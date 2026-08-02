@@ -1,0 +1,1 @@
+export const statusColors = { success: { bg: '#10B981', text: '#FFFFFF', soft: '#10B98120' }, warning: { bg: '#F59E0B', text: '#FFFFFF', soft: '#F59E0B20' }, error: { bg: '#EF4444', text: '#FFFFFF', soft: '#EF444420' }, info: { bg: '#3B82F6', text: '#FFFFFF', soft: '#3B82F620' } } as const;

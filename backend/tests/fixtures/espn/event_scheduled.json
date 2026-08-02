@@ -1,0 +1,11 @@
+{
+  "id": "600059339",
+  "date": "2026-08-01T14:00Z",
+  "name": "UFC Fight Night: Medi\u0107 vs. Rodriguez",
+  "shortName": "UFC Fight Night",
+  "status": {
+    "type": {
+      "name": "STATUS_SCHEDULED"
+    }
+  }
+}

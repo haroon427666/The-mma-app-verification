@@ -1,0 +1,15 @@
+{
+  "id": "3321",
+  "name": "Ultimate Fighting Championship",
+  "displayName": "UFC",
+  "slug": "ufc",
+  "season": {
+    "year": 2026
+  },
+  "logos": [
+    {
+      "href": "https://a.espncdn.com/i/teamlogos/leagues/500/ufc.png"
+    }
+  ],
+  "gender": "MALE"
+}

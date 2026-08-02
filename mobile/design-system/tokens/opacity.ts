@@ -1,0 +1,1 @@
+export const opacity = { disabled: 0.38, hover: 0.08, pressed: 0.12, overlay: 0.5, subtle: 0.6 } as const;

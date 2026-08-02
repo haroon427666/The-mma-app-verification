@@ -1,0 +1,53 @@
+{
+  "__description": "Grafana dashboard for MMA Backend sync jobs, queue, and provider health",
+  "dashboard": {
+    "title": "MMA Backend — Sync Monitoring",
+    "tags": ["mma", "sync", "backend"],
+    "panels": [
+      {
+        "title": "Sync Jobs Status",
+        "type": "stat",
+        "targets": [{"expr": "sync_job_total", "legendFormat": "{{job}} {{status}}"}],
+        "gridPos": {"x": 0, "y": 0, "w": 8, "h": 4}
+      },
+      {
+        "title": "Sync Duration (seconds)",
+        "type": "timeseries",
+        "targets": [{"expr": "sync_job_duration_seconds", "legendFormat": "{{job}}"}],
+        "gridPos": {"x": 8, "y": 0, "w": 16, "h": 4}
+      },
+      {
+        "title": "Queue Size",
+        "type": "gauge",
+        "targets": [{"expr": "sync_queue_size"}],
+        "fieldConfig": {"defaults": {"thresholds": {"steps": [
+          {"color": "green", "value": null}, {"color": "yellow", "value": 10},
+          {"color": "red", "value": 50}
+        ]}}},
+        "gridPos": {"x": 0, "y": 4, "w": 6, "h": 4}
+      },
+      {
+        "title": "Records Synced",
+        "type": "timeseries",
+        "targets": [{"expr": "rate(sync_records_total[5m])", "legendFormat": "{{job}} {{operation}}"}],
+        "gridPos": {"x": 6, "y": 4, "w": 18, "h": 4}
+      },
+      {
+        "title": "Provider Errors",
+        "type": "stat",
+        "targets": [{"expr": "sync_provider_errors_total", "legendFormat": "{{provider}}"}],
+        "gridPos": {"x": 0, "y": 8, "w": 6, "h": 4}
+      },
+      {
+        "title": "Live Mode",
+        "type": "stat",
+        "targets": [{"expr": "sync_live_mode"}],
+        "fieldConfig": {"defaults": {"mappings": [
+          {"type": "value", "value": "0", "text": "Normal"},
+          {"type": "value", "value": "1", "text": "LIVE"}
+        ]}},
+        "gridPos": {"x": 6, "y": 8, "w": 6, "h": 4}
+      }
+    ]
+  }
+}

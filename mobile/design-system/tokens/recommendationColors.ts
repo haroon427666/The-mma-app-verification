@@ -1,0 +1,1 @@
+export const recommendationColors = { forYou: '#3B82F6', similar: '#8B5CF6', trending: '#F97316', discover: '#10B981', dismiss: '#EF4444', like: '#10B981', score: { high: '#10B981', medium: '#F59E0B', low: '#6B7280' } } as const;

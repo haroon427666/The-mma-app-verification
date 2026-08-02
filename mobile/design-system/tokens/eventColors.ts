@@ -1,0 +1,1 @@
+export const eventColors = { live: { bg: '#EF4444', text: '#FFFFFF' }, upcoming: { bg: '#3B82F6', text: '#FFFFFF' }, completed: { bg: '#10B981', text: '#FFFFFF' }, cancelled: { bg: '#6B7280', text: '#FFFFFF' }, segments: { main: '#F59E0B', coMain: '#FCD34D', mainCard: '#3B82F6', prelims: '#6B7280', earlyPrelims: '#4B5563' } } as const;

@@ -1,0 +1,36 @@
+{
+  "id": "3088812",
+  "firstName": "Islam",
+  "lastName": "Makhachev",
+  "fullName": "Islam Makhachev",
+  "displayName": "Islam Makhachev",
+  "shortName": "I. Makhachev",
+  "weight": 155.0,
+  "displayWeight": "155 lbs",
+  "height": 70.0,
+  "displayHeight": "5' 10\"",
+  "reach": 70.5,
+  "weightClass": {
+    "id": "986",
+    "text": "Lightweight",
+    "shortName": "Lightweight",
+    "slug": "lightweight"
+  },
+  "stance": {
+    "id": "75",
+    "text": "Orthodox"
+  },
+  "citizenship": {
+    "country": "Russia"
+  },
+  "dateOfBirth": "1991-10-27T00:00Z",
+  "active": true,
+  "slug": "islam-makhachev",
+  "images": [],
+  "statistics": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/mma/athletes/3088812/statistics?lang=en&region=us"
+  },
+  "records": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/mma/athletes/3088812/records?lang=en&region=us"
+  }
+}

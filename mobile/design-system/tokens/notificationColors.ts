@@ -1,0 +1,1 @@
+export const notificationColors = { event: '#8B5CF6', fight: '#EF4444', ranking: '#F59E0B', prediction: '#3B82F6', recommendation: '#10B981', watchlist: '#F97316', system: '#6B7280', unread: '#3B82F6' } as const;

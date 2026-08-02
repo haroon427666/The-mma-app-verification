@@ -1,0 +1,1 @@
+export const predictionColors = { confidence: { very_high: '#059669', high: '#10B981', medium: '#F59E0B', low: '#F97316', coin_flip: '#6B7280' }, finish: { ko: '#EF4444', submission: '#8B5CF6', decision: '#3B82F6' }, factor: { positive: '#10B981', negative: '#EF4444', neutral: '#6B7280' }, correct: '#10B981', wrong: '#EF4444' } as const;

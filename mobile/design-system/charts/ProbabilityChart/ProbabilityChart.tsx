@@ -1,0 +1,4 @@
+import React from 'react'; import { View, Text } from 'react-native'; import { useTheme } from '../../theme';
+export const ProbabilityChart = ({ probA }: { probA: number }) => { const { palette } = useTheme(); return (<View style={{ alignItems: 'center', padding: 16 }}><View style={{ flexDirection: 'row', height: 20, borderRadius: 10, overflow: 'hidden', width: '100%', backgroundColor: palette.surface.elevated }}><View style={{ flex: probA, backgroundColor: palette.primary[400] }} /><View style={{ flex: 1 - probA, backgroundColor: '#8B5CF6' }} /></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 4 }}><Text style={{ color: palette.text.secondary }}>{Math.round(probA * 100)}%</Text><Text style={{ color: palette.text.secondary }}>{Math.round((1 - probA) * 100)}%</Text></View></View>); };
+export const WinLossChart = ({ wins, losses }: { wins: number; losses: number }) => null;
+export const MomentumChart = () => null;

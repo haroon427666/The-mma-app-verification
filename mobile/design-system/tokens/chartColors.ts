@@ -1,0 +1,2 @@
+export const chartColors = { primary: '#3B82F6', secondary: '#8B5CF6', tertiary: '#10B981', quaternary: '#F59E0B', quinary: '#EF4444', senary: '#EC4899', septenary: '#06B6D4', octonary: '#F97316' } as const;
+export const chartPalette = [chartColors.primary, chartColors.secondary, chartColors.tertiary, chartColors.quaternary, chartColors.quinary, chartColors.senary, chartColors.septenary, chartColors.octonary] as const;

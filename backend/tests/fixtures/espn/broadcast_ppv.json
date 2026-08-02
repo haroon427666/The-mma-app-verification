@@ -1,0 +1,13 @@
+{
+  "market": {
+    "type": "National"
+  },
+  "media": {
+    "name": "PPV"
+  },
+  "type": {
+    "shortName": "PPV"
+  },
+  "lang": "en",
+  "region": "us"
+}

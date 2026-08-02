@@ -1,0 +1,2 @@
+import { StyleSheet } from 'react-native';
+export const btnStyles = StyleSheet.create({ base: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }, full: { width: '100%' }, label: { fontWeight: '600', textAlign: 'center' as const } });

@@ -1,0 +1,7 @@
+# MMA Data Platform — dependencies
+# Core Python (no external packages required for core framework)
+# Production additions:
+#   aiohttp>=3.9      # HTTP for connectors
+#   redis>=5.0        # Distributed locks
+#   python-dateutil   # Date parsing
+#   pyyaml>=6.0       # Config files

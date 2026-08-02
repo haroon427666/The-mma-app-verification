@@ -1,0 +1,5 @@
+import React from 'react'; import { View, StyleSheet } from 'react-native';
+export const Skeleton = ({ width, height = 14, borderRadius = 8 }: { width?: number | string; height?: number; borderRadius?: number }) => (<View style={[s.skel, { width: width as any, height, borderRadius, backgroundColor: '#1A1A2E' }]} />);
+export const SkeletonCard = ({ lines = 3 }: { lines?: number }) => (<View style={s.card}>{Array.from({ length: lines }).map((_, i) => <Skeleton key={i} width={i === lines - 1 ? '60%' : '100%'} height={14} />)}</View>);
+export const SkeletonProfile = () => (<View style={s.profile}><Skeleton width={72} height={72} borderRadius={36} /><View style={{ flex: 1, marginLeft: 16, gap: 8 }}><Skeleton width="80%" height={20} /><Skeleton width="50%" height={14} /></View></View>);
+const s = StyleSheet.create({ skel: { overflow: 'hidden' }, card: { padding: 24, gap: 10 }, profile: { flexDirection: 'row', alignItems: 'center', padding: 24 } });

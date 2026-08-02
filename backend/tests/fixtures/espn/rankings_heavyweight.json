@@ -1,0 +1,36 @@
+{
+  "id": "3",
+  "name": "Heavyweight",
+  "shortName": "Heavyweight",
+  "type": "heavyweight",
+  "ranks": [
+    {
+      "current": 1,
+      "trend": "-",
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/mma/athletes/3088812?lang=en&region=us"
+      },
+      "hasAccolade": false,
+      "defenses": 0
+    },
+    {
+      "current": 2,
+      "trend": "-",
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/mma/athletes/4189320?lang=en&region=us"
+      },
+      "hasAccolade": false,
+      "defenses": 0
+    },
+    {
+      "current": 3,
+      "trend": "+2",
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/mma/athletes/2506549?lang=en&region=us"
+      },
+      "hasAccolade": false,
+      "defenses": 0
+    }
+  ],
+  "gender": "MALE"
+}

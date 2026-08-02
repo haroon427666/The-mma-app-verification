@@ -1,0 +1,1 @@
+export const rankingColors = { gold: '#F59E0B', silver: '#9CA3AF', bronze: '#CD7F32', movement: { up: '#10B981', down: '#EF4444', steady: '#6B7280', new: '#3B82F6' }, streak: { win: '#10B981', loss: '#EF4444' }, prospect: { rising: '#10B981', peak: '#3B82F6', declining: '#F97316' } } as const;

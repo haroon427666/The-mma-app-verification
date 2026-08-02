@@ -1,0 +1,19 @@
+{
+  "id": "2354359",
+  "firstName": "Jason",
+  "lastName": "Reinhardt",
+  "fullName": "Jason Reinhardt",
+  "weight": 145.0,
+  "height": 66.0,
+  "reach": 0.0,
+  "weightClass": {
+    "id": "970",
+    "text": "Bantamweight"
+  },
+  "stance": {
+    "id": "75",
+    "text": "Orthodox"
+  },
+  "images": [],
+  "active": false
+}

@@ -1,0 +1,4 @@
+/** Surface + Text palettes per mode */
+import { neutral } from './colors';
+export const surface = { light: { bg: neutral[0], card: neutral[0], elevated: neutral[50], border: neutral[200], overlay: 'rgba(0,0,0,0.5)' }, dark: { bg: '#0A0A0A', card: '#1A1A2E', elevated: '#222240', border: '#2A2A3E', overlay: 'rgba(0,0,0,0.7)' }, amoled: { bg: '#000000', card: '#0D0D0D', elevated: '#1A1A1A', border: '#1F1F1F', overlay: 'rgba(0,0,0,0.85)' } } as const;
+export const text = { light: { primary: neutral[900], secondary: neutral[600], tertiary: neutral[400], disabled: neutral[300], inverse: neutral[0] }, dark: { primary: neutral[0], secondary: neutral[400], tertiary: neutral[500], disabled: neutral[700], inverse: neutral[900] }, amoled: { primary: neutral[0], secondary: neutral[400], tertiary: neutral[500], disabled: neutral[700], inverse: neutral[900] } } as const;

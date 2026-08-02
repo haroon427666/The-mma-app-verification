@@ -1,0 +1,2 @@
+import type { ReactNode } from 'react';
+export interface TextFieldProps { value: string; onChangeText: (t: string) => void; placeholder?: string; label?: string; error?: string; secureTextEntry?: boolean; keyboardType?: any; autoFocus?: boolean; leftIcon?: ReactNode; rightIcon?: ReactNode; multiline?: boolean; maxLength?: number; editable?: boolean; onFocus?: () => void; onBlur?: () => void; }

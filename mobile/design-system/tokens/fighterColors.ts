@@ -1,0 +1,1 @@
+export const fighterColors = { win: '#10B981', loss: '#EF4444', draw: '#F59E0B', nc: '#6B7280', champion: '#F59E0B', interimChampion: '#FCD34D', streak: { hot: '#EF4444', warm: '#F97316', cold: '#10B981' }, style: { striker: '#EF4444', grappler: '#8B5CF6', mixed: '#3B82F6', bjj: '#10B981' } } as const;

@@ -1,0 +1,60 @@
+{
+  "id": "401870843",
+  "description": "5 Rnd (5-5-5-5-5)",
+  "date": "2025-01-18T17:00Z",
+  "endDate": "2025-01-18T17:45Z",
+  "type": {
+    "id": "969",
+    "text": "Welterweight",
+    "abbreviation": "Welterweight"
+  },
+  "venue": {
+    "id": "3115",
+    "fullName": "Belgrade Arena",
+    "address": {
+      "city": "Belgrade",
+      "country": "Serbia"
+    },
+    "grass": false,
+    "indoor": true
+  },
+  "competitors": [
+    {
+      "id": "4426312",
+      "order": 2,
+      "winner": true,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/mma/athletes/4426312?lang=en&region=us"
+      }
+    },
+    {
+      "id": "4685870",
+      "order": 1,
+      "winner": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/mma/athletes/4685870?lang=en&region=us"
+      }
+    }
+  ],
+  "matchNumber": 1,
+  "cardSegment": {
+    "id": "173",
+    "description": "Main Card",
+    "name": "main"
+  },
+  "status": {
+    "type": {
+      "id": "2",
+      "name": "STATUS_FINAL",
+      "completed": true
+    }
+  },
+  "format": {
+    "regulation": {
+      "periods": 5,
+      "displayName": "Round",
+      "slug": "round",
+      "clock": 300.0
+    }
+  }
+}

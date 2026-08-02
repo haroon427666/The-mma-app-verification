@@ -1,0 +1,1 @@
+export const easings = { easeIn: [0.4, 0, 1, 1] as const, easeOut: [0, 0, 0.2, 1] as const, easeInOut: [0.4, 0, 0.2, 1] as const, spring: { damping: 20, stiffness: 200, mass: 0.8 } as const };

@@ -1,0 +1,1 @@
+"""Configuration — constants, defaults, weights."""

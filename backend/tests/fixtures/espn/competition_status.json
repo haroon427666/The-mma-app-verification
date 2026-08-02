@@ -1,0 +1,21 @@
+{
+  "clock": 245.0,
+  "displayClock": "4:05",
+  "period": 3,
+  "type": {
+    "id": "2",
+    "name": "STATUS_FINAL",
+    "state": "post",
+    "completed": true,
+    "description": "Final",
+    "detail": "Final",
+    "shortDetail": "Final"
+  },
+  "result": {
+    "id": "6",
+    "name": "submission",
+    "displayName": "Submission",
+    "description": "D'Arce Choke",
+    "abbreviation": "SUB"
+  }
+}
