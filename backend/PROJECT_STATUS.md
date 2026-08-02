@@ -1,6 +1,6 @@
 # PROJECT_STATUS.md
 
-**Last updated:** 2026-08-01
+**Last updated:** 2026-08-02
 **Repository:** MMA Backend
 
 ---
@@ -9,19 +9,19 @@
 
 | Phase | Name | Status | Date Completed | Artifacts |
 |---|---|---|---|---|
-| Phase 0 | Project Foundation (Architecture) | ✅ Approved | 2026-08-01 | `backend/ARCHITECTURE.md` |
-| Phase 1 | Database Design | ✅ Approved | 2026-08-01 | `backend/DATABASE_DESIGN.md` |
+| Phase 0 | Project Foundation (Architecture) | ✅ Complete | 2026-08-01 | `backend/ARCHITECTURE.md` |
+| Phase 1 | Database Design | ✅ Complete | 2026-08-01 | `backend/DATABASE_DESIGN.md` |
 | Phase 2 | ESPN Data Layer | ✅ Complete | 2026-08-01 | `backend/src/providers/` |
-| Phase 3 | Sync Engine | 🔜 Next | — | — |
-| Phase 4 | Repository Layer | ⏳ Future | — | — |
-| Phase 5 | Service Layer | ⏳ Future | — | — |
-| Phase 6 | REST API | ⏳ Future | — | — |
-| Phase 7 | Advanced API | ⏳ Future | — | — |
-| Phase 8 | Notifications | ⏳ Future | — | — |
-| Phase 9 | Authentication | ⏳ Future | — | — |
-| Phase 10 | Redis Caching | ⏳ Future | — | — |
-| Phase 11 | Testing | ⏳ Future | — | — |
-| Phase 12 | Production | ⏳ Future | — | — |
+| Phase 3 | Sync Engine | ✅ Complete | 2026-08-02 | `backend/src/sync/` |
+| Phase 4 | Repository Layer | ✅ Complete | 2026-08-02 | `backend/src/db/repositories/` |
+| Phase 5 | Service Layer | ✅ Complete | 2026-08-02 | `backend/src/services/` |
+| Phase 6 | REST API | ✅ Complete | 2026-08-02 | `backend/src/api/v1/` |
+| Phase 7 | Advanced API | ✅ Complete | 2026-08-02 | `backend/src/api/v1/other.py`, `backend/src/api/v1/search.py` |
+| Phase 8 | Notifications | ✅ Complete (v1 routes) | 2026-08-02 | `backend/src/api/v1/notifications.py` |
+| Phase 9 | Authentication | ✅ Complete (v1 routes/services) | 2026-08-02 | `backend/src/api/v1/auth.py`, `backend/src/auth/` |
+| Phase 10 | Redis Caching | ⚠️ Partial | — | `backend/src/middleware/cache.py` (in-memory abstraction present; Redis wiring not finalized) |
+| Phase 11 | Testing | ✅ Active | 2026-08-02 | `backend/tests/` |
+| Phase 12 | Production | ⏳ In progress | — | health/metrics/monitoring scaffolding in `backend/src/monitoring/` |
 
 ---
 
@@ -41,6 +41,19 @@
 **Date:** 2026-08-01
 **Decision:** `CacheManager` abstraction in `core/cache.py`. Services use `CacheManager` and never know if data came from PostgreSQL or Redis.
 **Rationale:** Every expensive query gets cache invalidation + configurable TTL without service-layer awareness.
+
+---
+
+## State Reconciliation (2026-08-02)
+
+This repository has advanced beyond the earlier "Phase 2 only" snapshot. The following capabilities are already implemented and should not be treated as blocked:
+
+- Rankings APIs are live (`/api/v1/rankings`, `/api/v1/rankings/{division}`, `/api/v1/rankings/p4p`, gender splits).
+- Broadcast data model + sync upserts are implemented (`src/db/models/core.py`, `src/sync/upserts/broadcast.py`, ESPN broadcast parser/job).
+- Competition-level status/result handling is implemented in competition parsing + upserts and exposed via event/fight endpoints.
+- Live and high-frequency event synchronization flows are implemented (`events_live`, `results`, `events_upcoming` job definitions).
+- Weight-class parsing, DTO flow, persistence, and sync upserts are implemented (`weight_class` parser/job/upsert path).
+- Scheduler execution is implemented with lock-aware APScheduler orchestration, misfire/coalesce/max_instances controls, manual trigger support, and run history (`src/sync/scheduler.py`).
 
 ### ADR-004: Modular Sync Jobs
 **Date:** 2026-08-01
@@ -64,52 +77,29 @@
 
 ---
 
-## Current Phase Details: Phase 2 (Complete)
+## Current Focus: Production Readiness
 
-### Delivered
-- `BaseDataProvider` Protocol — contract for all data providers (14 async methods)
-- `ProviderRegistry` — maps promotion slugs to provider instances; zero code changes to add a provider
-- Internal DTOs — 10 provider-agnostic dataclasses (`PromotionDTO`, `FighterDTO`, etc.)
-- ESPN HTTP client — async httpx client with:
-  - Token bucket rate limiter (10 req/s, 15 burst)
-  - Exponential backoff retry (3 attempts, 429 + 5xx)
-  - Circuit breaker (5 consecutive failures → open for 60s)
-  - Configurable timeouts (30s request, 10s connect)
-  - Async pagination generator
-  - Structured logging per API call
-- ESPN `$ref` resolver — cached resolution within a sync run, parallel resolve_all
-- 9 response parsers — pure functions: raw ESPN JSON → DTO
-  - `promotion.py` — leagues → PromotionDTO
-  - `fighter.py` — athletes → FighterDTO (including record parsing, physical stats, headshot)
-  - `event.py` — events → EventDTO (with status mapping, date parsing, slug generation)
-  - `competition.py` — competitions → CompetitionDTO + CompetitorDTOs (corner, outcome, result method/round/time)
-  - `ranking.py` — rankings → RankingDTO (per-category, trend, is_champion)
-  - `broadcast.py` — broadcasts → BroadcastDTO (network, region, type)
-  - `statistics.py` — statistics → StatisticDTO (category + label + value)
-  - `weight_class.py` — weight classes → WeightClassDTO
-  - `venue.py` — venues → VenueDTO (address, coordinates, capacity)
-- `ESPNProvider` — complete BaseDataProvider implementation tying together client, resolver, and all parsers
-- ESPN config — all API endpoint URLs, league IDs, status mapping, client defaults
+### Delivered (implemented in codebase)
+- Provider layer (`src/providers/`) + sync orchestration (`src/sync/`) are implemented.
+- Repository + service + REST routing layers are implemented (`src/db/repositories/`, `src/services/`, `src/api/v1/`).
+- Rankings, broadcasts, competition result/status flows, live-event polling, and weight-class sync paths are all implemented.
+- Lock-aware scheduler execution and run observability are implemented (`src/sync/scheduler.py`, `src/scheduler/`).
+- Health, metrics, and monitoring scaffolding are in place (`src/monitoring/`, `src/metrics/`).
 
-### Pending
-- Phase 2 unit tests (parsers tested against real ESPN fixture data)
-- Phase 2 integration tests (ESPN client with mocked httpx)
+### In progress
+- Redis cache hardening: move from in-memory cache abstraction to production Redis wiring and invalidation discipline.
+- Production hardening pass across configuration, validation, and deployment runbooks.
 
 ---
 
-## Next Milestone: Phase 3 — Sync Engine
+## Next Milestone: Phase 10+ Production Hardening
 
-**Goal:** Build the sync engine that fetches from providers and writes to the database.
+**Goal:** Complete production readiness without reworking already-shipped sync/API foundations.
 
-**Scope:**
-- `SyncEngine` orchestrator — runs jobs in dependency order within transactions
-- 9 sync jobs — one per entity, each idempotent (re-run produces same DB state)
-- Upsert strategies — merge vs. replace per entity
-- Change diff — detect what changed for notification triggers
-- Integration with `ExternalId` table for provider-neutral lookups
-- Full observability via `sync_runs` + `sync_jobs` tables
-
-**Blockers:** None — Phase 3 can begin immediately.
+**Priority scope:**
+- Finalize Redis-backed cache behavior and failure-mode fallback.
+- Tighten readiness/operational checks and deployment defaults.
+- Keep scheduler locking/overlap guarantees stable under multi-instance deployment.
 
 ---
 
@@ -128,12 +118,12 @@ The product blueprint (Flutter app design) lives in `docs/blueprint/`:
 
 | Item | Severity | Notes |
 |---|---|---|
-| Auth milestone not yet started | High | Blocks all personalized features. Must be scoped before Flutter work begins. |
-| Cross-org fighter identity (FIGHT-07) | Medium | No backend design exists yet. ExternalId table lays the groundwork. |
-| Non-UFC organization verification | Medium | Only UFC is fully verified. Gated on `scripts/verify_additional_organizations.py`. |
+| Redis integration is partial | High | `src/middleware/cache.py` is still in-memory-first; production Redis behavior needs finalization. |
+| Cross-org fighter identity (FIGHT-07) | Medium | External ID groundwork exists; conflict resolution rules still need stronger operational playbooks. |
+| Non-UFC organization verification | Medium | UFC paths are strongest; additional orgs still require deeper provider-level verification. |
 
 ---
 
 ## Environment Setup
 
-*Documented in `backend/.env.example` — to be created during Phase 2 implementation.*
+*Documented in `backend/.env.example`.*
