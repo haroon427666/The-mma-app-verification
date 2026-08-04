@@ -1,8 +1,8 @@
 """Phase 8 API Tests — endpoint contracts, pagination, filters, serialization."""
 
-import pytest
-from datetime import date, datetime
+from datetime import datetime
 
+import pytest
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Schema Validation Tests
@@ -71,7 +71,7 @@ class TestSchemas:
         assert event.fights[0].is_main_event is True
 
     def test_ranking_response_structure(self):
-        from src.schemas.misc import RankingsResponse, RankingCategory, RankingEntry
+        from src.schemas.misc import RankingCategory, RankingEntry, RankingsResponse
         entries = [
             RankingEntry(rank=1, fighter_id="f1", fighter_name="Islam Makhachev",
                         record="28-1-0", is_champion=True, title_defenses=4),
@@ -84,7 +84,7 @@ class TestSchemas:
         assert resp.categories[0].champion.is_champion is True
 
     def test_error_response_json(self):
-        from src.schemas.common import ErrorResponse, ErrorDetail
+        from src.schemas.common import ErrorDetail, ErrorResponse
         err = ErrorResponse(error="Not found", code=404,
                            details=[ErrorDetail(message="No fighter found for: xyz")])
         d = err.model_dump()
@@ -186,7 +186,7 @@ class TestSerialization:
             thumbnail_url = None
             fight_count = 13
 
-        event = EventListItem.model_validate(FakeOrmEvent)
+        event = EventListItem.model_validate(FakeOrmEvent())
         assert event.name == "UFC 400"
 
 
@@ -201,11 +201,11 @@ class TestPerformanceTargets:
         """FighterListItem has < 20 fields — fast serialization."""
         from src.schemas.fighter import FighterListItem
         # Count top-level fields (excluding model_config)
-        fields = [f for f in dir(FighterListItem.__annotations__) if not f.startswith("_")]
+        [f for f in dir(FighterListItem.__annotations__) if not f.startswith("_")]
         # 14 fields — lean enough for <100ms response
 
     def test_rankings_schema_lightweight(self):
         """Rankings response can fit in <30ms."""
         from src.schemas.misc import RankingEntry
-        fields = [f for f in dir(RankingEntry.__annotations__) if not f.startswith("_")]
+        [f for f in dir(RankingEntry.__annotations__) if not f.startswith("_")]
         # Should be < 10 fields for fast response

@@ -1,6 +1,6 @@
 /** Events module — complete type definitions */
 
-import type { Fighter, Fight as BaseFight, Event as BaseEvent } from '../../models';
+import type { Fighter, Fight as BaseFight, Event as BaseEvent } from '../models';
 
 export interface ExtendedEvent extends BaseEvent {
   promotion: string;

@@ -12,7 +12,6 @@ Tests:
 - Circuit breaker state machine → CLOSED→OPEN→HALF_OPEN→CLOSED
 """
 
-import asyncio
 import time
 
 import pytest
@@ -113,7 +112,7 @@ class TestCircuitBreakerStateMachine:
 
     @pytest.mark.asyncio
     async def test_half_open_failure_opens_again(self, circuit_breaker):
-        from src.sync.failure import CircuitState, FailureCategory
+        from src.sync.failure import FailureCategory
         for _ in range(3):
             circuit_breaker.on_failure(FailureCategory.TRANSIENT)
         time.sleep(0.2)

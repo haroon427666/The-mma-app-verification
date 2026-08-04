@@ -9,12 +9,14 @@ Key findings:
 - NO weightClass reference at the ranking entry level
 """
 
+from typing import Any
+
 from src.providers.dto import RankingDTO
 from src.providers.espn.reference import extract_id_from_ref
 
 
 def parse_ranking_category(
-    data: dict,
+    data: dict[str, Any],
     promotion_external_id: str,
 ) -> list[RankingDTO]:
     """Parse a single ranking category (resolved $ref).
@@ -40,7 +42,7 @@ def parse_ranking_category(
     result: list[RankingDTO] = []
 
     category_name = data.get("name", "") or data.get("shortName", "")
-    category_type = data.get("type", "")  # "pound-for-pound" or weight class slug
+    data.get("type", "")  # "pound-for-pound" or weight class slug
 
     ranks = data.get("ranks", []) or []
     for entry in ranks:

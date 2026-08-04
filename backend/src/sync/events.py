@@ -13,8 +13,9 @@ Usage:
 
 import asyncio
 import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any, Awaitable, Callable
+from typing import Any
 
 from src.sync.types import EntityType
 
@@ -131,7 +132,9 @@ class SyncEventBus:
 
     # ── Internal ───────────────────────────────────────────────────────────
 
-    async def _fire(self, handlers: list, *args: Any) -> None:
+    async def _fire(
+        self, handlers: list[Callable[..., Awaitable[None]]], *args: Any
+    ) -> None:
         """Fire all handlers concurrently. Failures are logged, never raised."""
         if not handlers:
             return
@@ -141,7 +144,9 @@ class SyncEventBus:
         await asyncio.gather(*tasks, return_exceptions=True)
 
     @staticmethod
-    async def _safe_call(handler: Callable, *args: Any) -> None:
+    async def _safe_call(
+        handler: Callable[..., Awaitable[None]], *args: Any
+    ) -> None:
         try:
             await handler(*args)
         except Exception:
@@ -150,5 +155,5 @@ class SyncEventBus:
 
 # ── Forward references ────────────────────────────────────────────────────────
 # Avoid circular imports — resolved at runtime.
-from src.sync.result import SyncResult  # noqa: E402
-from src.sync.job import JobResult      # noqa: E402
+from src.sync.job import JobResult
+from src.sync.result import SyncResult

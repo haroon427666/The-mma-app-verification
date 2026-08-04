@@ -4,6 +4,8 @@ Events are fetched from /leagues/{league}/events.
 Competitions are EMBEDDED in the event response — no separate fetch needed.
 """
 
+from typing import Any, cast
+
 from src.sync.job import SyncJob
 from src.sync.types import EntityType
 
@@ -15,15 +17,15 @@ class ESPN_EventSyncJob(SyncJob):
     batch_size = 25
     supports_incremental = False
 
-    async def _fetch(self, ctx, state):
+    async def _fetch(self, ctx: Any, state: Any) -> list[Any]:
         provider = ctx.provider
         offset = state.last_offset if state.last_offset else 0
         events = await provider.fetch_events(limit=self.batch_size, offset=offset)
-        return events
+        return cast(list[Any], events)
 
-    async def _upsert(self, ctx, dtos):
-        from src.sync.upserts.id_resolver import IdResolver
+    async def _upsert(self, ctx: Any, dtos: list[Any]) -> dict[str, int]:
         from src.sync.upserts.event import EventUpsert
+        from src.sync.upserts.id_resolver import IdResolver
 
         resolver = IdResolver(ctx.db)
         upsert = EventUpsert(resolver)

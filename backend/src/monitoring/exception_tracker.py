@@ -3,13 +3,17 @@
 import logging
 import traceback
 import uuid
-from datetime import datetime, timezone
+from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime
+from typing import Any
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 logger = logging.getLogger(__name__)
+
+RequestResponseEndpoint = Callable[[Request], Awaitable[Response]]
 
 
 class ExceptionTrackerMiddleware(BaseHTTPMiddleware):
@@ -19,7 +23,7 @@ class ExceptionTrackerMiddleware(BaseHTTPMiddleware):
     query params, payload size — everything needed for debugging.
     """
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         try:
             return await call_next(request)
         except Exception as exc:
@@ -47,7 +51,7 @@ class ExceptionTrackerMiddleware(BaseHTTPMiddleware):
             "exception_type": type(exc).__name__,
             "exception_message": str(exc)[:500],
             "stack_trace": traceback.format_exc()[-2000:],
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         # Log with all context
@@ -74,12 +78,12 @@ class ProfilerMiddleware(BaseHTTPMiddleware):
     Stores last 1000 requests per endpoint for percentile calculation.
     """
 
-    def __init__(self, app, max_samples: int = 1000):
+    def __init__(self, app: Any, max_samples: int = 1000):
         super().__init__(app)
         self._samples: dict[str, list[float]] = {}
         self._max_samples = max_samples
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         import time
         start = time.monotonic()
         response = await call_next(request)
@@ -104,13 +108,13 @@ class ProfilerMiddleware(BaseHTTPMiddleware):
 
         return response
 
-    def get_percentiles(self, endpoint: str) -> dict:
+    def get_percentiles(self, endpoint: str) -> dict[str, float | int]:
         """Get P50/P95/P99 for an endpoint."""
         samples = sorted(self._samples.get(endpoint, []))
         if not samples:
             return {"p50": 0, "p95": 0, "p99": 0, "count": 0}
 
-        def percentile(data, p):
+        def percentile(data: list[float], p: float) -> float:
             k = (len(data) - 1) * p
             f = int(k)
             c = k - f
@@ -125,5 +129,5 @@ class ProfilerMiddleware(BaseHTTPMiddleware):
             "count": len(samples),
         }
 
-    def get_all_percentiles(self) -> dict:
+    def get_all_percentiles(self) -> dict[str, dict[str, float | int]]:
         return {ep: self.get_percentiles(ep) for ep in self._samples}

@@ -1,11 +1,21 @@
 """Telemetry package — OpenTelemetry tracing."""
 
 from src.telemetry.tracer import (
-    setup_tracing, instrument_app, instrument_sqlalchemy, instrument_httpx,
-    tracer, span, OTEL_AVAILABLE,
+    OTEL_AVAILABLE,
+    instrument_app,
+    instrument_httpx,
+    instrument_sqlalchemy,
+    setup_tracing,
+    span,
+    tracer,
 )
 
 __all__ = [
-    "setup_tracing", "instrument_app", "instrument_sqlalchemy", "instrument_httpx",
-    "tracer", "span", "OTEL_AVAILABLE",
+    "OTEL_AVAILABLE",
+    "instrument_app",
+    "instrument_httpx",
+    "instrument_sqlalchemy",
+    "setup_tracing",
+    "span",
+    "tracer",
 ]

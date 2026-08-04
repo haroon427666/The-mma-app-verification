@@ -4,13 +4,22 @@ Uses FighterRepository, MergeEngine, and Validation layer.
 Never exposes raw DTOs or SQLAlchemy to callers.
 """
 
+from __future__ import annotations
+
 import logging
-from datetime import date
+from typing import TYPE_CHECKING, Any, cast
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.unit_of_work import UnitOfWork
-from src.sync.merge_engine import MergeEngine, MergeResult
 from src.sync.conflicts import ConflictTracker
+from src.sync.merge_engine import MergeEngine, MergeResult
 from src.validation import validate as validate_dto
+
+if TYPE_CHECKING:
+    from src.db.models.core import Ranking, Statistic
+    from src.db.models.event import Event
+    from src.db.models.fighter import Fighter
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +30,7 @@ class FighterService:
     def __init__(self, uow: UnitOfWork):
         self._uow = uow
         self._merge_engine = MergeEngine(uow)
-        self._conflicts = ConflictTracker(uow._session)
+        self._conflicts = ConflictTracker(cast(AsyncSession, uow._session))
 
     # ── API Query Methods ───────────────────────────────────────────────
 
@@ -37,7 +46,7 @@ class FighterService:
         search: str | None = None,
         sort_by: str | None = None,
         sort_dir: str = "asc",
-    ) -> tuple[list, int]:
+    ) -> tuple[list[Fighter], int]:
         """List fighters with filters, pagination, sorting."""
         filters: dict[str, object] = {"search": search}
         if weight_class:
@@ -56,7 +65,7 @@ class FighterService:
         total = await self._uow.fighters.count_filtered(filters)
         return fighters, total
 
-    async def get_fighter_detail(self, fighter_id: str) -> dict | None:
+    async def get_fighter_detail(self, fighter_id: str) -> dict[str, Any] | None:
         """Full fighter profile — identity, physical, record, stats, rankings, fights."""
         fighter = await self._uow.fighters.get_by_id(fighter_id)
         if fighter is None:
@@ -66,9 +75,10 @@ class FighterService:
         record = await self._uow.fighters.get_record(fighter_id)
 
         # Rankings
-        from src.db.models.core import Ranking
         from sqlalchemy import select as sa_select
-        result = await self._uow._session.execute(
+
+        from src.db.models.core import Ranking
+        result = await self._uow.session.execute(
             sa_select(Ranking).where(Ranking.fighter_id == fighter_id).order_by(Ranking.rank)
         )
         rankings = list(result.scalars().all())
@@ -83,20 +93,21 @@ class FighterService:
             "recent_fights": fights,
         }
 
-    async def get_fighter_stats(self, fighter_id: str):
+    async def get_fighter_stats(self, fighter_id: str) -> list[Statistic]:
         """Fighter's career statistics from the most recent competition."""
-        from src.db.models.core import Statistic
         from sqlalchemy import select as sa_select
-        result = await self._uow._session.execute(
+
+        from src.db.models.core import Statistic
+        result = await self._uow.session.execute(
             sa_select(Statistic).where(Statistic.fighter_id == fighter_id)
         )
         return list(result.scalars().all())
 
-    async def get_fighter_fights(self, fighter_id: str, limit: int = 20) -> list:
+    async def get_fighter_fights(self, fighter_id: str, limit: int = 20) -> list[dict[str, Any]]:
         """Recent + upcoming fights for a fighter."""
         return await self._uow.fighters.get_recent_fights(fighter_id, limit)
 
-    async def get_fighter_media(self, fighter_id: str) -> dict | None:
+    async def get_fighter_media(self, fighter_id: str) -> dict[str, Any] | None:
         """Fighter images — headshot, cutout, render, CDN fallback."""
         fighter = await self._uow.fighters.get_by_id(fighter_id)
         if fighter is None:
@@ -110,7 +121,7 @@ class FighterService:
 
     # ── Sync Methods ────────────────────────────────────────────────────
 
-    async def sync_fighters(self, dtos: list, batch_size: int = 500) -> dict:
+    async def sync_fighters(self, dtos: list[Any], batch_size: int = 500) -> dict[str, int]:
         inserted = updated = skipped = errors = 0
         for i in range(0, len(dtos), batch_size):
             batch = dtos[i:i + batch_size]
@@ -133,17 +144,17 @@ class FighterService:
         return {"inserted": inserted, "updated": updated, "skipped": skipped, "errors": errors}
 
     async def enrich_fighter(
-        self, fighter_id: str, enrichment: dict, source: str,
+        self, fighter_id: str, enrichment: dict[str, Any], source: str,
     ) -> MergeResult:
         return await self._merge_engine.merge_fighter(fighter_id, enrichment, source)
 
-    async def sync_fighter_record(self, fighter_id: str, record) -> None:
+    async def sync_fighter_record(self, fighter_id: str, record: Any) -> None:
         await self._uow.fighters.upsert_record(fighter_id, record)
 
-    async def get_active_fighters(self, limit: int = 100) -> list:
+    async def get_active_fighters(self, limit: int = 100) -> list[Fighter]:
         return await self._uow.fighters.get_active(limit)
 
-    async def get_by_weight_class(self, name: str) -> list:
+    async def get_by_weight_class(self, name: str) -> list[Fighter]:
         return await self._uow.fighters.get_by_weight_class(name)
 
 
@@ -167,7 +178,7 @@ class EventService:
         search: str | None = None,
         sort_by: str | None = None,
         sort_dir: str = "asc",
-    ) -> tuple[list, int]:
+    ) -> tuple[list[Event], int]:
         """List events with filters, pagination, sorting."""
         filters: dict[str, object] = {}
         if status:
@@ -184,32 +195,35 @@ class EventService:
         total = await self._uow.events.count_filtered(filters)
         return events, total
 
-    async def get_upcoming(self, limit: int = 50) -> list:
+    async def get_upcoming(self, limit: int = 50) -> list[Event]:
         return await self._uow.events.get_upcoming(limit)
 
-    async def get_live(self) -> list:
+    async def get_live(self) -> list[Event]:
         from sqlalchemy import select as sa_select
+
         from src.db.models.event import Event
-        result = await self._uow._session.execute(
+        result = await self._uow.session.execute(
             sa_select(Event).where(Event.status == "IN_PROGRESS").limit(20)
         )
         return list(result.scalars().all())
 
-    async def get_past(self, limit: int = 50, offset: int = 0) -> tuple[list, int]:
-        from sqlalchemy import select as sa_select, func
+    async def get_past(self, limit: int = 50, offset: int = 0) -> tuple[list[Event], int]:
+        from sqlalchemy import func
+        from sqlalchemy import select as sa_select
+
         from src.db.models.event import Event
-        result = await self._uow._session.execute(
+        result = await self._uow.session.execute(
             sa_select(Event).where(Event.status == "FINAL")
             .order_by(Event.date_utc.desc()).limit(limit).offset(offset)
         )
         events = list(result.scalars().all())
-        count_result = await self._uow._session.execute(
+        count_result = await self._uow.session.execute(
             sa_select(func.count()).select_from(Event).where(Event.status == "FINAL")
         )
         total = count_result.scalar_one()
         return events, total
 
-    async def get_event_detail(self, event_id: str) -> dict | None:
+    async def get_event_detail(self, event_id: str) -> dict[str, Any] | None:
         """Event with fights, broadcasts, venue."""
         event = await self._uow.events.get_by_id(event_id)
         if event is None:
@@ -217,25 +231,32 @@ class EventService:
 
         # Fights (competitions) for this event
         from sqlalchemy import select as sa_select
-        from src.db.models.event import Competition, Competitor
-        from src.db.models.core import Broadcast, Ranking
 
-        result = await self._uow._session.execute(
+        from src.db.models.core import Broadcast
+        from src.db.models.event import Competition, Competitor
+
+        result = await self._uow.session.execute(
             sa_select(Competition).where(Competition.event_id == event_id).order_by(Competition.order_num)
         )
         competitions = list(result.scalars().all())
 
-        # Competitors for all competitions
-        fights_data = []
-        for comp in competitions:
-            comp_result = await self._uow._session.execute(
-                sa_select(Competitor).where(Competitor.competition_id == comp.id)
+        # Competitors for all competitions — single query, no N+1
+        competitors_by_comp: dict[str, list[Competitor]] = {}
+        if competitions:
+            comp_ids = [comp.id for comp in competitions]
+            comp_result = await self._uow.session.execute(
+                sa_select(Competitor).where(Competitor.competition_id.in_(comp_ids))
             )
-            competitors = list(comp_result.scalars().all())
-            fights_data.append({"competition": comp, "competitors": competitors})
+            for comp in comp_result.scalars().all():
+                competitors_by_comp.setdefault(comp.competition_id, []).append(comp)
+
+        fights_data = [
+            {"competition": comp, "competitors": competitors_by_comp.get(comp.id, [])}
+            for comp in competitions
+        ]
 
         # Broadcasts
-        broadcast_result = await self._uow._session.execute(
+        broadcast_result = await self._uow.session.execute(
             sa_select(Broadcast).where(Broadcast.event_id == event_id)
         )
         broadcasts = list(broadcast_result.scalars().all())
@@ -248,7 +269,7 @@ class EventService:
 
     # ── Sync Methods ────────────────────────────────────────────────────
 
-    async def sync_events(self, dtos: list, batch_size: int = 50) -> dict:
+    async def sync_events(self, dtos: list[Any], batch_size: int = 50) -> dict[str, int]:
         inserted = updated = errors = 0
         for i in range(0, len(dtos), batch_size):
             batch = dtos[i:i + batch_size]
@@ -279,9 +300,10 @@ class RankingService:
 
     # ── API Query Methods ───────────────────────────────────────────────
 
-    async def get_all_rankings(self, gender: str | None = None) -> list:
+    async def get_all_rankings(self, gender: str | None = None) -> list[Ranking]:
         """All rankings, optionally filtered by gender."""
         from sqlalchemy import select as sa_select
+
         from src.db.models.core import Ranking
 
         stmt = sa_select(Ranking)
@@ -289,47 +311,51 @@ class RankingService:
             stmt = stmt.where(Ranking.gender == gender)
         stmt = stmt.order_by(Ranking.category_name, Ranking.rank)
 
-        result = await self._uow._session.execute(stmt)
+        result = await self._uow.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_p4p(self) -> list:
+    async def get_p4p(self) -> list[Ranking]:
         """Pound-for-pound rankings."""
         from sqlalchemy import select as sa_select
+
         from src.db.models.core import Ranking
-        result = await self._uow._session.execute(
+        result = await self._uow.session.execute(
             sa_select(Ranking)
             .where(Ranking.category_name == "Pound-for-Pound")
             .order_by(Ranking.rank)
         )
         return list(result.scalars().all())
 
-    async def get_by_division(self, division: str) -> list:
+    async def get_by_division(self, division: str) -> list[Ranking]:
         """Rankings for a specific weight class."""
         from sqlalchemy import select as sa_select
+
         from src.db.models.core import Ranking
-        result = await self._uow._session.execute(
+        result = await self._uow.session.execute(
             sa_select(Ranking)
             .where(Ranking.category_name.ilike(f"%{division}%"))
             .order_by(Ranking.rank)
         )
         return list(result.scalars().all())
 
-    async def get_mens(self) -> list:
+    async def get_mens(self) -> list[Ranking]:
         """All men's division rankings."""
         from sqlalchemy import select as sa_select
+
         from src.db.models.core import Ranking
-        result = await self._uow._session.execute(
+        result = await self._uow.session.execute(
             sa_select(Ranking)
             .where(Ranking.gender == "MALE")
             .order_by(Ranking.category_name, Ranking.rank)
         )
         return list(result.scalars().all())
 
-    async def get_womens(self) -> list:
+    async def get_womens(self) -> list[Ranking]:
         """All women's division rankings."""
         from sqlalchemy import select as sa_select
+
         from src.db.models.core import Ranking
-        result = await self._uow._session.execute(
+        result = await self._uow.session.execute(
             sa_select(Ranking)
             .where(Ranking.gender == "FEMALE")
             .order_by(Ranking.category_name, Ranking.rank)
@@ -339,7 +365,7 @@ class RankingService:
     # ── Sync Methods ────────────────────────────────────────────────────
 
     async def sync_rankings(
-        self, promotion_id: str, category_name: str, dtos: list,
+        self, promotion_id: str, category_name: str, dtos: list[Any],
     ) -> int:
         for dto in dtos:
             validation = validate_dto("ranking", dto)
@@ -349,6 +375,6 @@ class RankingService:
         return await self._uow.rankings.replace_category(promotion_id, category_name, dtos)
 
     async def verify_rankings(
-        self, promotion_id: str, octagon_rankings: list,
-    ) -> dict:
+        self, promotion_id: str, octagon_rankings: list[Any],
+    ) -> dict[str, Any]:
         return {"discrepancies": 0, "details": []}

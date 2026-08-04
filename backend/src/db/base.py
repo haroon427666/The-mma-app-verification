@@ -4,10 +4,10 @@ Every table gets: UUID PK, created_at, updated_at, synced_at, source_provider, v
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, DateTime, Integer, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import JSON, DateTime, Integer, String
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -15,18 +15,22 @@ class Base(DeclarativeBase):
     pass
 
 
+# JSONB on Postgres, portable JSON on any other dialect (SQLite for tests)
+JSONType = JSON().with_variant(JSONB(), "postgresql")
+
+
 class TimestampMixin:
     """Shared timestamp columns for all tables."""
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )
 
@@ -45,7 +49,7 @@ class SyncableMixin(TimestampMixin):
 
     synced_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=True,
     )
     source_provider: Mapped[str] = mapped_column(

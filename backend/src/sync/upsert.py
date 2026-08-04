@@ -5,6 +5,7 @@ Carries both counts AND IDs for debugging and audit trails.
 """
 
 from dataclasses import dataclass, field
+from typing import Any
 from uuid import UUID
 
 
@@ -34,7 +35,7 @@ class UpsertResult:
     error_details: list[str] = field(default_factory=list)
     """Error messages for failed operations."""
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "inserted": self.inserted,
             "updated": self.updated,

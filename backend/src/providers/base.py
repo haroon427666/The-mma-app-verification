@@ -19,13 +19,13 @@ from typing import Protocol, runtime_checkable
 from src.providers.dto import (
     BroadcastDTO,
     CompetitionDTO,
+    EventDTO,
     FighterDTO,
     PromotionDTO,
     RankingDTO,
     StatisticDTO,
     VenueDTO,
     WeightClassDTO,
-    EventDTO,
 )
 
 

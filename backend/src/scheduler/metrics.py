@@ -14,8 +14,7 @@ Metrics exposed:
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 logger = logging.getLogger(__name__)
 
@@ -53,26 +52,26 @@ class MetricsRegistry:
     No external dependency — works without prometheus_client.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._counters: dict[str, Counter] = {}
         self._gauges: dict[str, Gauge] = {}
-        self._started_at = datetime.now(timezone.utc)
+        self._started_at = datetime.now(UTC)
 
     # ── Registration ────────────────────────────────────────────────────
 
-    def counter(self, name: str, **labels) -> Counter:
+    def counter(self, name: str, **labels: str) -> Counter:
         key = self._make_key(name, labels)
         if key not in self._counters:
             self._counters[key] = Counter(name=name, labels=labels)
         return self._counters[key]
 
-    def gauge(self, name: str, **labels) -> Gauge:
+    def gauge(self, name: str, **labels: str) -> Gauge:
         key = self._make_key(name, labels)
         if key not in self._gauges:
             self._gauges[key] = Gauge(name=name, labels=labels)
         return self._gauges[key]
 
-    def _make_key(self, name: str, labels: dict) -> str:
+    def _make_key(self, name: str, labels: dict[str, str]) -> str:
         parts = [name] + [f"{k}={v}" for k, v in sorted(labels.items())]
         return "|".join(parts)
 
@@ -108,10 +107,10 @@ class MetricsRegistry:
         lines = [
             "# HELP sync_up Time since the sync service started.",
             "# TYPE sync_up gauge",
-            f"sync_up {int((datetime.now(timezone.utc) - self._started_at).total_seconds())}",
+            f"sync_up {int((datetime.now(UTC) - self._started_at).total_seconds())}",
         ]
 
-        for _, counter in self._counters.items():
+        for counter in self._counters.values():
             label_str = self._format_labels(counter.labels)
             lines.extend([
                 f"# HELP {counter.name} Auto-generated counter metric.",
@@ -119,7 +118,7 @@ class MetricsRegistry:
                 f"{counter.name}{label_str} {counter.value}",
             ])
 
-        for _, gauge in self._gauges.items():
+        for gauge in self._gauges.values():
             label_str = self._format_labels(gauge.labels)
             lines.extend([
                 f"# HELP {gauge.name} Auto-generated gauge metric.",
@@ -129,7 +128,7 @@ class MetricsRegistry:
 
         return "\n".join(lines) + "\n"
 
-    def _format_labels(self, labels: dict) -> str:
+    def _format_labels(self, labels: dict[str, str]) -> str:
         if not labels:
             return ""
         parts = [f'{k}="{v}"' for k, v in sorted(labels.items())]

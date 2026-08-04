@@ -5,11 +5,10 @@ Tests register, login, refresh, logout, password reset, email verify,
 RBAC enforcement, token reuse detection, duplicate prevention.
 """
 
-import asyncio
-import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+import pytest
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 
 @pytest.fixture
@@ -17,6 +16,9 @@ async def db_session():
     """In-memory SQLite session for test isolation."""
     engine = create_async_engine("sqlite+aiosqlite://", echo=False)
     async with engine.begin() as conn:
+        import src.db.models
+        import src.db.models.auth
+        import src.db.models.support  # noqa: F401
         from src.db.base import Base
         await conn.run_sync(Base.metadata.create_all)
     factory = async_sessionmaker(engine, class_=AsyncSession)
@@ -32,9 +34,10 @@ async def db_session():
 class TestRegisterFlow:
     @pytest.mark.asyncio
     async def test_register_creates_user_in_db(self, db_session):
-        from src.services.auth_service import AuthService
-        from src.db.models.auth import User
         from sqlalchemy import select
+
+        from src.db.models.auth import User
+        from src.services.auth_service import AuthService
 
         service = AuthService(db_session)
         result = await service.register(
@@ -81,9 +84,10 @@ class TestRegisterFlow:
 
     @pytest.mark.asyncio
     async def test_register_creates_session(self, db_session):
-        from src.services.auth_service import AuthService
-        from src.db.models.auth import UserSession
         from sqlalchemy import select
+
+        from src.db.models.auth import UserSession
+        from src.services.auth_service import AuthService
 
         service = AuthService(db_session)
         result = await service.register(
@@ -110,9 +114,10 @@ class TestRegisterFlow:
 class TestLoginFlow:
     @pytest.mark.asyncio
     async def test_login_success(self, db_session):
-        from src.services.auth_service import AuthService
-        from src.db.models.auth import User
         from sqlalchemy import select
+
+        from src.db.models.auth import User
+        from src.services.auth_service import AuthService
 
         service = AuthService(db_session)
         # Register first
@@ -141,9 +146,10 @@ class TestLoginFlow:
 
     @pytest.mark.asyncio
     async def test_login_wrong_password(self, db_session):
-        from src.services.auth_service import AuthService
-        from src.db.models.auth import User
         from sqlalchemy import select
+
+        from src.db.models.auth import User
+        from src.services.auth_service import AuthService
 
         service = AuthService(db_session)
         await service.register(email="wrong@example.com", username="wronguser", password="CorrectPass123!")
@@ -161,9 +167,8 @@ class TestLoginFlow:
 
     @pytest.mark.asyncio
     async def test_account_lockout_after_5_failures(self, db_session):
+
         from src.services.auth_service import AuthService
-        from src.db.models.auth import User
-        from sqlalchemy import select
 
         service = AuthService(db_session)
         await service.register(email="lock@example.com", username="lockuser", password="CorrectPass123!")
@@ -188,9 +193,10 @@ class TestLoginFlow:
 class TestRefreshFlow:
     @pytest.mark.asyncio
     async def test_refresh_rotates_token(self, db_session):
-        from src.services.auth_service import AuthService
-        from src.db.models.auth import UserSession
         from sqlalchemy import select
+
+        from src.db.models.auth import UserSession
+        from src.services.auth_service import AuthService
 
         service = AuthService(db_session)
         result = await service.register(
@@ -217,9 +223,10 @@ class TestRefreshFlow:
 
     @pytest.mark.asyncio
     async def test_reuse_detection_revokes_all(self, db_session):
-        from src.services.auth_service import AuthService
-        from src.db.models.auth import UserSession
         from sqlalchemy import select
+
+        from src.db.models.auth import UserSession
+        from src.services.auth_service import AuthService
 
         service = AuthService(db_session)
         result = await service.register(
@@ -255,9 +262,10 @@ class TestRefreshFlow:
 class TestPasswordReset:
     @pytest.mark.asyncio
     async def test_reset_token_is_hashed(self, db_session):
-        from src.services.auth_service import AuthService
-        from src.db.models.auth import User
         from sqlalchemy import select
+
+        from src.db.models.auth import User
+        from src.services.auth_service import AuthService
 
         service = AuthService(db_session)
         await service.register(email="reset@example.com", username="resetuser", password="OldPass123!")
@@ -278,10 +286,12 @@ class TestPasswordReset:
 
     @pytest.mark.asyncio
     async def test_reset_token_single_use(self, db_session):
-        from src.services.auth_service import AuthService
-        from src.db.models.auth import User
-        from sqlalchemy import select
         import uuid
+
+        from sqlalchemy import select
+
+        from src.db.models.auth import User
+        from src.services.auth_service import AuthService
 
         service = AuthService(db_session)
         await service.register(email="single@example.com", username="singleuser", password="OldPass123!")
@@ -293,7 +303,7 @@ class TestPasswordReset:
         db_result = await db_session.execute(select(User).where(User.email == "single@example.com"))
         user = db_result.scalar_one()
         user.password_reset_token = hash_refresh_token(raw_token)
-        user.password_reset_expires = datetime.now(timezone.utc) + timedelta(hours=1)
+        user.password_reset_expires = datetime.now(UTC) + timedelta(hours=1)
         await db_session.commit()
 
         # Use the raw token to reset
@@ -312,10 +322,12 @@ class TestPasswordReset:
 
     @pytest.mark.asyncio
     async def test_reset_token_expires(self, db_session):
-        from src.services.auth_service import AuthService
-        from src.db.models.auth import User
-        from sqlalchemy import select
         import uuid
+
+        from sqlalchemy import select
+
+        from src.db.models.auth import User
+        from src.services.auth_service import AuthService
 
         service = AuthService(db_session)
         await service.register(email="expire@example.com", username="expireuser", password="OldPass123!")
@@ -326,7 +338,7 @@ class TestPasswordReset:
         db_result = await db_session.execute(select(User).where(User.email == "expire@example.com"))
         user = db_result.scalar_one()
         user.password_reset_token = hash_refresh_token(raw_token)
-        user.password_reset_expires = datetime.now(timezone.utc) - timedelta(hours=2)  # Expired
+        user.password_reset_expires = datetime.now(UTC) - timedelta(hours=2)  # Expired
         await db_session.commit()
 
         with pytest.raises(ValueError, match="expired"):
@@ -340,12 +352,13 @@ class TestPasswordReset:
 class TestEmailVerification:
     @pytest.mark.asyncio
     async def test_verify_email(self, db_session):
-        from src.services.auth_service import AuthService
-        from src.db.models.auth import User
         from sqlalchemy import select
 
+        from src.db.models.auth import User
+        from src.services.auth_service import AuthService
+
         service = AuthService(db_session)
-        result = await service.register(email="verify@example.com", username="verifyuser", password="MyPass123!")
+        await service.register(email="verify@example.com", username="verifyuser", password="MyPass123!")
         await db_session.commit()
 
         # Get the verification token from DB
@@ -395,9 +408,10 @@ class TestRBACEnforcement:
 
     @pytest.mark.asyncio
     async def test_require_permission_blocks_unauthorized(self, db_session):
+        from fastapi import HTTPException
+
         from src.auth.dependencies import require_permission
         from src.auth.jwt import TokenPayload
-        from fastapi import HTTPException
 
         user = TokenPayload(sub="u1", email="user@example.com", role="user", permissions=["metrics.read"])
 
@@ -428,9 +442,10 @@ class TestRBACEnforcement:
 class TestSessionManagement:
     @pytest.mark.asyncio
     async def test_logout_all_revokes_everything(self, db_session):
-        from src.services.auth_service import AuthService
-        from src.db.models.auth import UserSession
         from sqlalchemy import select
+
+        from src.db.models.auth import UserSession
+        from src.services.auth_service import AuthService
 
         service = AuthService(db_session)
         result = await service.register(
@@ -441,8 +456,8 @@ class TestSessionManagement:
         user_id = result["user"]["id"]
 
         # Create 2 more sessions (simulating multiple devices)
-        from src.auth.tokens import create_session
         from src.auth.jwt import create_refresh_token
+        from src.auth.tokens import create_session
         await create_session(db_session, user_id, create_refresh_token(user_id), {"device": "iPad"})
         await create_session(db_session, user_id, create_refresh_token(user_id), {"device": "Android"})
         await db_session.commit()
@@ -494,8 +509,9 @@ class TestJWTClaims:
 
 class TestDuplicatePrevention:
     def test_favorite_fighter_unique_constraint_declared(self):
-        from src.db.models.auth import FighterFavorite
         from sqlalchemy import UniqueConstraint
+
+        from src.db.models.auth import FighterFavorite
         constraints = [
             c for c in FighterFavorite.__table_args__
             if isinstance(c, UniqueConstraint)
@@ -504,8 +520,9 @@ class TestDuplicatePrevention:
         # Should have (user_id, fighter_id) unique
 
     def test_watchlist_unique_constraint_declared(self):
-        from src.db.models.auth import WatchlistEvent
         from sqlalchemy import UniqueConstraint
+
+        from src.db.models.auth import WatchlistEvent
         constraints = [
             c for c in WatchlistEvent.__table_args__
             if isinstance(c, UniqueConstraint)

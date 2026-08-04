@@ -8,6 +8,7 @@ SyncRun is the persistent, queryable record.
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 
 @dataclass
@@ -27,5 +28,5 @@ class SyncRun:
     total_errors: int = 0
     total_api_calls: int = 0
     error_msg: str | None = None
-    metadata: dict = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     """Arbitrary metadata: schema_version, entity counts, etc."""

@@ -1,13 +1,14 @@
 """Request context middleware — injects correlation IDs into every request."""
 
-import time
 import logging
+import time
+from collections.abc import Awaitable, Callable
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-from src.logging.config import set_request_id, set_user
+from src.logging.config import set_request_id
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         X-Correlation-ID → inherited from incoming or same as request ID
     """
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         # Extract or generate request ID
         rid = request.headers.get("X-Request-ID") or set_request_id()
         cid = request.headers.get("X-Correlation-ID", rid)
@@ -46,6 +47,16 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                 "client_ip": request.client.host if request.client else "unknown",
             },
         )
+
+        # Prometheus API metrics (safe — no-ops until setup() runs)
+        try:
+            from src.monitoring.scheduler_metrics import SchedulerMetricsCollector
+            SchedulerMetricsCollector().record_api_request(
+                request.method, request.url.path, response.status_code, duration_ms,
+            )
+        except Exception:
+            pass
+
         return response
 
 
@@ -61,8 +72,8 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
         "/api/sync": "sync_trigger",
     }
 
-    async def dispatch(self, request: Request, call_next) -> Response:
-        response = await call_next(request)
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+        response: Response = await call_next(request)
 
         action = self.AUDIT_PATHS.get(request.url.path)
         if action is None:

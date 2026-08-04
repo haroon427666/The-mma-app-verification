@@ -16,10 +16,10 @@ in the provider layer works with already-fetched data.
 import asyncio
 import logging
 import time
-from contextlib import asynccontextmanager
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, AsyncIterator
+from typing import Any, Self, cast
 
 import httpx
 
@@ -50,10 +50,12 @@ class CircuitBreaker:
 
     async def _transition(self) -> None:
         now = time.monotonic()
-        if self.state == CircuitState.OPEN:
-            if now - self.last_failure_time >= self.recovery_timeout:
-                self.state = CircuitState.HALF_OPEN
-                logger.info("Circuit breaker: OPEN → HALF_OPEN (recovery attempt)")
+        if (
+            self.state == CircuitState.OPEN
+            and now - self.last_failure_time >= self.recovery_timeout
+        ):
+            self.state = CircuitState.HALF_OPEN
+            logger.info("Circuit breaker: OPEN → HALF_OPEN (recovery attempt)")
 
     async def before_call(self) -> None:
         """Called before each HTTP request. Raises if circuit is open."""
@@ -94,7 +96,6 @@ class CircuitBreaker:
 
 class CircuitBreakerOpenError(Exception):
     """Raised when the circuit breaker is open and a request is attempted."""
-    pass
 
 
 # ── Rate Limiter (Token Bucket) ────────────────────────────────────────────────
@@ -171,11 +172,11 @@ class ESPNClient:
             recovery_timeout=self.config.circuit_breaker_recovery,
         )
 
-    async def __aenter__(self) -> "ESPNClient":
+    async def __aenter__(self) -> Self:
         await self.start()
         return self
 
-    async def __aexit__(self, *args: Any) -> None:
+    async def __aexit__(self, *args: object) -> None:
         await self.close()
 
     async def start(self) -> None:
@@ -313,7 +314,7 @@ class ESPNClient:
     async def get_json(self, path: str, **kwargs: Any) -> dict[str, Any]:
         """GET request, returns parsed JSON."""
         response = await self.get(path, **kwargs)
-        return response.json()
+        return cast(dict[str, Any], response.json())
 
     # ── Reference Resolution ────────────────────────────────────────────────
 

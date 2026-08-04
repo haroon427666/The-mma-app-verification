@@ -1,10 +1,7 @@
 """Phase 7 Scheduler Tests — retry, queue, locks, live mode, metrics, jobs."""
 
-import asyncio
-import pytest
-import time
-from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Retry Engine Tests
@@ -32,13 +29,13 @@ class TestRetryEngine:
 
         delays = [state.compute_delay() for _ in range(20)]
         state.reset()
-        delays2 = [state.compute_delay() for _ in range(20)]
+        [state.compute_delay() for _ in range(20)]
 
         # Delays should vary (not all identical)
-        assert len(set(round(d, 2) for d in delays)) > 1
+        assert len({round(d, 2) for d in delays}) > 1
 
     def test_max_attempts_exhausted(self):
-        from src.scheduler.retry import RetryPolicy, RetryState, RetryDecision
+        from src.scheduler.retry import RetryDecision, RetryPolicy, RetryState
         policy = RetryPolicy(max_attempts=2)
         state = RetryState(policy=policy)
 
@@ -49,14 +46,14 @@ class TestRetryEngine:
         assert state.decide(ConnectionError()) == RetryDecision.FAIL
 
     def test_non_retryable_goes_to_dead_letter(self):
-        from src.scheduler.retry import RetryPolicy, RetryState, RetryDecision
+        from src.scheduler.retry import RetryDecision, RetryPolicy, RetryState
         state = RetryState(policy=RetryPolicy())
 
         # ValueError is not in retryable_exceptions
         assert state.decide(ValueError("bad data")) == RetryDecision.DEAD_LETTER
 
     def test_budget_exhaustion(self):
-        from src.scheduler.retry import RetryPolicy, RetryState, RetryDecision
+        from src.scheduler.retry import RetryDecision, RetryPolicy, RetryState
         policy = RetryPolicy(max_attempts=100, retry_budget=3)
         state = RetryState(policy=policy)
 
@@ -94,7 +91,7 @@ class TestRetryEngine:
 class TestPriorityQueue:
     @pytest.mark.asyncio
     async def test_higher_priority_dequeued_first(self):
-        from src.scheduler.queue import PriorityQueue, Priority
+        from src.scheduler.queue import Priority, PriorityQueue
         q = PriorityQueue()
 
         called = []
@@ -116,7 +113,7 @@ class TestPriorityQueue:
 
     @pytest.mark.asyncio
     async def test_concurrency_limit(self):
-        from src.scheduler.queue import PriorityQueue, Priority
+        from src.scheduler.queue import Priority, PriorityQueue
         q = PriorityQueue(max_concurrent=1)
 
         async def fn(): pass
@@ -139,7 +136,7 @@ class TestPriorityQueue:
 
     @pytest.mark.asyncio
     async def test_cancel_removes_queued_jobs(self):
-        from src.scheduler.queue import PriorityQueue, Priority
+        from src.scheduler.queue import Priority, PriorityQueue
         q = PriorityQueue()
 
         async def fn(): pass
@@ -232,7 +229,7 @@ class TestLiveMode:
 
 class TestJobRegistry:
     def test_all_jobs_have_functions(self):
-        from src.scheduler.jobs import JOB_REGISTRY, JOB_FUNCTIONS
+        from src.scheduler.jobs import JOB_FUNCTIONS, JOB_REGISTRY
         for name in JOB_REGISTRY:
             assert name in JOB_FUNCTIONS, f"{name} has no registered function"
 
@@ -273,7 +270,7 @@ class TestRecovery:
 
     @pytest.mark.asyncio
     async def test_shutdown_cancels_pending_jobs(self):
-        from src.scheduler.queue import PriorityQueue, Priority
+        from src.scheduler.queue import Priority, PriorityQueue
         q = PriorityQueue()
 
         async def fn(): pass
@@ -289,7 +286,7 @@ class TestConcurrentExecution:
     @pytest.mark.asyncio
     async def test_two_queued_jobs_deduplicate(self):
         """Two same-named jobs can exist in queue (not deduplicated at queue level)."""
-        from src.scheduler.queue import PriorityQueue, Priority
+        from src.scheduler.queue import Priority, PriorityQueue
         q = PriorityQueue()
 
         async def fn(): pass
@@ -300,7 +297,7 @@ class TestConcurrentExecution:
 
     @pytest.mark.asyncio
     async def test_queue_ordering_mixed_priorities(self):
-        from src.scheduler.queue import PriorityQueue, Priority
+        from src.scheduler.queue import Priority, PriorityQueue
         q = PriorityQueue(max_concurrent=10)
 
         items = []
@@ -319,3 +316,134 @@ class TestConcurrentExecution:
         assert items[0] == "a"
         assert items[1] == "b"
         assert items[2] == "c"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Hardening Tests — lock discipline, in-process dedup, degraded Redis
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class StubCtx:
+    """Minimal stand-in for the scheduler runtime context."""
+
+    def __init__(self):
+        self.redis = None
+        self.db = None
+        self.db_session_factory = None
+        self.espn_provider = None
+        self.tsdb_provider = None
+        self.octagon_provider = None
+
+    def is_live_event_active(self):
+        return False
+
+
+class HeldLock:
+    """A lock that is already held elsewhere."""
+
+    async def __aenter__(self):
+        from src.scheduler.locks import LockAcquisitionError
+        raise LockAcquisitionError("held by another instance")
+
+    async def __aexit__(self, *args):
+        return False
+
+
+class FailingLock:
+    """A lock backend that is broken (e.g. Redis down)."""
+
+    async def __aenter__(self):
+        raise ConnectionError("redis down")
+
+    async def __aexit__(self, *args):
+        return False
+
+
+class StubLocks:
+    def __init__(self, lock):
+        self._lock = lock
+
+    def get(self, name, ttl=300):
+        return self._lock
+
+
+class AvailableLock:
+    """A lock that is free to acquire."""
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args):
+        return False
+
+
+class TestSchedulerHardening:
+    def _make_manager(self, lock):
+        from src.scheduler.manager import SyncManager
+        manager = SyncManager(StubCtx())
+        manager.locks = StubLocks(lock)
+        return manager
+
+    @pytest.mark.asyncio
+    async def test_job_skipped_when_lock_held(self):
+        from src.scheduler.jobs import JobConfig
+        manager = self._make_manager(HeldLock())
+        calls = []
+
+        async def job_fn(ctx):
+            calls.append(ctx)
+
+        config = JobConfig(name="test_job")
+        await manager._execute_job("test_job", config, job_fn)
+        assert calls == []  # Never ran
+        assert manager.monitor.get_status()["jobs"] == {}  # Not even recorded
+
+    @pytest.mark.asyncio
+    async def test_lock_backend_failure_recorded_as_job_failure(self):
+        from src.scheduler.jobs import JobConfig
+        manager = self._make_manager(FailingLock())
+
+        async def job_fn(ctx):
+            raise AssertionError("should not run")
+
+        config = JobConfig(name="test_job")
+        await manager._execute_job("test_job", config, job_fn)
+        status = manager.monitor.get_status()["jobs"]
+        assert status["test_job"]["consecutive_failures"] == 1
+
+    @pytest.mark.asyncio
+    async def test_in_process_dedup_prevents_recursive_overlap(self):
+        from src.scheduler.jobs import JobConfig
+        manager = self._make_manager(AvailableLock())
+        calls = []
+
+        async def inner(ctx):
+            calls.append("inner")
+
+        async def outer(ctx):
+            calls.append("outer")
+            # Simulate a timer firing while this job is still running
+            await manager._execute_job("test_job", JobConfig(name="test_job"), inner)
+
+        config = JobConfig(name="test_job")
+        await manager._execute_job("test_job", config, outer)
+        assert calls == ["outer"]  # Inner invocation skipped
+
+    @pytest.mark.asyncio
+    async def test_redis_lock_skips_without_redis(self):
+        from src.scheduler.locks import RedisLock
+        lock = RedisLock(None, "sync:fighters")
+        assert await lock.acquire() is False
+        assert await lock.is_locked() is False
+        assert await lock.extend() is False
+
+
+class TestHealthMonitorAccessor:
+    def test_consecutive_failures_returns_count(self):
+        from src.scheduler.monitor import HealthMonitor
+        monitor = HealthMonitor()
+        assert monitor.consecutive_failures("unknown") == 0
+        monitor.job_failed("fighters", "boom")
+        monitor.job_failed("fighters", "boom")
+        assert monitor.consecutive_failures("fighters") == 2
+        monitor.job_succeeded("fighters", 100)
+        assert monitor.consecutive_failures("fighters") == 0

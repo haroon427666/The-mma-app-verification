@@ -17,7 +17,7 @@ Bad payloads are routed to dead letters, never crash the pipeline.
 
 import logging
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from enum import Enum
 from typing import Any
 
@@ -85,28 +85,27 @@ def validate_fighter(dto: Any) -> ValidationResult:
     if dto.weight_kg is not None:
         if not (40.0 <= dto.weight_kg <= 200.0):
             result.add_warning("weight_kg", dto.weight_kg,
-                f"Weight out of expected range (40–200 kg)")
+                "Weight out of expected range (40–200 kg)")
         if dto.weight_kg <= 0:
             result.add_error("weight_kg", dto.weight_kg, "Weight must be positive")
 
     if dto.height_cm is not None:
         if not (120.0 <= dto.height_cm <= 220.0):
             result.add_warning("height_cm", dto.height_cm,
-                f"Height out of expected range (120–220 cm)")
+                "Height out of expected range (120–220 cm)")
         if dto.height_cm <= 0:
             result.add_error("height_cm", dto.height_cm, "Height must be positive")
 
     if dto.reach_cm is not None:
         if not (100.0 <= dto.reach_cm <= 300.0):
             result.add_warning("reach_cm", dto.reach_cm,
-                f"Reach out of expected range (100–300 cm)")
+                "Reach out of expected range (100–300 cm)")
         if dto.reach_cm <= 0:
             result.add_warning("reach_cm", dto.reach_cm, "Reach is zero — likely missing data, not invalid")
 
-    if dto.leg_reach_cm is not None:
-        if not (50.0 <= dto.leg_reach_cm <= 200.0):
-            result.add_warning("leg_reach_cm", dto.leg_reach_cm,
-                f"Leg reach out of expected range (50–200 cm)")
+    if dto.leg_reach_cm is not None and not (50.0 <= dto.leg_reach_cm <= 200.0):
+        result.add_warning("leg_reach_cm", dto.leg_reach_cm,
+            "Leg reach out of expected range (50–200 cm)")
 
     # Stance enum
     if dto.stance and dto.stance not in VALID_STANCES:
@@ -125,7 +124,7 @@ def validate_fighter(dto: Any) -> ValidationResult:
             result.add_error("birth_date", dto.birth_date, "Invalid birth date type")
         elif dto.birth_date.year < 1950:
             result.add_warning("birth_date", dto.birth_date, "Birth year too early (pre-1950)")
-        elif dto.birth_date.year > date.today().year - 16:
+        elif dto.birth_date.year > datetime.now(UTC).date().year - 16:
             result.add_warning("birth_date", dto.birth_date, "Birth year suggests fighter under 16")
 
     return result
@@ -252,7 +251,7 @@ def validate(entity_type: str, dto: Any) -> ValidationResult:
     try:
         return validator(dto)
     except Exception as e:
-        logger.error(f"Validator crashed for {entity_type}: {e}", exc_info=True)
+        logger.exception(f"Validator crashed for {entity_type}")
         result = ValidationResult(is_valid=True)  # Don't crash on validator bugs
         result.add_warning("_validator", str(e), "Validator exception — DTO passed through")
         return result

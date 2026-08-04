@@ -9,14 +9,22 @@ Usage:
     # rollback on exception — automatic
 """
 
+from types import TracebackType
+from typing import Self
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db.session import async_session_factory
-from src.db.repositories.fighter import FighterRepository
 from src.db.repositories.events import (
-    EventRepository, CompetitionRepository, PromotionRepository,
-    VenueRepository, RankingRepository, WeightClassRepository, BroadcastRepository,
+    BroadcastRepository,
+    CompetitionRepository,
+    EventRepository,
+    PromotionRepository,
+    RankingRepository,
+    VenueRepository,
+    WeightClassRepository,
 )
+from src.db.repositories.fighter import FighterRepository
+from src.db.session import async_session_factory
 
 
 class UnitOfWork:
@@ -26,43 +34,58 @@ class UnitOfWork:
         self._external_session = session is not None
         self._session = session
 
-    async def __aenter__(self) -> "UnitOfWork":
+    @property
+    def session(self) -> AsyncSession:
+        """The active session. Raises if the unit of work is not entered."""
+        if self._session is None:
+            raise RuntimeError("UnitOfWork not entered — call 'async with UnitOfWork()' first")
+        return self._session
+
+    async def __aenter__(self) -> Self:
         if self._session is None:
             self._session = async_session_factory()
-        self.fighters = FighterRepository(self._session)
-        self.events = EventRepository(self._session)
-        self.competitions = CompetitionRepository(self._session)
-        self.promotions = PromotionRepository(self._session)
-        self.venues = VenueRepository(self._session)
-        self.rankings = RankingRepository(self._session)
-        self.weight_classes = WeightClassRepository(self._session)
-        self.broadcasts = BroadcastRepository(self._session)
+        session = self.session
+        self.fighters = FighterRepository(session)
+        self.events = EventRepository(session)
+        self.competitions = CompetitionRepository(session)
+        self.promotions = PromotionRepository(session)
+        self.venues = VenueRepository(session)
+        self.rankings = RankingRepository(session)
+        self.weight_classes = WeightClassRepository(session)
+        self.broadcasts = BroadcastRepository(session)
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> bool:
+        session = self.session
         if exc_type is not None:
-            await self._session.rollback()
+            await session.rollback()
             if not self._external_session:
-                await self._session.close()
+                await session.close()
             return False  # Propagate exception
 
         try:
-            await self._session.commit()
+            await session.commit()
         except Exception:
-            await self._session.rollback()
+            await session.rollback()
             raise
         finally:
             if not self._external_session:
-                await self._session.close()
+                await session.close()
+        return False
 
-    async def commit(self):
+    async def commit(self) -> None:
         """Explicit commit mid-transaction."""
-        await self._session.commit()
+        await self.session.commit()
 
-    async def rollback(self):
+    async def rollback(self) -> None:
         """Explicit rollback."""
-        await self._session.rollback()
+        await self.session.rollback()
 
-    async def flush(self):
+    async def flush(self) -> None:
         """Flush pending changes to DB (for getting IDs)."""
-        await self._session.flush()
+        await self.session.flush()

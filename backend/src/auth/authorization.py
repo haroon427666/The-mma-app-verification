@@ -8,11 +8,13 @@ Built on top of src/auth/dependencies.py — extends with:
 """
 
 import logging
-from typing import Optional
+from collections.abc import Callable
+from typing import Any
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 
-from src.auth.dependencies import get_current_user, TokenPayload
+from src.auth.dependencies import get_current_user
+from src.auth.jwt import TokenPayload
 
 logger = logging.getLogger(__name__)
 
@@ -66,9 +68,8 @@ PERMISSIONS: dict[str, list[str]] = {
 def has_permission(user: TokenPayload, permission: str) -> bool:
     """Check if a user has a specific permission."""
     user_perms = getattr(user, "permissions", None)
-    if user_perms and isinstance(user_perms, list):
-        if permission in user_perms:
-            return True
+    if user_perms and isinstance(user_perms, list) and permission in user_perms:
+        return True
     role_perms = PERMISSIONS.get(user.role, [])
     return permission in role_perms
 
@@ -77,7 +78,7 @@ def has_permission(user: TokenPayload, permission: str) -> bool:
 # Dependency Factories
 # ═══════════════════════════════════════════════════════════════════════════
 
-def require_role(*roles: str):
+def require_role(*roles: str) -> Callable[..., Any]:
     """Require user to have one of the specified roles (hierarchical).
     
     Usage:
@@ -94,7 +95,7 @@ def require_role(*roles: str):
     return checker
 
 
-def require_permission(permission: str):
+def require_permission(permission: str) -> Callable[..., Any]:
     """Require a specific permission.
     
     Usage:
@@ -111,12 +112,12 @@ def require_permission(permission: str):
     return checker
 
 
-def require_premium():
+def require_premium() -> Callable[..., Any]:
     """Require premium tier (or higher)."""
     return require_role("premium", "moderator", "admin")
 
 
-def require_admin():
+def require_admin() -> Callable[..., Any]:
     """Require admin role."""
     return require_role("admin")
 
@@ -129,7 +130,7 @@ def require_resource_owner(
     entity_type: str,
     id_param: str = "entity_id",
     repo_attr: str | None = None,
-):
+) -> Callable[..., Any]:
     """Dependency factory: ensure the authenticated user owns the resource.
     
     Checks the resource's user_id/owner_id field against token.sub.
@@ -148,7 +149,7 @@ def require_resource_owner(
         repo_attr: the repository attribute name on the UnitOfWork (e.g., "favorites")
     """
     async def checker(
-        request,
+        request: Request,
         user: TokenPayload = Depends(get_current_user),
     ) -> TokenPayload:
         # Admins bypass ownership checks
@@ -161,17 +162,19 @@ def require_resource_owner(
             raise HTTPException(status_code=400, detail=f"Missing {id_param}")
 
         # Verify ownership via database
-        from src.db.models.auth import User
         from sqlalchemy import select as sa_select
+
         from src.db.session import async_session_factory
 
         async with async_session_factory() as sess:
             # For favorites/watchlist/preferences — check user_id matches
             if entity_type in ("favorite", "watchlist", "preference", "notification"):
                 from src.db.models.auth import (
-                    FighterFavorite, EventFavorite, WatchlistEvent, Notification,
+                    FighterFavorite,
+                    Notification,
+                    WatchlistEvent,
                 )
-                model_map = {
+                model_map: dict[str, type[Any]] = {
                     "favorite": FighterFavorite,
                     "watchlist": WatchlistEvent,
                     "notification": Notification,

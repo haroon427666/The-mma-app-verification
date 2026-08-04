@@ -2,8 +2,8 @@
 
 from typing import Any
 
-from sqlalchemy import select as sa_select, func
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func
+from sqlalchemy import select as sa_select
 
 from src.db.models.fighter import Fighter, FighterRecord
 from src.db.repositories.base import BaseRepository
@@ -146,7 +146,7 @@ class FighterRepository(BaseRepository[Fighter]):
 
     # ── Recent Fights ────────────────────────────────────────────────────
 
-    async def get_recent_fights(self, fighter_id: str, limit: int = 20) -> list[dict]:
+    async def get_recent_fights(self, fighter_id: str, limit: int = 20) -> list[dict[str, Any]]:
         """Get a fighter's recent + upcoming competitions with opponent data."""
         from src.db.models.event import Competition, Competitor
         from src.db.models.fighter import Fighter

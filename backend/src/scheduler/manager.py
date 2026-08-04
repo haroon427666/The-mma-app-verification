@@ -12,19 +12,24 @@ Usage:
 
 import asyncio
 import logging
-import signal
-import time
-from datetime import datetime, timezone
-from typing import Any, Optional
+import random
+from typing import Any
 
-from src.scheduler.jobs import JOB_REGISTRY, JOB_FUNCTIONS, JobConfig, JobStatus, JobResult
-from src.scheduler.queue import PriorityQueue, Priority
-from src.scheduler.locks import LockManager
-from src.scheduler.retry import RetryPolicy, RetryState
+from src.scheduler.jobs import JOB_FUNCTIONS, JOB_REGISTRY, JobConfig, JobResult, JobStatus
 from src.scheduler.live_mode import LiveModeDetector
-from src.scheduler.monitor import HealthMonitor
+from src.scheduler.locks import LockAcquisitionError, LockManager
 from src.scheduler.metrics import metrics
+from src.scheduler.monitor import HealthMonitor
 from src.scheduler.notifier import Notifier
+from src.scheduler.queue import Priority, PriorityQueue
+from src.scheduler.retry import RetryPolicy, RetryState
+
+PROM_METRICS: Any = None
+try:
+    from src.monitoring.scheduler_metrics import SchedulerMetricsCollector
+    PROM_METRICS = SchedulerMetricsCollector()
+except Exception:  # pragma: no cover - prometheus_client optional
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +43,7 @@ class SyncManager:
     Resumes from checkpoints after restart.
     """
 
-    def __init__(self, context: "SyncContext"):
+    def __init__(self, context: Any):
         self.ctx = context
 
         # Core components
@@ -51,8 +56,9 @@ class SyncManager:
 
         # State
         self._running = False
-        self._tasks: list[asyncio.Task] = []
-        self._job_timers: dict[str, asyncio.Task] = {}
+        self._tasks: list[asyncio.Task[Any]] = []
+        self._job_timers: dict[str, asyncio.Task[Any]] = {}
+        self._running_jobs: set[str] = set()  # In-process dedup guard
 
     # ── Lifecycle ────────────────────────────────────────────────────────────
 
@@ -91,7 +97,7 @@ class SyncManager:
         logger.info("SyncManager shutting down...")
 
         # Cancel all scheduled timers
-        for name, task in self._job_timers.items():
+        for task in self._job_timers.values():
             task.cancel()
 
         # Cancel worker tasks
@@ -113,14 +119,16 @@ class SyncManager:
             logger.warning(f"No function registered for job '{name}' — skipping")
             return
 
-        async def _timer_loop():
+        async def _timer_loop() -> None:
             # Run once at startup
             await self._execute_job(name, config, fn)
-            # Then run on interval
+            # Then run on interval (with jitter to avoid thundering herd
+            # when multiple workers start at the same wall-clock time)
             while self._running:
                 try:
                     interval = config.interval_seconds or 300
-                    await asyncio.sleep(interval)
+                    jittered = interval * random.uniform(0.9, 1.1)
+                    await asyncio.sleep(jittered)
                     if not self._running:
                         break
                     await self._execute_job(name, config, fn)
@@ -133,29 +141,44 @@ class SyncManager:
         self._job_timers[name] = asyncio.create_task(_timer_loop(), name=f"timer_{name}")
         logger.info(f"Scheduled job: {name} (every {config.interval_seconds}s)")
 
-    async def _execute_job(self, name: str, config: JobConfig, fn) -> None:
+    async def _execute_job(self, name: str, config: JobConfig, fn: Any) -> None:
         """Execute a single job run — lock, run, record."""
-        # Check dependencies
-        for dep in config.depends_on:
-            dep_health = self.monitor._jobs.get(dep)
-            if dep_health and dep_health.consecutive_failures > 0:
-                logger.debug(f"Skipping '{name}' — dependency '{dep}' has failures")
-                return
-
-        # Acquire distributed lock
-        lock = self.locks.get(name, ttl=config.lock_ttl)
+        # In-process dedup: never run the same job concurrently in this process
+        if name in self._running_jobs:
+            logger.debug(f"Skipping '{name}' — already running in this process")
+            return
+        self._running_jobs.add(name)
         try:
-            async with lock:
-                await self._run_job_inner(name, config, fn)
-        except Exception:
-            # Lock already held by another instance — skip
-            pass
+            # Check dependencies
+            for dep in config.depends_on:
+                if self.monitor.consecutive_failures(dep) > 0:
+                    logger.debug(f"Skipping '{name}' — dependency '{dep}' has failures")
+                    return
 
-    async def _run_job_inner(self, name: str, config: JobConfig, fn) -> None:
+            # Acquire distributed lock
+            lock = self.locks.get(name, ttl=config.lock_ttl)
+            try:
+                async with lock:
+                    await self._run_job_inner(name, config, fn)
+            except LockAcquisitionError:
+                # Lock already held by another instance — skip quietly
+                logger.debug(f"Lock held for '{name}' — skipped (concurrent instance)")
+            except Exception as e:
+                # Lock backend failure (e.g. Redis down) — record, don't crash the loop
+                logger.error(f"Lock error for '{name}': {e}")
+                self.monitor.job_failed(name, f"lock error: {e}")
+                metrics.record_job_result(name, "failed", errors=1)
+        finally:
+            self._running_jobs.discard(name)
+
+    async def _run_job_inner(self, name: str, config: JobConfig, fn: Any) -> None:
         """Run the job with retry, metrics, and monitoring."""
         self.monitor.job_started(name)
+        if PROM_METRICS is not None:
+            PROM_METRICS.record_job_start(name)
 
-        retry_state = RetryState(policy=RetryPolicy(max_attempts=3))
+        policy = config.retry_policy or RetryPolicy(max_attempts=3)
+        retry_state = RetryState(policy=policy)
 
         try:
             result = await retry_state.execute(
@@ -169,6 +192,14 @@ class SyncManager:
                 updated=result.records_updated,
                 errors=result.errors,
             )
+            if PROM_METRICS is not None:
+                PROM_METRICS.record_job_finish(name, result.status.value, result.duration_ms)
+                PROM_METRICS.record_records_synced(
+                    name,
+                    inserted=result.records_inserted,
+                    updated=result.records_updated,
+                    errors=result.errors,
+                )
 
             if result.status == JobStatus.SUCCESS:
                 logger.info(
@@ -178,16 +209,20 @@ class SyncManager:
             else:
                 logger.warning(f"⚠ {name}: failed — {result.error_message}")
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self.monitor.job_failed(name, f"Timeout after {config.max_runtime_seconds}s")
             metrics.record_job_result(name, "failed", errors=1)
+            if PROM_METRICS is not None:
+                PROM_METRICS.record_job_failed(name)
             await self.notifier.sync_failed(name, f"Timeout after {config.max_runtime_seconds}s")
 
         except Exception as e:
             self.monitor.job_failed(name, str(e))
             metrics.record_job_result(name, "failed", errors=1)
+            if PROM_METRICS is not None:
+                PROM_METRICS.record_job_failed(name)
 
-    async def _run_with_timeout(self, fn, config: JobConfig) -> JobResult:
+    async def _run_with_timeout(self, fn: Any, config: JobConfig) -> JobResult:
         """Run a job function with a hard timeout."""
         result = await asyncio.wait_for(
             fn(self.ctx),
@@ -206,6 +241,8 @@ class SyncManager:
                 item = await self.queue.dequeue()
                 if item is None:
                     await asyncio.sleep(0.5)
+                    if PROM_METRICS is not None:
+                        PROM_METRICS.record_queue_size(self.queue.size, self.queue.running_count)
                     continue
 
                 # Execute the queued job
@@ -214,6 +251,8 @@ class SyncManager:
                     await self.queue.mark_complete(item.job_id)
                 except Exception as e:
                     logger.error(f"Queued job {item.job_name} failed: {e}")
+                    metrics.record_job_result(item.job_name, "failed", errors=1)
+                    await self.notifier.sync_failed(item.job_name, str(e))
                     await self.queue.mark_failed(item.job_id)
 
                 metrics.set_queue_size(self.queue.size)
@@ -229,7 +268,6 @@ class SyncManager:
     async def _live_mode_loop(self) -> None:
         """Continuously check if a live event is active. Toggle live mode."""
         live_job_config = JOB_REGISTRY.get("events_live")
-        results_job_config = JOB_REGISTRY.get("results")
 
         while self._running:
             try:
@@ -267,7 +305,6 @@ class SyncManager:
         run_id = await recorder.start_run("manual")
 
         # Enqueue all entity syncs
-        from src.scheduler.jobs import sync_events_upcoming, sync_rankings
         for name, fn in JOB_FUNCTIONS.items():
             if entities and name not in entities:
                 continue
@@ -287,7 +324,7 @@ class SyncManager:
 
     # ── Status ────────────────────────────────────────────────────────────────
 
-    async def get_status(self) -> dict:
+    async def get_status(self) -> dict[str, Any]:
         """Get the full status of the sync service."""
         return {
             "running": self._running,

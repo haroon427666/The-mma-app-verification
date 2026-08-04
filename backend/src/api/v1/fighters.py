@@ -1,27 +1,37 @@
 """Fighters API — v1. Real implementation connected to FighterService → FighterRepository → PostgreSQL."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import Any
 
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+
+from src.api.cache import cache_key, cached_json_response
 from src.db.unit_of_work import UnitOfWork
 from src.dependencies import (
     Pagination as PaginationDep,
-    Sorting as SortingDep,
-    get_uow,
-    PaginationParams,
-    SortParams,
 )
-from src.schemas.common import FightFilters, ErrorResponse, PaginatedResponse
+from src.dependencies import (
+    Sorting as SortingDep,
+)
+from src.dependencies import (
+    get_uow,
+)
+from src.schemas.common import ErrorResponse, PaginatedResponse
 from src.schemas.fighter import (
-    FighterListItem, FighterProfileResponse, FighterStatsResponse,
-    FighterFightEntry, FighterMediaResponse, FighterRecordResponse,
-    FighterRankingEntry, StatValue,
+    FighterFightEntry,
+    FighterListItem,
+    FighterMediaResponse,
+    FighterProfileResponse,
+    FighterRankingEntry,
+    FighterRecordResponse,
+    FighterStatsResponse,
+    StatValue,
 )
 from src.services.fighter_service import FighterService
 
 router = APIRouter(prefix="/v1/fighters", tags=["fighters"])
 
 
-def _fighter_to_list_item(fighter) -> FighterListItem:
+def _fighter_to_list_item(fighter: Any) -> FighterListItem:
     """Map ORM Fighter model → FighterListItem Pydantic schema."""
     record = f"{fighter.record_wins or 0}-{fighter.record_losses or 0}-{fighter.record_draws or 0}"
     return FighterListItem(
@@ -45,12 +55,17 @@ def _fighter_to_list_item(fighter) -> FighterListItem:
     )
 
 
-def _fighter_to_profile(fighter, record=None, rankings=None, recent_fights=None) -> FighterProfileResponse:
+def _fighter_to_profile(
+    fighter: Any,
+    record: Any = None,
+    rankings: Any = None,
+    recent_fights: Any = None,
+) -> FighterProfileResponse:
     """Map ORM Fighter + relations → FighterProfileResponse."""
-    from datetime import date as date_t
+    from datetime import UTC, datetime
     age = None
     if fighter.birth_date:
-        today = date_t.today()
+        today = datetime.now(UTC).date()
         age = today.year - fighter.birth_date.year - (
             (today.month, today.day) < (fighter.birth_date.month, fighter.birth_date.day)
         )
@@ -104,7 +119,7 @@ def _fighter_to_profile(fighter, record=None, rankings=None, recent_fights=None)
     )
 
 
-def _record_to_schema(record) -> FighterRecordResponse | None:
+def _record_to_schema(record: Any) -> FighterRecordResponse | None:
     if record is None:
         return None
     return FighterRecordResponse(
@@ -128,6 +143,7 @@ def _record_to_schema(record) -> FighterRecordResponse | None:
 
 @router.get("", response_model=PaginatedResponse[FighterListItem])
 async def list_fighters(
+    request: Request,
     pagination: PaginationDep,
     sort: SortingDep,
     weight_class: str | None = Query(None),
@@ -139,119 +155,158 @@ async def list_fighters(
     style: str | None = Query(None),
     search: str | None = Query(None),
     uow: UnitOfWork = Depends(get_uow),
-):
+) -> PaginatedResponse[FighterListItem]:
     """List fighters with pagination, filtering, search."""
     svc = FighterService(uow)
-    items, total = await svc.list_fighters(
-        limit=pagination.limit,
-        offset=(pagination.page - 1) * pagination.limit,
-        weight_class=weight_class,
-        country=country,
-        active=active,
-        stance=stance,
-        search=search,
-        sort_by=sort.sort_by,
-        sort_dir=sort.sort_dir,
-    )
-    return PaginatedResponse(
-        items=[_fighter_to_list_item(f) for f in items],
-        total=total,
-        page=pagination.page,
-        limit=pagination.limit,
-        pages=(total + pagination.limit - 1) // pagination.limit if total > 0 else 0,
+
+    async def loader() -> dict:
+        items, total = await svc.list_fighters(
+            limit=pagination.limit,
+            offset=(pagination.page - 1) * pagination.limit,
+            weight_class=weight_class,
+            country=country,
+            active=active,
+            stance=stance,
+            search=search,
+            sort_by=sort.sort_by,
+            sort_dir=sort.sort_dir,
+        )
+        return PaginatedResponse(
+            items=[_fighter_to_list_item(f) for f in items],
+            total=total,
+            page=pagination.page,
+            limit=pagination.limit,
+            pages=(total + pagination.limit - 1) // pagination.limit if total > 0 else 0,
+        ).model_dump(mode="json")
+
+    return await cached_json_response(
+        request,
+        cache_key=cache_key(
+            "fighters:list",
+            pagination.limit, pagination.page, sort.sort_by, sort.sort_dir,
+            weight_class, country, active, ranked, stance, gym, style, search,
+        ),
+        ttl=300,
+        loader=loader,
     )
 
 
 @router.get("/{fighter_id}", response_model=FighterProfileResponse,
             responses={404: {"model": ErrorResponse}})
-async def get_fighter(fighter_id: str, uow: UnitOfWork = Depends(get_uow)):
+async def get_fighter(request: Request, fighter_id: str, uow: UnitOfWork = Depends(get_uow)):
     """Complete fighter profile — bio, record, rankings, stats, media."""
     svc = FighterService(uow)
-    detail = await svc.get_fighter_detail(fighter_id)
-    if detail is None:
-        raise HTTPException(404, detail=ErrorResponse.not_found("fighter", fighter_id).error)
 
-    return _fighter_to_profile(
-        fighter=detail["fighter"],
-        record=detail.get("record"),
-        rankings=detail.get("rankings"),
-        recent_fights=detail.get("recent_fights"),
+    async def loader() -> dict:
+        detail = await svc.get_fighter_detail(fighter_id)
+        if detail is None:
+            raise HTTPException(404, detail=ErrorResponse.not_found("fighter", fighter_id).error)
+        return _fighter_to_profile(
+            fighter=detail["fighter"],
+            record=detail.get("record"),
+            rankings=detail.get("rankings"),
+            recent_fights=detail.get("recent_fights"),
+        ).model_dump(mode="json")
+
+    return await cached_json_response(
+        request,
+        cache_key=cache_key("fighters:detail", fighter_id),
+        ttl=3600,
+        loader=loader,
     )
 
 
 @router.get("/{fighter_id}/statistics", response_model=FighterStatsResponse)
-async def get_fighter_stats(fighter_id: str, uow: UnitOfWork = Depends(get_uow)):
+async def get_fighter_stats(request: Request, fighter_id: str, uow: UnitOfWork = Depends(get_uow)) -> FighterStatsResponse:
     """Fighter's career statistics — striking, grappling, general."""
     svc = FighterService(uow)
-    fighter = await svc._uow.fighters.get_by_id(fighter_id)
-    if fighter is None:
-        raise HTTPException(404)
 
-    stats_rows = await svc.get_fighter_stats(fighter_id)
-    stats = FighterStatsResponse(all_stats=[
-        StatValue(label=s.label, value=s.value, display_value=s.display_value or str(s.value), category=s.category)
-        for s in stats_rows
-    ])
+    async def loader() -> dict:
+        fighter = await svc._uow.fighters.get_by_id(fighter_id)
+        if fighter is None:
+            raise HTTPException(404)
 
-    # Populate known stat fields from rows
-    for s in stats_rows:
-        label_lower = s.label.lower()
-        if "sig strikes landed per min" in label_lower:
-            stats.sig_strikes_landed_per_min = s.value
-        elif "accuracy" in label_lower and "takedown" not in label_lower:
-            stats.sig_strikes_accuracy = s.value
-        elif "absorbed" in label_lower:
-            stats.sig_strikes_absorbed_per_min = s.value
-        elif "defense" in label_lower and "takedown" not in label_lower:
-            stats.sig_strikes_defense = s.value
-        elif "takedown avg" in label_lower:
-            stats.takedown_avg_per_15min = s.value
-        elif "takedown accuracy" in label_lower:
-            stats.takedown_accuracy = s.value
-        elif "takedown defense" in label_lower:
-            stats.takedown_defense = s.value
-        elif "submission avg" in label_lower:
-            stats.submission_avg_per_15min = s.value
-        elif "knockdown" in label_lower:
-            stats.knockdowns = s.value
-        elif "avg fight time" in label_lower:
-            stats.avg_fight_time_sec = s.value
-        elif "control time" in label_lower:
-            stats.control_time_sec = s.value
-    return stats
+        stats_rows = await svc.get_fighter_stats(fighter_id)
+        stats = FighterStatsResponse(all_stats=[
+            StatValue(label=s.label, value=s.value, display_value=s.display_value or str(s.value), category=s.category)
+            for s in stats_rows
+        ])
+
+        # Populate known stat fields from rows
+        for s in stats_rows:
+            label_lower = s.label.lower()
+            if "sig strikes landed per min" in label_lower:
+                stats.sig_strikes_landed_per_min = s.value
+            elif "accuracy" in label_lower and "takedown" not in label_lower:
+                stats.sig_strikes_accuracy = s.value
+            elif "absorbed" in label_lower:
+                stats.sig_strikes_absorbed_per_min = s.value
+            elif "defense" in label_lower and "takedown" not in label_lower:
+                stats.sig_strikes_defense = s.value
+            elif "takedown avg" in label_lower:
+                stats.takedown_avg_per_15min = s.value
+            elif "takedown accuracy" in label_lower:
+                stats.takedown_accuracy = s.value
+            elif "takedown defense" in label_lower:
+                stats.takedown_defense = s.value
+            elif "submission avg" in label_lower:
+                stats.submission_avg_per_15min = s.value
+            elif "knockdown" in label_lower:
+                stats.knockdowns = s.value
+            elif "avg fight time" in label_lower:
+                stats.avg_fight_time_sec = s.value
+            elif "control time" in label_lower:
+                stats.control_time_sec = s.value
+        return stats.model_dump(mode="json")
+
+    return await cached_json_response(
+        request,
+        cache_key=cache_key("fighters:statistics", fighter_id),
+        ttl=3600,
+        loader=loader,
+    )
 
 
 @router.get("/{fighter_id}/history", response_model=list[FighterFightEntry])
-async def get_fighter_history(fighter_id: str, limit: int = Query(20, le=50), uow: UnitOfWork = Depends(get_uow)):
+async def get_fighter_history(request: Request, fighter_id: str, limit: int = Query(20, le=50), uow: UnitOfWork = Depends(get_uow)) -> list[FighterFightEntry]:
     """Recent fight history."""
     svc = FighterService(uow)
-    fighter = await svc._uow.fighters.get_by_id(fighter_id)
-    if fighter is None:
-        raise HTTPException(404)
 
-    fights = await svc.get_fighter_fights(fighter_id, limit)
-    entries = []
-    for f in fights:
-        comp = f["competition"]
-        opp = f.get("opponent")
-        corner = f.get("corner")
-        entries.append(FighterFightEntry(
-            event_name=f.get("event_name") or "",
-            event_date=f.get("event_date"),
-            opponent_name=f"{opp.first_name} {opp.last_name}" if opp else None,
-            opponent_id=opp.id if opp else None,
-            outcome=corner.outcome if corner else None,
-            method=comp.result_method,
-            round=comp.result_round,
-            time=comp.result_time,
-            weight_class=comp.weight_class_name,
-            is_title_fight=comp.is_title_fight or False,
-        ))
-    return entries
+    async def loader() -> list[dict]:
+        fighter = await svc._uow.fighters.get_by_id(fighter_id)
+        if fighter is None:
+            raise HTTPException(404)
+
+        fights = await svc.get_fighter_fights(fighter_id, limit)
+        entries = []
+        for f in fights:
+            comp = f["competition"]
+            opp = f.get("opponent")
+            corner = f.get("corner")
+            entries.append(FighterFightEntry(
+                event_name=f.get("event_name") or "",
+                event_date=f.get("event_date"),
+                opponent_name=f"{opp.first_name} {opp.last_name}" if opp else None,
+                opponent_id=opp.id if opp else None,
+                outcome=corner.outcome if corner else None,
+                method=comp.result_method,
+                round=comp.result_round,
+                time=comp.result_time,
+                weight_class=comp.weight_class_name,
+                is_title_fight=comp.is_title_fight or False,
+            ))
+        return [e.model_dump(mode="json") for e in entries]
+
+    return await cached_json_response(
+        request,
+        cache_key=cache_key("fighters:history", fighter_id, limit),
+        ttl=3600,
+        loader=loader,
+    )
 
 
 @router.get("/{fighter_id}/media", response_model=FighterMediaResponse)
-async def get_fighter_media(fighter_id: str, uow: UnitOfWork = Depends(get_uow)):
+async def get_fighter_media(fighter_id: str, uow: UnitOfWork = Depends(get_uow)) -> FighterMediaResponse:
     """Fighter images — headshot, cutout, render, CDN fallback."""
     svc = FighterService(uow)
     media = await svc.get_fighter_media(fighter_id)

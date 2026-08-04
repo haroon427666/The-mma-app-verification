@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     # Redis
     redis_url: str = "redis://localhost:6379/0"
 
+    # Cache
+    cache_enabled: bool = True
+    cache_default_ttl: int = 300
+
     # ESPN
     espn_base_url: str = "https://sports.core.api.espn.com/v2/sports/mma"
     espn_rate_limit: float = 10.0
@@ -40,6 +44,10 @@ class Settings(BaseSettings):
     # Sync
     sync_default_provider: str = "espn"
     sync_batch_size: int = 500
+    # Start the autonomous SyncManager on app startup. Default OFF — enable
+    # explicitly in production (docker-compose sets SYNC_ENABLED=true) so local
+    # runs without Postgres/Redis still boot cleanly.
+    sync_enabled: bool = False
 
     # Cron
     cron_full_sync: str = "0 2 * * *"       # Daily 2 AM

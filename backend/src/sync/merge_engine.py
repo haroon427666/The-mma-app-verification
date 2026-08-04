@@ -9,9 +9,13 @@ Usage:
 """
 
 import logging
-from dataclasses import dataclass, field as dc_field
+from dataclasses import dataclass
+from dataclasses import field as dc_field
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from src.db.unit_of_work import UnitOfWork
 
 from src.providers.merge import AUTHORITY_MAP, FieldCategory
 
@@ -151,7 +155,7 @@ class MergeEngine:
 
         return MergeAction.SKIP_WRONG_PROVIDER
 
-    def _get_repo(self, table: str):
+    def _get_repo(self, table: str) -> Any:
         repo_map = {
             "fighters": self._uow.fighters,
             "events": self._uow.events,

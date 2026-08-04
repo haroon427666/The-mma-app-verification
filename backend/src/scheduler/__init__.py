@@ -1,25 +1,33 @@
 """Scheduler package — autonomous sync orchestration."""
 
-from src.scheduler.manager import SyncManager
-from src.scheduler.jobs import JOB_REGISTRY, JOB_FUNCTIONS, JobConfig, JobStatus, JobResult
-from src.scheduler.queue import PriorityQueue, Priority
-from src.scheduler.locks import LockManager
-from src.scheduler.retry import RetryPolicy, RetryState, RetryDecision
-from src.scheduler.live_mode import LiveModeDetector
-from src.scheduler.monitor import HealthMonitor
-from src.scheduler.metrics import metrics, MetricsRegistry
-from src.scheduler.notifier import Notifier
 from src.scheduler.cleanup import MaintenanceCleanup
+from src.scheduler.jobs import JOB_FUNCTIONS, JOB_REGISTRY, JobConfig, JobResult, JobStatus
+from src.scheduler.live_mode import LiveModeDetector
+from src.scheduler.locks import LockManager
+from src.scheduler.manager import SyncManager
+from src.scheduler.metrics import MetricsRegistry, metrics
+from src.scheduler.monitor import HealthMonitor
+from src.scheduler.notifier import Notifier
+from src.scheduler.queue import Priority, PriorityQueue
+from src.scheduler.retry import RetryDecision, RetryPolicy, RetryState
 
 __all__ = [
-    "SyncManager",
-    "JOB_REGISTRY", "JOB_FUNCTIONS", "JobConfig", "JobStatus", "JobResult",
-    "PriorityQueue", "Priority",
-    "LockManager",
-    "RetryPolicy", "RetryState", "RetryDecision",
-    "LiveModeDetector",
+    "JOB_FUNCTIONS",
+    "JOB_REGISTRY",
     "HealthMonitor",
-    "metrics", "MetricsRegistry",
-    "Notifier",
+    "JobConfig",
+    "JobResult",
+    "JobStatus",
+    "LiveModeDetector",
+    "LockManager",
     "MaintenanceCleanup",
+    "MetricsRegistry",
+    "Notifier",
+    "Priority",
+    "PriorityQueue",
+    "RetryDecision",
+    "RetryPolicy",
+    "RetryState",
+    "SyncManager",
+    "metrics",
 ]

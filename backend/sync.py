@@ -2,35 +2,38 @@
 """ 
 MMA Backend — Production Sync Entry Point.
 
-One command to populate the database from all three providers.
+One command to populate the database from the ESPN provider
+through the real sync engine (SyncEngine → SyncPipeline → SyncJob).
 
 Usage:
-    python sync.py --full                     # Full sync, all providers, all entities
-    python sync.py --full --provider espn    # ESPN only
+    python sync.py --full                     # Full sync (all 9 entity types)
+    python sync.py --full --provider espn    # ESPN only (default)
     python sync.py --resume                   # Resume from last checkpoint
     python sync.py --entity fighter           # Sync only fighters
-    python sync.py --weekly                   # Enrichment-only sync (TSDB + Octagon)
-    python sync.py --rankings                  # Rankings-only sync + verification
+    python sync.py --weekly                   # Fighters + statistics (closest weekly run)
+    python sync.py --rankings                 # Rankings-only sync
 
 At the end of a successful run, your database contains:
     - All promotions (UFC, Bellator, PFL)
-    - All fighters (1,809 from ESPN + enrichment from TSDB/Octagon)
+    - All fighters (from ESPN)
     - All events (upcoming + past with embedded competitions)
     - All competitions (fight cards with results)
-    - 24 ranking categories (full positional rankings)
-    - Career records (all breakdowns: KO, submission, title fights)
+    - Ranking categories (positional rankings)
     - Career statistics (striking, grappling, general)
     - Broadcast information
     - Venues with coordinates
     - Weight classes with boundaries
+
+NOTE: TSDB + Octagon enrichment providers are deferred — the engine job
+registry currently contains the 9 ESPN jobs only.
 """
 
 import argparse
 import asyncio
 import logging
 import sys
-import time
-from datetime import datetime, timezone
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Configure structured logging
 logging.basicConfig(
@@ -45,7 +48,7 @@ logger = logging.getLogger("sync")
 BANNER = """
 ╔══════════════════════════════════════════════════╗
 ║           MMA Backend — Sync Engine              ║
-║   ESPN (primary) + TheSportsDB + Octagon API     ║
+║   ESPN (primary) via SyncEngine + SyncPipeline   ║
 ╚══════════════════════════════════════════════════╝
 """
 
@@ -57,21 +60,21 @@ def parse_args():
         epilog="""
 Examples:
   python sync.py --full                    Full sync, all entities
-  python sync.py --full --provider espn   ESPN only
+  python sync.py --full --provider espn   ESPN only (default)
   python sync.py --resume                  Resume from last checkpoint
   python sync.py --entity fighter          Fighters only
-  python sync.py --weekly                  Enrichment sync (TSDB + Octagon)
-  python sync.py --rankings                Rankings sync + Octagon verification
+  python sync.py --weekly                  Fighters + statistics
+  python sync.py --rankings                Rankings sync
         """,
     )
 
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--full", action="store_true", help="Full sync from scratch")
     mode.add_argument("--resume", action="store_true", help="Resume from last checkpoint")
-    mode.add_argument("--weekly", action="store_true", help="Enrichment sync only")
-    mode.add_argument("--rankings", action="store_true", help="Rankings sync + verification")
+    mode.add_argument("--weekly", action="store_true", help="Fighters + statistics run")
+    mode.add_argument("--rankings", action="store_true", help="Rankings sync")
 
-    parser.add_argument("--provider", default="espn", help="Provider: espn, tsdb, octagon, all")
+    parser.add_argument("--provider", default="espn", help="Provider: espn (default) or all")
     parser.add_argument("--entity", help="Specific entity: fighter, event, competition, ranking, etc.")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be synced, don't execute")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
@@ -79,44 +82,36 @@ Examples:
     return parser.parse_args()
 
 
-async def setup_database():
-    """Create database engine and run pending migrations."""
+async def setup_database() -> AsyncSession:
+    """Create database session and verify connectivity."""
+    from sqlalchemy import text
     from sqlalchemy.ext.asyncio import create_async_engine
 
     from src.config import settings
 
     engine = create_async_engine(settings.database_url, echo=False)
 
-    # Verify connectivity
     async with engine.connect() as conn:
-        from sqlalchemy import text
         await conn.execute(text("SELECT 1"))
         logger.info("Database connected")
 
-    return engine
+    session = AsyncSession(engine)
+    return session
 
 
 async def setup_providers():
-    """Initialize all three providers."""
-    from src.providers.espn import ESPNProvider, ESPNClientConfig
-    from src.providers.tsdb import TSDBProvider
-    from src.providers.octagon import OctagonProvider
+    """Initialize the ESPN provider (the only provider wired to sync jobs)."""
+    from src.providers.espn import ESPNClientConfig, ESPNProvider
 
     espn = ESPNProvider(ESPNClientConfig())
-    tsdb = TSDBProvider()
-    octagon = OctagonProvider()
-
     await espn._ensure_started()
-    await tsdb._ensure_started()
-    await octagon._ensure_started()
-
-    logger.info("All providers initialized: ESPN, TheSportsDB, Octagon API")
-    return {"espn": espn, "tsdb": tsdb, "octagon": octagon}
+    logger.info("Provider initialized: ESPN")
+    return {"espn": espn}
 
 
 async def close_providers(providers: dict):
     """Clean up provider connections."""
-    for name, p in providers.items():
+    for p in providers.values():
         try:
             await p.close()
         except Exception:
@@ -124,99 +119,107 @@ async def close_providers(providers: dict):
     logger.info("All providers closed")
 
 
-async def run_full_sync(db_engine, providers: dict, entity_filter: str | None = None):
-    """Run a complete sync: ESPN (primary) → Octagon (enrichment) → TSDB (enrichment)."""
+def build_engine():
+    """Build the real SyncEngine with all 9 ESPN jobs."""
+    from src.providers.espn.jobs import (
+        ESPN_BroadcastSyncJob,
+        ESPN_CompetitionSyncJob,
+        ESPN_EventSyncJob,
+        ESPN_FighterSyncJob,
+        ESPN_PromotionSyncJob,
+        ESPN_RankingSyncJob,
+        ESPN_StatisticSyncJob,
+        ESPN_VenueSyncJob,
+        ESPN_WeightClassSyncJob,
+    )
     from src.sync.engine import SyncEngine
-    from src.sync.pipeline import SyncPipeline
-    from src.sync.context import SyncContext
-    from src.sync.plan import SyncPlan
+    from src.sync.state_store import MemorySyncStateStore
     from src.sync.types import EntityType
 
-    # Build sync plan
+    jobs = {
+        EntityType.PROMOTION: ESPN_PromotionSyncJob(),
+        EntityType.VENUE: ESPN_VenueSyncJob(),
+        EntityType.WEIGHT_CLASS: ESPN_WeightClassSyncJob(),
+        EntityType.FIGHTER: ESPN_FighterSyncJob(),
+        EntityType.EVENT: ESPN_EventSyncJob(),
+        EntityType.COMPETITION: ESPN_CompetitionSyncJob(),
+        EntityType.BROADCAST: ESPN_BroadcastSyncJob(),
+        EntityType.STATISTIC: ESPN_StatisticSyncJob(),
+        EntityType.RANKING: ESPN_RankingSyncJob(),
+    }
+    return SyncEngine(jobs=jobs, statestore=MemorySyncStateStore())
+
+
+def _build_plan(plan_name: str, entity_filter: str | None):
+    """Return the SyncPlan for the requested mode + optional entity filter."""
+    from src.sync.plan import (
+        EventsPlan,
+        FighterPlan,
+        FoundationPlan,
+        FullSyncPlan,
+        RankingsPlan,
+        SyncPlan,
+    )
+    from src.sync.types import EntityType
+
     if entity_filter:
-        entity_types = [EntityType(entity_filter)]
-    else:
-        entity_types = [
-            EntityType.PROMOTION,
-            EntityType.WEIGHT_CLASS,
-            EntityType.VENUE,
-            EntityType.FIGHTER,
-            EntityType.EVENT,
-            EntityType.COMPETITION,
-            EntityType.RANKING,
-            EntityType.STATISTIC,
-            EntityType.BROADCAST,
-        ]
+        try:
+            entity = EntityType(entity_filter)
+        except ValueError:
+            valid = ", ".join(e.value for e in EntityType)
+            raise SystemExit(f"Unknown entity '{entity_filter}'. Valid: {valid}")
+        return SyncPlan(
+            name="single_sync",
+            description=f"Single entity sync: {entity.value}",
+            order=[entity],
+        )
 
-    plan = SyncPlan(entity_types=entity_types, mode="full")
-    context = SyncContext(db=db_engine, espn_provider=providers["espn"])
-
-    engine = SyncEngine(context=context)
-    pipeline = SyncPipeline(engine=engine)
-
-    start = time.monotonic()
-    logger.info(f"Starting FULL sync: {len(entity_types)} entities")
-
-    result = await pipeline.execute(plan)
-
-    elapsed = time.monotonic() - start
-    logger.info(f"Sync completed in {elapsed:.1f}s")
-
-    return result
+    if plan_name == "full":
+        return FullSyncPlan()
+    if plan_name == "rankings":
+        return RankingsPlan()
+    if plan_name == "events":
+        return EventsPlan()
+    if plan_name == "fighters":
+        return FighterPlan()
+    if plan_name == "foundation":
+        return FoundationPlan()
+    raise SystemExit(f"Unknown plan '{plan_name}'")
 
 
-async def run_enrichment_sync(db_engine, providers: dict):
-    """Run enrichment-only sync: Octagon + TSDB media/bios."""
-    from src.sync.engine import SyncEngine
-    from src.sync.pipeline import SyncPipeline
-    from src.sync.context import SyncContext
-    from src.sync.plan import SyncPlan
-    from src.sync.types import EntityType
+async def run_sync(
+    session: AsyncSession,
+    providers: dict,
+    plan_name: str,
+    entity_filter: str | None = None,
+    mode: str | None = None,
+):
+    """Run a sync plan through the real engine, then commit the transaction."""
+    from src.sync.types import SyncMode
 
-    plan = SyncPlan(
-        entity_types=[EntityType.FIGHTER],
-        mode="enrichment",
-        providers=["tsdb", "octagon"],
+    plan = _build_plan(plan_name, entity_filter)
+    engine = build_engine()
+    espn = providers["espn"]
+
+    logger.info(
+        f"Starting sync: plan={plan.name} jobs={plan.job_count} "
+        f"mode={mode or 'auto'}"
     )
 
-    context = SyncContext(
-        db=db_engine,
-        espn_provider=providers["espn"],
-        tsdb_provider=providers["tsdb"],
-        octagon_provider=providers["octagon"],
+    result = await engine.execute(
+        plan=plan,
+        provider=espn,
+        db_session=session,
+        mode=SyncMode(mode) if mode else None,
     )
 
-    pipeline = SyncPipeline(engine=SyncEngine(context=context))
-    result = await pipeline.execute(plan)
-
-    logger.info(f"Enrichment sync completed: {result}")
-    return result
-
-
-async def run_rankings_sync(db_engine, providers: dict):
-    """Run rankings sync + Octagon verification."""
-    from src.sync.engine import SyncEngine
-    from src.sync.pipeline import SyncPipeline
-    from src.sync.context import SyncContext
-    from src.sync.plan import SyncPlan
-    from src.sync.types import EntityType
-
-    plan = SyncPlan(entity_types=[EntityType.RANKING], mode="full")
-
-    context = SyncContext(
-        db=db_engine,
-        espn_provider=providers["espn"],
-        octagon_provider=providers["octagon"],
+    await session.commit()
+    logger.info(
+        f"Sync finished: {result.overall_status.value} "
+        f"inserted={result.total_inserted} updated={result.total_updated} "
+        f"skipped={result.total_skipped} errors={result.total_errors} "
+        f"duration={result.duration_ms:.0f}ms"
     )
-
-    pipeline = SyncPipeline(engine=SyncEngine(context=context))
-    result = await pipeline.execute(plan)
-
-    # Verify against Octagon
-    if providers.get("octagon"):
-        verification = await providers["octagon"].verify_rankings()
-        logger.info(f"Rankings verification: {verification}")
-
     return result
 
 
@@ -225,25 +228,23 @@ def print_results(result):
     if result is None:
         return
 
+    summary = result.summary()
     print("\n" + "=" * 60)
     print("SYNC RESULTS")
     print("=" * 60)
-
-    if hasattr(result, "jobs"):
-        for job_result in result.jobs:
-            status = "✓" if not job_result.error else "✗"
-            print(f"  {status} {job_result.entity_type:<20} "
-                  f"inserted={job_result.records_inserted:<6} "
-                  f"updated={job_result.records_updated:<6} "
-                  f"skipped={job_result.records_skipped:<6} "
-                  f"errors={job_result.records_errors:<6}"
-                  f"{'  ERROR: ' + job_result.error if job_result.error else ''}")
-
-    total_inserted = sum(j.records_inserted for j in result.jobs) if hasattr(result, "jobs") else 0
-    total_updated = sum(j.records_updated for j in result.jobs) if hasattr(result, "jobs") else 0
-    total_errors = sum(j.records_errors for j in result.jobs) if hasattr(result, "jobs") else 0
-
-    print(f"\n  Total: {total_inserted} inserted, {total_updated} updated, {total_errors} errors")
+    for job in summary["jobs"]:
+        mark = "✓" if job["status"] == "COMPLETED" else "✗"
+        print(
+            f"  {mark} {job['entity']:<20} "
+            f"inserted={job['inserted']:<6} "
+            f"updated={job['updated']:<6} "
+            f"skipped={job['skipped']:<6} "
+            f"errors={job['errors']:<6}"
+            f"{'  ERROR: ' + job['error'] if job['error'] else ''}"
+        )
+    print(f"\n  Status: {summary['status']} | {summary['duration_ms']:.0f}ms")
+    print(f"  Total: {summary['total_inserted']} inserted, "
+          f"{summary['total_updated']} updated, {summary['total_errors']} errors")
     print("=" * 60)
 
 
@@ -257,36 +258,43 @@ async def main():
     logger.info(f"Mode: {'FULL' if args.full else 'RESUME' if args.resume else 'WEEKLY' if args.weekly else 'RANKINGS'}")
     logger.info(f"Provider: {args.provider}")
 
+    if args.provider not in ("espn", "all"):
+        raise SystemExit("Only 'espn' (default) and 'all' (= espn) are wired. TSDB/Octagon enrichment is deferred.")
+
     if args.dry_run:
-        logger.info("DRY RUN — no data will be written")
+        plan = _build_plan(
+            "full" if args.full else "rankings" if args.rankings else "fighters" if args.weekly else "full",
+            args.entity,
+        )
+        logger.info(f"DRY RUN — would execute plan '{plan.name}' ({plan.job_count} jobs)")
         return
 
-    # Setup
-    db_engine = await setup_database()
+    session = await setup_database()
     providers = await setup_providers()
 
     try:
         if args.full:
-            result = await run_full_sync(db_engine, providers, entity_filter=args.entity)
+            result = await run_sync(session, providers, "full", entity_filter=args.entity)
         elif args.rankings:
-            result = await run_rankings_sync(db_engine, providers)
+            result = await run_sync(session, providers, "rankings")
         elif args.weekly:
-            result = await run_enrichment_sync(db_engine, providers)
+            logger.info("Weekly run: fighters + statistics (TSDB/Octagon enrichment deferred)")
+            result = await run_sync(session, providers, "fighters")
         elif args.resume:
-            logger.info("Resume mode — would pick up from last checkpoint")
-            result = await run_full_sync(db_engine, providers, entity_filter=args.entity)
+            logger.info("Resume mode — engine resumes from last checkpoint")
+            result = await run_sync(session, providers, "full", entity_filter=args.entity, mode="resume")
         else:
             logger.info("No mode specified. Use --full, --resume, --weekly, or --rankings.")
             result = None
 
         print_results(result)
 
-    except Exception as e:
-        logger.error(f"Sync failed: {e}", exc_info=True)
+    except Exception:
+        logger.exception("Sync failed")
         sys.exit(1)
     finally:
         await close_providers(providers)
-        await db_engine.dispose()
+        await session.close()
 
     logger.info("Sync engine shutdown complete")
 

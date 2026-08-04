@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-FIXTURES_DIR = Path(__file__).parent.parent / "fixtures" / "espn"
+FIXTURES_DIR = Path(__file__).parent / "fixtures" / "espn"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -196,7 +196,6 @@ class FakeHTTPError(Exception):
 
 class FakeTimeoutError(Exception):
     """Simulates a network timeout."""
-    pass
 
 
 @pytest.fixture

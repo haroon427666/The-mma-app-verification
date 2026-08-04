@@ -7,7 +7,7 @@ on a typed class. Prometheus/Grafana integration maps directly to these fields.
 
 import time
 from dataclasses import dataclass, field
-
+from typing import Any
 
 # ── Sub-metrics (strongly typed, no dicts) ────────────────────────────────────
 
@@ -149,7 +149,7 @@ class SyncMetrics:
 
     # ── Prometheus-ready summary ───────────────────────────────────────────
 
-    def summary(self) -> dict:
+    def summary(self) -> dict[str, Any]:
         """JSON-serializable summary for structured logging and monitoring."""
         return {
             "duration_ms": round(self.total_duration_ms, 1),

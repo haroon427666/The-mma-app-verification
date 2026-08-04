@@ -6,7 +6,7 @@ import { EventDetailScreen } from '../screens/EventDetailScreen';
 import { FightCardScreen } from '../screens/FightCardScreen';
 import { LiveEventScreen } from '../screens/LiveEventScreen';
 import { ResultsScreen } from '../screens/ResultsScreen';
-import { EventStatisticsScreen } from '../screens/EventStatisticsScreen';
+import { EventStatisticsScreen } from '../screens/ResultsScreen';
 
 export type EventsStackParamList = {
   EventsList: undefined;

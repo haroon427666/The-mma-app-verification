@@ -6,24 +6,48 @@ Handles: register, login, refresh, logout, password reset, email verification.
 
 import logging
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.jwt import (
-    create_token_pair, TokenPair, verify_refresh_token, hash_refresh_token,
-    REFRESH_TOKEN_EXPIRE_DAYS,
+    TokenPair,
+    create_token_pair,
+    hash_refresh_token,
+    verify_refresh_token,
 )
-from src.auth.password import hash_password, verify_password, check_password_strength
+from src.auth.password import check_password_strength, hash_password, verify_password
 from src.auth.tokens import (
-    create_session, rotate_refresh_token, revoke_session, revoke_all_sessions,
-    is_jti_blocked, block_access_token,
+    block_access_token,
+    create_session,
+    revoke_all_sessions,
+    rotate_refresh_token,
 )
-from src.db.models.auth import User, UserSession
+from src.db.models.auth import User
 
 logger = logging.getLogger(__name__)
+
+
+def _record_login(status: str) -> None:
+    """Record login metrics to Prometheus (safe — no-ops before setup())."""
+    try:
+        from src.monitoring.scheduler_metrics import SchedulerMetricsCollector
+        SchedulerMetricsCollector().record_login(status)
+    except Exception:
+        pass
+
+
+def _utcnow() -> datetime:
+    return datetime.now(UTC)
+
+
+def _ensure_aware(dt: datetime | None) -> datetime | None:
+    """SQLite returns naive datetimes — normalize to UTC-aware for comparisons."""
+    if dt is not None and dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC)
+    return dt
 
 
 class AuthService:
@@ -42,8 +66,8 @@ class AuthService:
         username: str,
         password: str,
         display_name: str | None = None,
-        device_info: dict | None = None,
-    ) -> dict:
+        device_info: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Create a new user account. Returns tokens + user data.
 
         Steps:
@@ -116,8 +140,8 @@ class AuthService:
         email: str,
         password: str,
         remember_me: bool = False,
-        device_info: dict | None = None,
-    ) -> dict:
+        device_info: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Authenticate a user.
 
         Steps:
@@ -138,26 +162,29 @@ class AuthService:
         )
         user = result.scalar_one_or_none()
         if user is None:
+            _record_login("failed")
             raise ValueError("Invalid email or password")
 
         # 2. Account lockout check
-        if user.locked_until and user.locked_until > datetime.now(timezone.utc):
-            remaining = (user.locked_until - datetime.now(timezone.utc)).seconds
+        locked_until = _ensure_aware(user.locked_until)
+        if locked_until and locked_until > _utcnow():
+            remaining = (locked_until - _utcnow()).seconds
             raise ValueError(f"Account locked. Try again in {remaining // 60} minutes")
 
         # 3. Verify password
         if not verify_password(password, user.password_hash):
             user.login_attempts += 1
             if user.login_attempts >= 5:
-                user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=15)
+                user.locked_until = datetime.now(UTC) + timedelta(minutes=15)
                 logger.warning(f"Account locked: {user.email}")
             await self._session.flush()
+            _record_login("failed")
             raise ValueError("Invalid email or password")
 
         # 4. Reset on success
         user.login_attempts = 0
         user.locked_until = None
-        user.last_login_at = datetime.now(timezone.utc)
+        user.last_login_at = datetime.now(UTC)
 
         device = device_info or {}
         user.last_login_ip = device.get("ip", "unknown")
@@ -170,6 +197,7 @@ class AuthService:
 
         await self._session.flush()
         logger.info(f"User logged in: {user.email}")
+        _record_login("success")
 
         return self._build_auth_response(tokens, user)
 
@@ -177,7 +205,7 @@ class AuthService:
     # Refresh
     # ══════════════════════════════════════════════════════════════════════
 
-    async def refresh(self, old_refresh_token: str, device_info: dict | None = None) -> TokenPair:
+    async def refresh(self, old_refresh_token: str, device_info: dict[str, Any] | None = None) -> TokenPair:
         """Refresh an access token using a refresh token.
 
         Steps:
@@ -243,7 +271,7 @@ class AuthService:
         hashed_token = hash_refresh_token(raw_token)  # Reusing hash function
 
         user.password_reset_token = hashed_token
-        user.password_reset_expires = datetime.now(timezone.utc) + timedelta(hours=1)
+        user.password_reset_expires = datetime.now(UTC) + timedelta(hours=1)
         await self._session.flush()
 
         # Send email with raw_token (user clicks link with raw token)
@@ -276,7 +304,8 @@ class AuthService:
             raise ValueError("Invalid or expired reset token")
 
         # 3. Check expiry
-        if user.password_reset_expires is None or user.password_reset_expires < datetime.now(timezone.utc):
+        expires = _ensure_aware(user.password_reset_expires)
+        if expires is None or expires < _utcnow():
             raise ValueError("Reset token has expired")
 
         # 4. Hash new password
@@ -318,7 +347,7 @@ class AuthService:
     # Helpers
     # ══════════════════════════════════════════════════════════════════════
 
-    def _build_auth_response(self, tokens: TokenPair, user: User) -> dict:
+    def _build_auth_response(self, tokens: TokenPair, user: User) -> dict[str, Any]:
         return {
             "access_token": tokens.access_token,
             "refresh_token": tokens.refresh_token,

@@ -1,6 +1,6 @@
 /** Rankings module — complete type definitions */
 
-import type { Fighter } from '../../models';
+import type { Fighter } from '../models';
 
 // ── Core Ranking Types ──
 export interface RankingEntry {

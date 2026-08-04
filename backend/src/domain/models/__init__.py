@@ -1,0 +1,1 @@
+"""Domain model re-exports (keep import path stable for the sync layer)."""

@@ -12,10 +12,14 @@ Protected by DB unique constraint: uq_ranking_fighter_category on
 """
 
 import logging
+from typing import TYPE_CHECKING
 
 from src.domain.models.ranking import Ranking
 from src.providers.dto import RankingDTO
 from src.sync.upsert import UpsertResult
+
+if TYPE_CHECKING:
+    from src.sync.upserts.id_resolver import IdResolver
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +31,6 @@ class RankingUpsert:
     provider = "espn"
 
     def __init__(self, resolver: "IdResolver") -> None:
-        from src.sync.upserts.id_resolver import IdResolver
         self._resolver: IdResolver = resolver
 
     async def upsert_batch(self, dtos: list[RankingDTO]) -> UpsertResult:
@@ -66,7 +69,7 @@ class RankingUpsert:
                 await self._resolver._db.execute(
                     delete(Ranking).where(
                         Ranking.promotion_id == promo_uuid,
-                        Ranking.category == category,
+                        Ranking.category_name == category,
                     )
                 )
 
@@ -89,7 +92,7 @@ class RankingUpsert:
                             promotion_id=promo_uuid,
                             fighter_id=fighter_uuid,
                             weight_class_id=wclass_uuid,
-                            category=category,
+                            category_name=category,
                             rank=dto.rank,
                             trend=dto.trend,
                             is_champion=dto.is_champion,

@@ -9,8 +9,8 @@ const endpoints = {
   detail: (id: string) => `/v1/events/${id}`,
   fights: (id: string) => `/v1/events/${id}/fights`,
   predictions: (id: string) => `/v1/predictions/event/${id}`,
-  watch: (id: string) => `/v1/watchlist/events/${id}`,
-  watched: '/v1/watchlist/events',
+  watch: (id: string) => `/v1/me/watchlist/events/${id}`,
+  watched: '/v1/me/watchlist/events',
 } as const;
 
 export function useEvents(status: 'upcoming' | 'past') {

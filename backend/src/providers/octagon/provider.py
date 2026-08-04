@@ -9,7 +9,7 @@ from typing import Any
 
 from src.providers.dto import FighterDTO, RankingDTO
 from src.providers.octagon.client import OctagonClient
-from src.providers.octagon.config import OctagonClientConfig, ENDPOINTS
+from src.providers.octagon.config import ENDPOINTS, OctagonClientConfig
 from src.providers.octagon.parsers.fighter import parse_fighter, parse_fighter_enrichment
 from src.providers.octagon.parsers.ranking import parse_rankings
 
@@ -48,7 +48,7 @@ class OctagonProvider:
             if not isinstance(data, dict):
                 return []
             fighters: list[FighterDTO] = []
-            for _slug, fighter_data in data.items():
+            for fighter_data in data.values():
                 if isinstance(fighter_data, dict):
                     fighters.append(parse_fighter(fighter_data))
             logger.info(f"Octagon: fetched {len(fighters)} fighters")
@@ -69,7 +69,7 @@ class OctagonProvider:
             logger.error(f"Octagon fetch_fighter({fighter_id}) failed: {e}")
         return None
 
-    async def fetch_fighter_enrichment(self, fighter_id: str) -> dict | None:
+    async def fetch_fighter_enrichment(self, fighter_id: str) -> dict[str, Any] | None:
         """Fetch enrichment fields for a specific fighter."""
         await self._ensure_started()
         path = ENDPOINTS["fighter"].format(fighter_id=fighter_id)

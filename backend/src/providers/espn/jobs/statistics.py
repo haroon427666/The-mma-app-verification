@@ -5,6 +5,8 @@ Each stat is attached to the fighter's most recent competitor row
 (if resolved; otherwise skipped with a warning).
 """
 
+from typing import Any
+
 from src.sync.job import SyncJob
 from src.sync.types import EntityType
 
@@ -16,13 +18,12 @@ class ESPN_StatisticSyncJob(SyncJob):
     batch_size = 200
     supports_incremental = False
 
-    async def _fetch(self, ctx, state):
-        provider = ctx.provider
+    async def _fetch(self, ctx: Any, state: Any) -> list[Any]:
         # Fetch fighter stats in batches — iterate fighters
         # For now, return empty — stats are fetched per-fighter during fighter sync
         return []
 
-    async def _upsert(self, ctx, dtos):
+    async def _upsert(self, ctx: Any, dtos: list[Any]) -> dict[str, int]:
         from src.sync.upserts.id_resolver import IdResolver
         from src.sync.upserts.statistics import StatisticsUpsert
 

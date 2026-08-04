@@ -7,7 +7,7 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 import httpx
 
@@ -62,10 +62,9 @@ class TSDBClient:
                     if attempt < self.config.max_retries:
                         await asyncio.sleep(wait)
                         continue
-                if response.status_code in self.config.retry_status_codes:
-                    if attempt < self.config.max_retries:
-                        await asyncio.sleep(self.config.retry_backoff_base ** attempt)
-                        continue
+                if response.status_code in self.config.retry_status_codes and attempt < self.config.max_retries:
+                    await asyncio.sleep(self.config.retry_backoff_base ** attempt)
+                    continue
                 response.raise_for_status()
             except (httpx.TimeoutException, httpx.ConnectError):
                 if attempt < self.config.max_retries:
@@ -76,4 +75,4 @@ class TSDBClient:
 
     async def get_json(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
         response = await self.get(path, params)
-        return response.json()
+        return cast(dict[str, Any], response.json())

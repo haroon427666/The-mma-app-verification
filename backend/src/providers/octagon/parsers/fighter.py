@@ -6,6 +6,7 @@ Also provides higher-quality official UFC renders (imgUrl).
 """
 
 from datetime import datetime
+from typing import Any
 
 from src.providers.dto import FighterDTO
 
@@ -36,13 +37,13 @@ def parse_date(date_str: str | None) -> datetime | None:
         return None
     for fmt in ["%b. %d, %Y", "%Y-%m-%d", "%B %d, %Y"]:
         try:
-            return datetime.strptime(date_str, fmt)
+            return datetime.strptime(date_str, fmt)  # noqa: DTZ007 — date-only inputs, no zone
         except ValueError:
             continue
     return None
 
 
-def parse_fighter(data: dict) -> FighterDTO:
+def parse_fighter(data: dict[str, Any]) -> FighterDTO:
     external_id = data.get("name", "")  # Octagon uses name as ID (no numeric IDs)
     full_name = data.get("name", "")
     parts = full_name.split(" ", 1)
@@ -67,7 +68,7 @@ def parse_fighter(data: dict) -> FighterDTO:
     )
 
 
-def parse_fighter_enrichment(data: dict) -> dict:
+def parse_fighter_enrichment(data: dict[str, Any]) -> dict[str, Any]:
     """Extract Octagon-unique enrichment fields."""
     debut_date = parse_date(data.get("octagonDebut"))
     return {

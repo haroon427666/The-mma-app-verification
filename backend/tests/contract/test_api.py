@@ -15,8 +15,6 @@ Endpoints tested:
 - POST /sync/dead-letter/replay
 """
 
-import pytest
-from datetime import datetime
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -115,6 +113,8 @@ def validate_schema(data: dict, schema: dict, path: str = "$") -> list[str]:
             errors.append(f"{path}: expected min {min_items} items, got {len(data)}")
 
         item_schema = schema.get("items", {})
+        if not item_schema:
+            return errors  # No per-item schema declared — nothing to check
         for i, item in enumerate(data):
             sub_errors = validate_schema(item, item_schema, f"{path}[{i}]")
             errors.extend(sub_errors)
@@ -140,7 +140,7 @@ class TestHealthEndpoint:
 
     def test_health_always_200(self):
         """Health endpoint always returns 200 when app is running."""
-        pass  # Verified at runtime
+        # Verified at runtime
 
 
 class TestReadinessEndpoint:
@@ -191,28 +191,22 @@ class TestSyncTriggerEndpoint:
 
     def test_full_sync_trigger(self):
         """POST /sync/trigger with mode=full accepts the request."""
-        pass
 
     def test_entity_filtered_sync(self):
         """POST /sync/trigger with entity_types=['fighter'] limits scope."""
-        pass
 
 
 class TestSyncRunsEndpoint:
     def test_sync_runs_list_returns_paginated(self):
         """GET /sync/runs returns list with configurable limit."""
-        pass
 
     def test_sync_run_detail_returns_jobs(self):
         """GET /sync/runs/{id} returns run + associated jobs."""
-        pass
 
 
 class TestDeadLetterEndpoint:
     def test_replay_triggers_reprocessing(self):
         """POST /sync/dead-letter/replay triggers replay."""
-        pass
 
     def test_replay_filtered_by_entity(self):
         """POST /sync/dead-letter/replay?entity_type=fighter limits scope."""
-        pass

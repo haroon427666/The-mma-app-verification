@@ -13,8 +13,8 @@ from uuid import UUID
 from src.domain.models.competition import Competition
 from src.domain.models.competitor import Competitor
 from src.providers.dto import CompetitionDTO
-from src.sync.upserts.base import BaseUpsert
 from src.sync.upsert import UpsertResult
+from src.sync.upserts.base import BaseUpsert
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ class CompetitionUpsert(BaseUpsert):
     }
 
     @property
-    def _model_class(self) -> type:
+    def _model_class(self) -> type[Competition]:
         return Competition
 
     def _extract_external_id(self, dto: CompetitionDTO) -> str:

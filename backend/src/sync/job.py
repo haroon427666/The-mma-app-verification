@@ -24,7 +24,6 @@ from src.sync.context import SyncContext
 from src.sync.state import SyncState
 from src.sync.types import EntityType, JobStatus
 
-
 # ── Job Result ─────────────────────────────────────────────────────────────────
 
 
@@ -69,7 +68,7 @@ class SyncJob(ABC):
 
     # ── Metadata (override in subclasses) ──────────────────────────────────
 
-    entity_type: EntityType = NotImplemented  # type: ignore[assignment]
+    entity_type: EntityType = NotImplemented
     """Which entity this job syncs."""
 
     depends_on: list[EntityType] = []

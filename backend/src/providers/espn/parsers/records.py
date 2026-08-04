@@ -33,6 +33,7 @@ Real payload shape (verified 2026-08-01):
 
 import logging
 from dataclasses import dataclass, field
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -68,10 +69,10 @@ class FighterRecord:
     record_display: str = ""
 
     # Raw data for debugging
-    _raw_stats: dict = field(default_factory=dict, repr=False)
+    _raw_stats: dict[str, float] = field(default_factory=dict, repr=False)
 
 
-def parse_fighter_records(records_data: dict) -> FighterRecord:
+def parse_fighter_records(records_data: dict[str, Any]) -> FighterRecord:
     """Parse ALL available fields from ESPN /records endpoint.
 
     Args:
@@ -155,7 +156,7 @@ def parse_fighter_records(records_data: dict) -> FighterRecord:
 
 # ── Backward-compatible adapter ────────────────────────────────────────────────
 
-def parse_fighter_records_legacy(records_data: dict) -> dict[str, int]:
+def parse_fighter_records_legacy(records_data: dict[str, Any]) -> dict[str, int]:
     """Backward-compatible wrapper. Returns {wins, losses, draws, no_contests}.
 
     Use parse_fighter_records() for the full FighterRecord dataclass.

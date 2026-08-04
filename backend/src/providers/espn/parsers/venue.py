@@ -7,10 +7,12 @@ Venues are embedded in competition data within events:
 They can also be resolved from event.venues[] $ref array.
 """
 
+from typing import Any
+
 from src.providers.dto import VenueDTO
 
 
-def parse_venue(data: dict) -> VenueDTO:
+def parse_venue(data: dict[str, Any]) -> VenueDTO:
     """Parse venue from embedded competition data or resolved $ref.
 
     Args:

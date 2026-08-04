@@ -1,18 +1,30 @@
-/** Recommendations Module — complete barrel export */
+/** Recommendations Module — barrel export */
 
-// ── API + Repository ──
-export { recommendationsApi, recommendationsRepo } from './api';
-// ── Services + Hooks + Mutations ──
-export { recommendationKeys, recommendationCache, recommendationAnalytics } from './api';
-export { useRecommendations, useRecommendationsDashboard, useRecommendedFighters, useRecommendedEvents, useBecauseYouFollow, useBecauseYouWatched, useTrendingRecs, useHiddenGems, useSimilarFightersRec, useRecommendationMetrics } from './api';
-export { useDismissRecommendation, useRecommendationFeedback } from './api';
-export { useRecommendationStore, recommendationActions } from './api';
-// ── Navigation ──
-export { RecommendationsStack } from './navigation/RecommendationsStack';
-export type { RecommendationsStackParamList } from './navigation/RecommendationsStack';
-// ── Screens ──
-export { RecommendationsScreen } from './screens';
-// ── Theme + Charts + Errors ──
-export { recommendationColors, MetricsChart, NoRecommendations } from './screens';
+// ── API / Repository / Services / Hooks / Mutations / Store (consolidated in ./api) ──
+export {
+  recommendationsApi,
+  recommendationsRepo,
+  recommendationKeys,
+  recommendationCache,
+  recommendationAnalytics,
+  useRecommendationStore,
+  recommendationActions,
+  useRecommendations,
+  useRecommendationsDashboard,
+  useRecommendedFighters,
+  useRecommendedEvents,
+  useBecauseYouFollow,
+  useBecauseYouWatched,
+  useTrendingRecs,
+  useHiddenGems,
+  useSimilarFightersRec,
+  useRecommendationMetrics,
+  useDismissRecommendation,
+  useRecommendationFeedback,
+} from './api';
+
+// ── Screens / Stack (consolidated in ./RecsModule) ──
+export { RecommendationsStack, RecsScreen, recColors, recsRepo, recKeys, recCache, useRecs, useRecFighters, useRecEvents, useRecTrending, useRecDiscover, useRecBecause, useRecFeedback, useDismissRec, useRecStore, recActions } from './RecsModule';
+
 // ── Types ──
 export type * from './types';

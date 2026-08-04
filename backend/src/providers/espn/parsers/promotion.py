@@ -14,10 +14,12 @@ NOTE: List endpoint returns items as $ref URLs. Each must be resolved.
 This parser handles the RESOLVED league detail.
 """
 
+from typing import Any
+
 from src.providers.dto import PromotionDTO
 
 
-def parse_promotion(data: dict) -> PromotionDTO:
+def parse_promotion(data: dict[str, Any]) -> PromotionDTO:
     """Parse a resolved ESPN league resource → PromotionDTO.
 
     Args:

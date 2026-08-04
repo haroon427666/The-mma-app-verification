@@ -1,10 +1,8 @@
 """Ranking, Promotion, Venue Pydantic schemas."""
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel
-
 
 # ── Ranking ────────────────────────────────────────────────────────────────
 
@@ -32,6 +30,31 @@ class RankingCategory(BaseModel):
 class RankingsResponse(BaseModel):
     categories: list[RankingCategory] = []
     synced_at: datetime | None = None
+
+
+# ── Champion ────────────────────────────────────────────────────────────────
+
+class ChampionFighter(BaseModel):
+    id: str
+    full_name: str | None = None
+    nickname: str | None = None
+    headshot_url: str | None = None
+    record: str | None = None  # "21-5-0"
+
+
+class ChampionEntry(BaseModel):
+    """A current champion (rankings row with is_champion=true) + fighter info."""
+
+    category_name: str
+    category_type: str | None = None
+    gender: str | None = None
+    weight_class: str | None = None
+    rank: int = 1
+    trend: str | None = None
+    title_defenses: int | None = None
+    fighter: ChampionFighter
+
+    model_config = {"extra": "forbid"}
 
 
 # ── Promotion ──────────────────────────────────────────────────────────────

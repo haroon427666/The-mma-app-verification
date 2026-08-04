@@ -7,7 +7,9 @@ API docs: /docs (Swagger), /redoc (ReDoc), /openapi.json
 """
 
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,24 +22,49 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info(f"Starting {settings.app_name} ({settings.environment})")
 
-    # Start scheduler on startup (if database available)
+    # Initialize Prometheus metrics (idempotent)
     try:
-        from src.scheduler.manager import SyncManager
-        from src.api.sync import set_sync_manager
-        # Manager would be initialized with real context in production
-        # manager = SyncManager(context)
-        # await manager.start()
-        # set_sync_manager(manager)
-        logger.info("SyncManager — deferred to production runtime")
+        from src.metrics.prometheus import setup_metrics
+        setup_metrics()
+    except Exception as e:
+        logger.warning(f"Metrics not initialized: {e}")
+
+    # Start scheduler on startup (opt-in via SYNC_ENABLED=true)
+    _sync_manager = None
+    try:
+        if settings.sync_enabled:
+            from src.api.sync import set_sync_manager
+            from src.scheduler.context import build_scheduler_context
+            from src.scheduler.manager import SyncManager
+
+            context = await build_scheduler_context()
+            _sync_manager = SyncManager(context)
+            await _sync_manager.start()
+            set_sync_manager(_sync_manager)
+            logger.info("SyncManager started (SYNC_ENABLED=true)")
+        else:
+            logger.info("SyncManager disabled (set SYNC_ENABLED=true to enable)")
     except Exception as e:
         logger.warning(f"SyncManager not started: {e}")
 
     yield
 
     # Shutdown scheduler
+    try:
+        if _sync_manager is not None:
+            await _sync_manager.shutdown()
+    except Exception:
+        pass
+
+    # Close Redis
+    try:
+        from src.middleware.redis import close_redis
+        await close_redis()
+    except Exception:
+        pass
     logger.info("Shutting down")
 
 
@@ -97,7 +124,7 @@ except ImportError:
 
 # Request context + correlation IDs
 try:
-    from src.logging.middleware import RequestContextMiddleware, AuditLogMiddleware
+    from src.logging.middleware import AuditLogMiddleware, RequestContextMiddleware
     app.add_middleware(RequestContextMiddleware)
     app.add_middleware(AuditLogMiddleware)
 except ImportError:
@@ -119,29 +146,32 @@ except ImportError:
 
 # ── Exception Handlers ─────────────────────────────────────────────────────────
 
-from src.schemas.common import ErrorDetail
 from src.api.errors import (
-    ProblemDetail, problem_detail_handler, unhandled_exception_handler,
-    NotFoundError, ValidationError,
+    NotFoundError,
+    ProblemDetail,
+    ValidationError,
+    problem_detail_handler,
 )
+from src.schemas.common import ErrorDetail
+
 
 @app.exception_handler(ProblemDetail)
-async def problem_handler(request: Request, exc: ProblemDetail):
+async def problem_handler(request: Request, exc: ProblemDetail) -> Any:
     return await problem_detail_handler(request, exc)
 
 
 @app.exception_handler(NotFoundError)
-async def not_found_handler(request: Request, exc: NotFoundError):
+async def not_found_handler(request: Request, exc: NotFoundError) -> Any:
     return await problem_detail_handler(request, exc)
 
 
 @app.exception_handler(ValidationError)
-async def validation_error_handler(request: Request, exc: ValidationError):
+async def validation_error_handler(request: Request, exc: ValidationError) -> Any:
     return await problem_detail_handler(request, exc)
 
 
 @app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
     return JSONResponse(
         status_code=exc.status_code,
@@ -150,7 +180,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 
 @app.exception_handler(404)
-async def not_found_handler(request: Request, exc):
+async def path_not_found_handler(request: Request, exc: Any) -> JSONResponse:
     return JSONResponse(
         status_code=404,
         content=ErrorResponse(
@@ -161,7 +191,7 @@ async def not_found_handler(request: Request, exc):
 
 
 @app.exception_handler(422)
-async def validation_handler(request: Request, exc):
+async def validation_handler(request: Request, exc: Any) -> JSONResponse:
     return JSONResponse(
         status_code=422,
         content=ErrorResponse(
@@ -174,21 +204,23 @@ async def validation_handler(request: Request, exc):
 # ── Routers ────────────────────────────────────────────────────────────────────
 
 from src.api.v1 import routers as v1_routers
+
 for router in v1_routers:
     app.include_router(router, prefix="/api")
 
 # Scheduler admin endpoints
 from src.api.sync import router as scheduler_router
+
 app.include_router(scheduler_router, prefix="/api")
 
 # Legacy health (at root for Docker/K8s compatibility)
 @app.get("/health")
-async def health():
+async def health() -> dict[str, str]:
     return {"status": "ok", "app": settings.app_name, "version": "1.0.0"}
 
 
 @app.get("/health/live")
-async def health_live():
+async def health_live() -> dict[str, Any]:
     """Kubernetes liveness probe — always ok if the process is alive."""
     try:
         from src.monitoring.health import HealthChecker
@@ -199,41 +231,52 @@ async def health_live():
 
 
 @app.get("/health/ready")
-async def health_ready():
+async def health_ready() -> dict[str, Any]:
     """Kubernetes readiness probe — DB + Redis must be up."""
     try:
+        from src.db.session import async_session_factory
+        from src.middleware.redis import ping_redis
         from src.monitoring.health import HealthChecker, check_database
+
         checker = HealthChecker()
-        checker.register("database", check_database)
+        checker.register(
+            "database",
+            lambda: check_database(async_session_factory),
+        )
+        checker.register("redis", ping_redis)
         return await checker.run_readiness()
     except ImportError:
         return {"status": "healthy", "checks": {"database": {"status": "healthy"}}}
 
 
 @app.get("/health/database")
-async def health_database():
+async def health_database() -> dict[str, str]:
     """Database connectivity check."""
     try:
+        from src.db.session import async_session_factory
         from src.monitoring.health import check_database
-        ok = await check_database()
+        ok = await check_database(async_session_factory)
         return {"status": "healthy" if ok else "failed", "check": "database"}
     except ImportError:
         return {"status": "healthy", "check": "database", "message": "not configured"}
 
 
 @app.get("/health/redis")
-async def health_redis():
+async def health_redis() -> dict[str, str]:
     """Redis connectivity check."""
     try:
-        from src.monitoring.health import check_redis
-        ok = await check_redis()
+        from src.config import settings
+        from src.middleware.redis import ping_redis
+        if not settings.redis_url:
+            return {"status": "healthy", "check": "redis", "message": "not configured"}
+        ok = await ping_redis()
         return {"status": "healthy" if ok else "failed", "check": "redis"}
     except ImportError:
         return {"status": "healthy", "check": "redis", "message": "not configured"}
 
 
 @app.get("/health/providers")
-async def health_providers():
+async def health_providers() -> dict[str, Any]:
     """Provider health: ESPN, TSDB, Octagon status."""
     try:
         from src.monitoring.health import check_provider_espn
@@ -244,7 +287,7 @@ async def health_providers():
 
 
 @app.get("/health/scheduler")
-async def health_scheduler():
+async def health_scheduler() -> dict[str, str]:
     """Scheduler health: running, queue state, job failures."""
     try:
         from src.monitoring.health import check_scheduler
@@ -255,18 +298,19 @@ async def health_scheduler():
 
 
 @app.get("/api/metrics")
-async def prometheus_metrics():
+async def prometheus_metrics() -> Any:
     """Prometheus metrics endpoint — scraped by Prometheus server."""
     try:
-        from src.metrics.prometheus import get_metrics
         from fastapi.responses import PlainTextResponse
+
+        from src.metrics.prometheus import get_metrics
         return PlainTextResponse(get_metrics().export(), media_type="text/plain")
     except ImportError:
         return {"status": "disabled", "message": "prometheus_client not installed"}
 
 
 @app.get("/api/profiling")
-async def profiling():
+async def profiling() -> Any:
     """API latency percentiles — P50/P95/P99 per endpoint."""
     try:
         from src.monitoring.exception_tracker import ProfilerMiddleware
@@ -280,7 +324,7 @@ async def profiling():
 
 # Flag management (admin only)
 @app.get("/api/flags")
-async def feature_flags():
+async def feature_flags() -> dict[str, Any]:
     try:
         from src.features.flags import list_flags
         return {"flags": list_flags()}

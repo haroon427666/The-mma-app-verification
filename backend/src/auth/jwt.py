@@ -7,27 +7,38 @@ Token rotation: each refresh issues a new refresh token, revokes old
 
 import hashlib
 import logging
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 
 import jwt
-from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
+from jwt.exceptions import InvalidTokenError
 
 logger = logging.getLogger(__name__)
 
 # ── Config ─────────────────────────────────────────────────────────────────
 
 def _get_secret() -> str:
-    """Get JWT secret from config, with strict env enforcement."""
+    """Get JWT secret from config.
+
+    Strict enforcement applies in production: the app refuses to boot on the
+    placeholder secret. In development a local dev-only secret is used so the
+    app and test suite work out of the box.
+    """
+    import warnings
+
     try:
         from src.config import settings
         secret = settings.jwt_secret
         if secret == "CHANGE_ME_IN_PRODUCTION_USE_ENV_VAR":
-            raise ValueError("JWT_SECRET is still the default — set JWT_SECRET env var")
+            if settings.environment == "production":
+                raise ValueError("JWT_SECRET is still the default — set JWT_SECRET env var")
+            warnings.warn(
+                "JWT_SECRET is the default — set JWT_SECRET env var before deploying",
+                stacklevel=2,
+            )
+            return "dev-only-insecure-secret-for-local-development"
         return secret
     except ImportError:
-        import warnings
         warnings.warn("src.config not available — using hardcoded fallback (NOT FOR PRODUCTION)")
         return "CHANGE_ME_IN_PRODUCTION_USE_ENV_VAR"
 
@@ -53,10 +64,10 @@ class TokenPayload:
     sub: str          # user_id
     email: str
     role: str
-    permissions: list[str]  # list of permission strings
-    exp: Optional[datetime] = None
-    iat: Optional[datetime] = None
-    jti: Optional[str] = None  # JWT ID — for revocation
+    permissions: list[str] = field(default_factory=list)  # permission strings
+    exp: datetime | None = None
+    iat: datetime | None = None
+    jti: str | None = None  # JWT ID — for revocation
     token_type: str = "access"
 
 
@@ -64,8 +75,9 @@ class TokenPayload:
 
 
 def create_access_token(user_id: str, email: str, role: str = "user") -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     import uuid
+
     # Lazy import inside function to break circular dependency with dependencies.py
     from src.auth.dependencies import get_permissions_for_role
     permissions = get_permissions_for_role(role)
@@ -83,7 +95,7 @@ def create_access_token(user_id: str, email: str, role: str = "user") -> str:
 
 
 def create_refresh_token(user_id: str) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     import uuid
     payload = {
         "sub": user_id,
@@ -106,22 +118,17 @@ def create_token_pair(user_id: str, email: str, role: str = "user") -> TokenPair
 
 def decode_token(token: str) -> TokenPayload:
     """Decode and verify a JWT. Raises on expiry or invalid signature."""
-    try:
-        data = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return TokenPayload(
-            sub=data["sub"],
-            email=data.get("email", ""),
-            role=data.get("role", "user"),
-            permissions=data.get("permissions", []),
-            exp=data.get("exp"),
-            iat=data.get("iat"),
-            jti=data.get("jti"),
-            token_type=data.get("token_type", "access"),
-        )
-    except ExpiredSignatureError:
-        raise
-    except InvalidTokenError as e:
-        raise
+    data = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    return TokenPayload(
+        sub=data["sub"],
+        email=data.get("email", ""),
+        role=data.get("role", "user"),
+        permissions=data.get("permissions", []),
+        exp=data.get("exp"),
+        iat=data.get("iat"),
+        jti=data.get("jti"),
+        token_type=data.get("token_type", "access"),
+    )
 
 
 def verify_access_token(token: str) -> TokenPayload:

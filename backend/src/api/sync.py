@@ -14,10 +14,13 @@ Endpoints:
 """
 
 import logging
-from fastapi import APIRouter, HTTPException, Query, Depends
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from src.auth.dependencies import require_permission, get_current_user, TokenPayload
+from src.auth.dependencies import require_permission
+from src.auth.jwt import TokenPayload
 
 logger = logging.getLogger(__name__)
 
@@ -27,12 +30,12 @@ router = APIRouter(prefix="/scheduler", tags=["scheduler"])
 _manager = None
 
 
-def set_sync_manager(manager):
+def set_sync_manager(manager: Any) -> None:
     global _manager
     _manager = manager
 
 
-def get_manager():
+def get_manager() -> Any:
     if _manager is None:
         raise HTTPException(503, "SyncManager not initialized")
     return _manager
@@ -41,14 +44,14 @@ def get_manager():
 # ── Dashboard ──────────────────────────────────────────────────────────────────
 
 @router.get("/status")
-async def scheduler_status():
+async def scheduler_status() -> Any:
     """Full scheduler dashboard — jobs, queue, health, locks, live mode."""
     manager = get_manager()
     return await manager.get_status()
 
 
 @router.get("/jobs")
-async def list_jobs():
+async def list_jobs() -> Any:
     """List all configured sync jobs with their schedules."""
     from src.scheduler.jobs import JOB_REGISTRY
     return {
@@ -67,10 +70,11 @@ async def list_jobs():
 
 
 @router.get("/metrics")
-async def scheduler_metrics():
+async def scheduler_metrics() -> Any:
     """Export Prometheus-compatible metrics."""
-    from src.scheduler.metrics import metrics
     from fastapi.responses import PlainTextResponse
+
+    from src.scheduler.metrics import metrics
     return PlainTextResponse(metrics.export_prometheus(), media_type="text/plain")
 
 
@@ -85,7 +89,7 @@ class SyncRequest(BaseModel):
 async def trigger_full_sync(
     req: SyncRequest,
     user: TokenPayload = Depends(require_permission("sync.run")),
-):
+) -> Any:
     """Manually trigger a full sync."""
     manager = get_manager()
     run_id = await manager.trigger_full_sync(entities=req.entities)
@@ -96,11 +100,11 @@ async def trigger_full_sync(
 async def trigger_entity_sync(
     entity: str,
     user: TokenPayload = Depends(require_permission("sync.run")),
-):
+) -> Any:
     """Trigger sync for a specific entity."""
     manager = get_manager()
     try:
-        run_id = await manager.trigger_entity_sync(entity)
+        await manager.trigger_entity_sync(entity)
         return {"status": "accepted", "entity": entity}
     except ValueError as e:
         raise HTTPException(400, str(e))
@@ -110,7 +114,7 @@ async def trigger_entity_sync(
 async def cancel_job(
     job_name: str,
     user: TokenPayload = Depends(require_permission("sync.cancel")),
-):
+) -> Any:
     """Cancel all queued instances of a job."""
     manager = get_manager()
     count = await manager.cancel_job(job_name)
@@ -121,7 +125,7 @@ async def cancel_job(
 async def retry_job(
     job_name: str,
     user: TokenPayload = Depends(require_permission("sync.run")),
-):
+) -> Any:
     """Re-enqueue a failed job for immediate retry."""
     from src.scheduler.jobs import JOB_FUNCTIONS
     from src.scheduler.queue import Priority

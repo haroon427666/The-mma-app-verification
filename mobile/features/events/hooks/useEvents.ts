@@ -1,10 +1,21 @@
-/** Hooks — updated to use repository layer instead of raw API */
+/** useEvents — paginated/infinite event list (via repository layer) */
 
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { eventsRepo, fightsRepo, predictionsRepo } from '../repository';
-import { eventKeys, fightKeys, predictionKeys } from '../services/queryKeys';
-import { useEventsStore } from '../store/events.store';
-import type { FightPrediction } from '../types';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { eventsRepo } from '../repository';
+import { eventKeys } from '../services/queryKeys';
+import type { ExtendedEvent } from '../types';
 
-// Re-export all hooks with repository-based implementations
-export { useLiveEvents, useUpcomingEvents, usePastEvents, useFightCard, useCountdown, useWatchlist, useReminder, usePredictions } from './index';
+export function useEvents() {
+  return useInfiniteQuery<ExtendedEvent[]>({
+    queryKey: eventKeys.lists(),
+    queryFn: async ({ pageParam }) => {
+      const items = await eventsRepo.list({ page: pageParam as number, limit: 30 });
+      return items ?? [];
+    },
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage && lastPage.length > 0 ? allPages.length + 1 : undefined,
+    initialPageParam: 1,
+  });
+}
+
+// Note: other events hooks live in their own files; see ./index.ts

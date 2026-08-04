@@ -1,10 +1,9 @@
 """Common Pydantic models — pagination, errors, enums."""
 
-from datetime import datetime
-from typing import Any, Generic, TypeVar
+from datetime import UTC, datetime
+from typing import TypeVar
 
 from pydantic import BaseModel, Field
-
 
 # ── Pagination ──────────────────────────────────────────────────────────────
 
@@ -16,7 +15,7 @@ class PaginationParams(BaseModel):
     limit: int = Field(50, ge=1, le=200, description="Items per page (max 200)")
 
 
-class PaginatedResponse(BaseModel, Generic[T]):
+class PaginatedResponse[T](BaseModel):
     items: list[T]
     total: int
     page: int
@@ -91,7 +90,7 @@ class ErrorResponse(BaseModel):
     error: str
     code: int
     details: list[ErrorDetail] | None = None
-    timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
+    timestamp: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     @classmethod
     def not_found(cls, entity: str, identifier: str = "") -> "ErrorResponse":

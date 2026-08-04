@@ -19,13 +19,11 @@ from src.sync.clock import Clock, SystemClock
 from src.sync.metrics import SyncMetrics
 from src.sync.types import SyncSchemaVersion
 
-
 # ── Cancellation ──────────────────────────────────────────────────────────────
 
 
 class CancelledError(Exception):
     """Raised when a sync operation is cancelled mid-execution."""
-    pass
 
 
 @dataclass

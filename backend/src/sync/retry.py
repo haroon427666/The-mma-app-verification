@@ -15,8 +15,9 @@ Usage:
 
 import asyncio
 import logging
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
-from typing import Any, Callable, Coroutine
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -32,13 +33,25 @@ class ExponentialBackoff:
     max_delay: float = 60.0
     jitter: bool = True  # Add random jitter to avoid thundering herd
 
-    async def wait(self, attempt: int) -> None:
+    def delay(self, attempt: int) -> float:
+        """Return the backoff delay in seconds for the given attempt.
+
+        Jitter is bounded to ±25% so consecutive attempts always stay
+        monotonically non-decreasing (the nominal delay doubles each
+        attempt, which outpaces the jitter band).
+        """
         import random
-        delay = min(self.base ** attempt, self.max_delay)
-        if self.jitter:
-            delay = delay * (0.5 + random.random())  # 50%-150% of calculated delay
-        logger.debug(f"Backoff: waiting {delay:.1f}s (attempt {attempt})")
-        await asyncio.sleep(delay)
+
+        nominal = min(self.base ** attempt, self.max_delay)
+        if not self.jitter:
+            return nominal
+        jitter_factor = 0.75 + random.random() * 0.5  # 75%–125%
+        return min(nominal * jitter_factor, self.max_delay)
+
+    async def wait(self, attempt: int) -> None:
+        """Sleep for the computed backoff delay."""
+        logger.debug(f"Backoff: waiting {self.delay(attempt):.1f}s (attempt {attempt})")
+        await asyncio.sleep(self.delay(attempt))
 
 
 @dataclass

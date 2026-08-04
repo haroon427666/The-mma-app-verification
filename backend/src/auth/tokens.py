@@ -9,7 +9,11 @@ Prevents replay attacks:
 import hashlib
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any, cast
+
+from sqlalchemy.engine import CursorResult
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -44,11 +48,11 @@ def hash_refresh_token(token: str) -> str:
 
 
 async def rotate_refresh_token(
-    session,
+    session: AsyncSession,
     user_id: str,
     old_token: str,
     new_token: str,
-    device_info: dict,
+    device_info: dict[str, Any],
 ) -> None:
     """Rotate refresh token: revoke old, store new.
 
@@ -62,10 +66,11 @@ async def rotate_refresh_token(
         new_token: The new refresh token (raw)
         device_info: {device, browser, ip, country}
     """
-    from src.db.models.auth import UserSession
-    from sqlalchemy import select, update
     from datetime import timedelta
-    import uuid
+
+    from sqlalchemy import select, update
+
+    from src.db.models.auth import UserSession
 
     old_hash = hash_refresh_token(old_token)
     new_hash = hash_refresh_token(new_token)
@@ -100,7 +105,7 @@ async def rotate_refresh_token(
 
     # Normal rotation: revoke old, create new
     existing.revoked = True
-    existing.last_seen = datetime.now(timezone.utc)
+    existing.last_seen = datetime.now(UTC)
 
     # Create new session with new refresh token
     new_session = UserSession(
@@ -110,8 +115,8 @@ async def rotate_refresh_token(
         browser=device_info.get("browser", "unknown"),
         ip_address=device_info.get("ip", "unknown"),
         country=device_info.get("country"),
-        last_seen=datetime.now(timezone.utc),
-        expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+        last_seen=datetime.now(UTC),
+        expires_at=datetime.now(UTC) + timedelta(days=7),
         revoked=False,
     )
     session.add(new_session)
@@ -119,15 +124,16 @@ async def rotate_refresh_token(
 
 
 async def create_session(
-    session,
+    session: AsyncSession,
     user_id: str,
     refresh_token: str,
-    device_info: dict,
+    device_info: dict[str, Any],
     remember_me: bool = False,
 ) -> str:
     """Create a new session with a refresh token. Returns the hashed token."""
-    from src.db.models.auth import UserSession
     from datetime import timedelta
+
+    from src.db.models.auth import UserSession
 
     token_hash = hash_refresh_token(refresh_token)
     expiry_days = 30 if remember_me else 7
@@ -139,8 +145,8 @@ async def create_session(
         browser=device_info.get("browser", "unknown"),
         ip_address=device_info.get("ip", "unknown"),
         country=device_info.get("country"),
-        last_seen=datetime.now(timezone.utc),
-        expires_at=datetime.now(timezone.utc) + timedelta(days=expiry_days),
+        last_seen=datetime.now(UTC),
+        expires_at=datetime.now(UTC) + timedelta(days=expiry_days),
         revoked=False,
     )
     session.add(user_session)
@@ -148,27 +154,31 @@ async def create_session(
     return token_hash
 
 
-async def revoke_session(session, session_id: str, user_id: str) -> bool:
+async def revoke_session(session: AsyncSession, session_id: str, user_id: str) -> bool:
     """Revoke a specific session. Returns True if found and revoked."""
-    from src.db.models.auth import UserSession
     from sqlalchemy import update
+
+    from src.db.models.auth import UserSession
 
     result = await session.execute(
         update(UserSession)
         .where(UserSession.id == session_id, UserSession.user_id == user_id)
         .values(revoked=True)
     )
-    return result.rowcount > 0
+    count: int = cast(CursorResult[Any], result).rowcount
+    return count > 0
 
 
-async def revoke_all_sessions(session, user_id: str) -> int:
+async def revoke_all_sessions(session: AsyncSession, user_id: str) -> int:
     """Revoke all sessions for a user. Returns count revoked."""
-    from src.db.models.auth import UserSession
     from sqlalchemy import update
+
+    from src.db.models.auth import UserSession
 
     result = await session.execute(
         update(UserSession)
         .where(UserSession.user_id == user_id, UserSession.revoked == False)
         .values(revoked=True)
     )
-    return result.rowcount
+    count: int = cast(CursorResult[Any], result).rowcount
+    return count

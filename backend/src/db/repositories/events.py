@@ -2,12 +2,12 @@
 
 from typing import Any
 
-from sqlalchemy import select as sa_select, func
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func
+from sqlalchemy import select as sa_select
 from sqlalchemy.dialects.postgresql import insert
 
-from src.db.models.event import Event, Competition, Competitor
-from src.db.models.core import Promotion, Venue, WeightClass, Ranking, Broadcast
+from src.db.models.core import Broadcast, Promotion, Ranking, Venue, WeightClass
+from src.db.models.event import Competition, Competitor, Event
 from src.db.repositories.base import BaseRepository
 
 
@@ -142,9 +142,11 @@ class PromotionRepository(BaseRepository[Promotion]):
         return result.scalar_one_or_none()
 
     async def list_filtered(
-        self, *, filters: dict[str, object] = {},
+        self, *, filters: dict[str, object] | None = None,
         limit: int = 50, offset: int = 0,
     ) -> list[Promotion]:
+        if filters is None:
+            filters = {}
         stmt = sa_select(Promotion).limit(limit).offset(offset)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
@@ -168,9 +170,11 @@ class VenueRepository(BaseRepository[Venue]):
         }
 
     async def list_filtered(
-        self, *, filters: dict[str, object] = {},
+        self, *, filters: dict[str, object] | None = None,
         limit: int = 50, offset: int = 0,
     ) -> list[Venue]:
+        if filters is None:
+            filters = {}
         stmt = sa_select(Venue).limit(limit).offset(offset)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())

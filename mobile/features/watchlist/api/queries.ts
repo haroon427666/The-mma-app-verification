@@ -9,7 +9,7 @@ export function useWatchlist() {
     queryKey: ['watchlist'],
     queryFn: async () => {
       const [{ data: events }, { data: fighters }] = await Promise.all([
-        api.get('/v1/watchlist/events'), api.get('/v1/favorites/fighters'),
+        api.get('/v1/me/watchlist/events'), api.get('/v1/me/favorites/fighters'),
       ]);
       return { events: events.data ?? [], fighters: fighters.data ?? [] };
     },
@@ -20,7 +20,7 @@ export function useWatchlist() {
 export function useRemoveFavorite() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (fighterId: string) => api.delete(`/v1/favorites/fighters/${fighterId}`),
+    mutationFn: (fighterId: string) => api.delete(`/v1/me/favorites/fighters/${fighterId}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['watchlist'] }),
   });
 }

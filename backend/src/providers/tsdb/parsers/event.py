@@ -5,21 +5,22 @@ thumbnails, banners, descriptions, local times, spectators.
 """
 
 from datetime import datetime
+from typing import Any
 
 from src.providers.dto import EventDTO
 
 
-def parse_event(data: dict) -> EventDTO:
+def parse_event(data: dict[str, Any]) -> EventDTO:
     external_id = str(data.get("idEvent", ""))
     name = data.get("strEvent", "") or data.get("strEventAlternate", "")
     date = None
     raw_date = data.get("dateEvent") or data.get("strTimestamp")
     if raw_date:
         try:
-            date = datetime.fromisoformat(raw_date.replace("Z", "+00:00"))
+            date = datetime.fromisoformat(raw_date)
         except (ValueError, TypeError):
             try:
-                date = datetime.strptime(raw_date[:10], "%Y-%m-%d")
+                date = datetime.fromisoformat(raw_date[:10])
             except (ValueError, TypeError):
                 pass
 
@@ -43,7 +44,7 @@ def parse_event(data: dict) -> EventDTO:
     )
 
 
-def parse_event_enrichment(data: dict) -> dict:
+def parse_event_enrichment(data: dict[str, Any]) -> dict[str, Any]:
     """Enrichment-only fields for events."""
     return {
         "poster_url": data.get("strPoster"),

@@ -13,36 +13,32 @@ Key architectural decisions:
 """
 
 import logging
-from typing import Any
+from typing import Any, cast
 
-from src.providers.base import BaseDataProvider
 from src.providers.dto import (
     BroadcastDTO,
     CompetitionDTO,
+    EventDTO,
     FighterDTO,
     PromotionDTO,
     RankingDTO,
     StatisticDTO,
     VenueDTO,
     WeightClassDTO,
-    EventDTO,
 )
 from src.providers.espn.client import ESPNClient
-from src.providers.espn.config import ESPNClientConfig, ENDPOINTS
-from src.providers.espn.reference import RefResolver
-from src.providers.espn.parsers.promotion import parse_promotion
-from src.providers.espn.parsers.fighter import parse_fighter, parse_fighter_records
-from src.providers.espn.parsers.weight_class import parse_weight_class
-from src.providers.espn.parsers.venue import parse_venue
-from src.providers.espn.parsers.event import parse_event, extract_competitions_from_event
+from src.providers.espn.config import ENDPOINTS, ESPNClientConfig
+from src.providers.espn.parsers.broadcast import parse_broadcast_list
 from src.providers.espn.parsers.competition import (
     parse_competition,
     parse_competition_status,
-    extract_weight_class_from_comp,
 )
+from src.providers.espn.parsers.event import extract_competitions_from_event, parse_event
+from src.providers.espn.parsers.fighter import parse_fighter, parse_fighter_records
+from src.providers.espn.parsers.promotion import parse_promotion
 from src.providers.espn.parsers.ranking import parse_ranking_category
-from src.providers.espn.parsers.broadcast import parse_broadcast_list
 from src.providers.espn.parsers.statistics import parse_statistics
+from src.providers.espn.reference import RefResolver
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +156,7 @@ class ESPNProvider:
             data = await self._client.get_json(
                 ENDPOINTS["athlete_statistics"].format(athlete_id=fighter_external_id)
             )
-            return parse_statistics(data, fighter_external_id)
+            return cast(list[StatisticDTO], parse_statistics(data, fighter_external_id))
         except Exception as e:
             logger.error(f"Failed to fetch statistics for fighter {fighter_external_id}: {e}")
             return []

@@ -14,11 +14,11 @@ export interface FavoriteFighter { id: string; fullName?: string; lastName?: str
 
 // ── API + Repository ──
 export const watchlistApi = {
-  events: () => api.get('/v1/watchlist/events'),
-  addEvent: (id: string) => api.post(`/v1/watchlist/events/${id}`),
-  removeEvent: (id: string) => api.delete(`/v1/watchlist/events/${id}`),
-  fighters: () => api.get('/v1/favorites/fighters'),
-  removeFighter: (id: string) => api.delete(`/v1/favorites/fighters/${id}`),
+  events: () => api.get('/v1/me/watchlist/events'),
+  addEvent: (id: string) => api.post(`/v1/me/watchlist/events/${id}`),
+  removeEvent: (id: string) => api.delete(`/v1/me/watchlist/events/${id}`),
+  fighters: () => api.get('/v1/me/favorites/fighters'),
+  removeFighter: (id: string) => api.delete(`/v1/me/favorites/fighters/${id}`),
 };
 export const watchlistRepo = {
   events: async () => { const { data } = await watchlistApi.events(); return (data?.data ?? data) as WatchlistEvent[]; },

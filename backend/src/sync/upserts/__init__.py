@@ -14,27 +14,27 @@ Usage:
 """
 
 from src.sync.upserts.base import BaseUpsert
+from src.sync.upserts.broadcast import BroadcastUpsert
+from src.sync.upserts.competition import CompetitionUpsert
+from src.sync.upserts.event import EventUpsert
+from src.sync.upserts.fighter import FighterUpsert
 from src.sync.upserts.id_resolver import IdResolver
 from src.sync.upserts.promotion import PromotionUpsert
-from src.sync.upserts.venue import VenueUpsert
-from src.sync.upserts.weight_class import WeightClassUpsert
-from src.sync.upserts.fighter import FighterUpsert
-from src.sync.upserts.event import EventUpsert
-from src.sync.upserts.competition import CompetitionUpsert
-from src.sync.upserts.broadcast import BroadcastUpsert
 from src.sync.upserts.ranking import RankingUpsert
 from src.sync.upserts.statistics import StatisticsUpsert
+from src.sync.upserts.venue import VenueUpsert
+from src.sync.upserts.weight_class import WeightClassUpsert
 
 __all__ = [
     "BaseUpsert",
+    "BroadcastUpsert",
+    "CompetitionUpsert",
+    "EventUpsert",
+    "FighterUpsert",
     "IdResolver",
     "PromotionUpsert",
-    "VenueUpsert",
-    "WeightClassUpsert",
-    "FighterUpsert",
-    "EventUpsert",
-    "CompetitionUpsert",
-    "BroadcastUpsert",
     "RankingUpsert",
     "StatisticsUpsert",
+    "VenueUpsert",
+    "WeightClassUpsert",
 ]

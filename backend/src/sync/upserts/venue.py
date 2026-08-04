@@ -20,7 +20,7 @@ class VenueUpsert(BaseUpsert):
     }
 
     @property
-    def _model_class(self) -> type:
+    def _model_class(self) -> type[Venue]:
         return Venue
 
     def _extract_external_id(self, dto: VenueDTO) -> str:

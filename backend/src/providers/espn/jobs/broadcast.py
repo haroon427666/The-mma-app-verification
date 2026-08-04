@@ -1,5 +1,7 @@
 """ESPN Broadcast sync job."""
 
+from typing import Any, cast
+
 from src.sync.job import SyncJob
 from src.sync.types import EntityType
 
@@ -11,13 +13,13 @@ class ESPN_BroadcastSyncJob(SyncJob):
     batch_size = 50
     supports_incremental = False
 
-    async def _fetch(self, ctx, state):
+    async def _fetch(self, ctx: Any, state: Any) -> list[Any]:
         provider = ctx.provider
-        return await provider.fetch_broadcasts()
+        return cast(list[Any], await provider.fetch_broadcasts())
 
-    async def _upsert(self, ctx, dtos):
-        from src.sync.upserts.id_resolver import IdResolver
+    async def _upsert(self, ctx: Any, dtos: list[Any]) -> dict[str, int]:
         from src.sync.upserts.broadcast import BroadcastUpsert
+        from src.sync.upserts.id_resolver import IdResolver
 
         resolver = IdResolver(ctx.db)
         upsert = BroadcastUpsert(resolver)

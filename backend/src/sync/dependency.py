@@ -18,7 +18,6 @@ from src.sync.job import SyncJob
 from src.sync.plan import SyncPlan
 from src.sync.types import EntityType
 
-
 # ── Dependency declarations ───────────────────────────────────────────────────
 #
 # Each entry: (entity → depends_on)

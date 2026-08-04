@@ -1,25 +1,35 @@
 """Events API — v1. Real implementation connected to EventService → EventRepository → PostgreSQL."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import Any
 
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+
+from src.api.cache import cache_key, cached_json_response
+from src.db.models.core import Broadcast
+from src.db.models.event import Event
 from src.db.unit_of_work import UnitOfWork
 from src.dependencies import (
     Pagination as PaginationDep,
-    Sorting as SortingDep,
-    get_uow,
-    PaginationParams,
-    SortParams,
 )
-from src.schemas.common import EventFilters, ErrorResponse, PaginatedResponse
+from src.dependencies import (
+    Sorting as SortingDep,
+)
+from src.dependencies import (
+    get_uow,
+)
+from src.schemas.common import ErrorResponse, PaginatedResponse
 from src.schemas.event import (
-    EventListItem, EventDetailResponse, BroadcastResponse, FightListItem,
+    BroadcastResponse,
+    EventDetailResponse,
+    EventListItem,
+    FightListItem,
 )
 from src.services.fighter_service import EventService
 
 router = APIRouter(prefix="/v1/events", tags=["events"])
 
 
-def _event_to_list_item(event) -> EventListItem:
+def _event_to_list_item(event: Event) -> EventListItem:
     """Map ORM Event → EventListItem."""
     return EventListItem(
         id=event.id,
@@ -37,7 +47,11 @@ def _event_to_list_item(event) -> EventListItem:
     )
 
 
-def _event_to_detail(event, fights_data=None, broadcasts=None) -> EventDetailResponse:
+def _event_to_detail(
+    event: Event,
+    fights_data: list[dict[str, Any]] | None = None,
+    broadcasts: list[Broadcast] | None = None,
+) -> EventDetailResponse:
     """Map ORM Event + relations → EventDetailResponse."""
     fight_items = []
     if fights_data:
@@ -109,6 +123,7 @@ def _event_to_detail(event, fights_data=None, broadcasts=None) -> EventDetailRes
 
 @router.get("", response_model=PaginatedResponse[EventListItem])
 async def list_events(
+    request: Request,
     pagination: PaginationDep,
     sort: SortingDep,
     status: str | None = Query(None),
@@ -117,41 +132,72 @@ async def list_events(
     country: str | None = Query(None),
     search: str | None = Query(None),
     uow: UnitOfWork = Depends(get_uow),
-):
+) -> PaginatedResponse[EventListItem]:
     """List events with pagination, filtering, search."""
     svc = EventService(uow)
-    items, total = await svc.list_events(
-        limit=pagination.limit,
-        offset=(pagination.page - 1) * pagination.limit,
-        status=status,
-        year=year,
-        search=search,
-        sort_by=sort.sort_by,
-        sort_dir=sort.sort_dir,
-    )
-    return PaginatedResponse(
-        items=[_event_to_list_item(e) for e in items],
-        total=total,
-        page=pagination.page,
-        limit=pagination.limit,
-        pages=(total + pagination.limit - 1) // pagination.limit if total > 0 else 0,
+
+    async def loader() -> dict:
+        items, total = await svc.list_events(
+            limit=pagination.limit,
+            offset=(pagination.page - 1) * pagination.limit,
+            status=status,
+            year=year,
+            search=search,
+            sort_by=sort.sort_by,
+            sort_dir=sort.sort_dir,
+        )
+        return PaginatedResponse(
+            items=[_event_to_list_item(e) for e in items],
+            total=total,
+            page=pagination.page,
+            limit=pagination.limit,
+            pages=(total + pagination.limit - 1) // pagination.limit if total > 0 else 0,
+        ).model_dump(mode="json")
+
+    return await cached_json_response(
+        request,
+        cache_key=cache_key(
+            "events:list",
+            pagination.limit, pagination.page, sort.sort_by, sort.sort_dir,
+            status, promotion_slug, year, country, search,
+        ),
+        ttl=300,
+        loader=loader,
     )
 
 
 @router.get("/upcoming", response_model=list[EventListItem])
-async def upcoming_events(limit: int = Query(20, le=50), uow: UnitOfWork = Depends(get_uow)):
+async def upcoming_events(request: Request, limit: int = Query(20, le=50), uow: UnitOfWork = Depends(get_uow)) -> list[EventListItem]:
     """Upcoming scheduled events."""
     svc = EventService(uow)
-    events = await svc.get_upcoming(limit)
-    return [_event_to_list_item(e) for e in events]
+
+    async def loader() -> list[dict]:
+        events = await svc.get_upcoming(limit)
+        return [_event_to_list_item(e).model_dump(mode="json") for e in events]
+
+    return await cached_json_response(
+        request,
+        cache_key=cache_key("events:upcoming", limit),
+        ttl=300,
+        loader=loader,
+    )
 
 
 @router.get("/live", response_model=list[EventListItem])
-async def live_events(uow: UnitOfWork = Depends(get_uow)):
+async def live_events(request: Request, uow: UnitOfWork = Depends(get_uow)) -> list[EventListItem]:
     """Currently live or in-progress events."""
     svc = EventService(uow)
-    events = await svc.get_live()
-    return [_event_to_list_item(e) for e in events]
+
+    async def loader() -> list[dict]:
+        events = await svc.get_live()
+        return [_event_to_list_item(e).model_dump(mode="json") for e in events]
+
+    return await cached_json_response(
+        request,
+        cache_key=cache_key("events:live"),
+        ttl=60,
+        loader=loader,
+    )
 
 
 @router.get("/past", response_model=PaginatedResponse[EventListItem])
@@ -159,7 +205,7 @@ async def past_events(
     pagination: PaginationDep,
     year: int | None = Query(None),
     uow: UnitOfWork = Depends(get_uow),
-):
+) -> PaginatedResponse[EventListItem]:
     """Completed events."""
     svc = EventService(uow)
     items, total = await svc.get_past(
@@ -177,15 +223,23 @@ async def past_events(
 
 @router.get("/{event_id}", response_model=EventDetailResponse,
             responses={404: {"model": ErrorResponse}})
-async def get_event(event_id: str, uow: UnitOfWork = Depends(get_uow)):
+async def get_event(request: Request, event_id: str, uow: UnitOfWork = Depends(get_uow)):
     """Event detail — venue, fights, broadcasts, poster."""
     svc = EventService(uow)
-    detail = await svc.get_event_detail(event_id)
-    if detail is None:
-        raise HTTPException(404, detail=ErrorResponse.not_found("event", event_id).error)
 
-    return _event_to_detail(
-        event=detail["event"],
-        fights_data=detail.get("fights"),
-        broadcasts=detail.get("broadcasts"),
+    async def loader() -> dict:
+        detail = await svc.get_event_detail(event_id)
+        if detail is None:
+            raise HTTPException(404, detail=ErrorResponse.not_found("event", event_id).error)
+        return _event_to_detail(
+            event=detail["event"],
+            fights_data=detail.get("fights"),
+            broadcasts=detail.get("broadcasts"),
+        ).model_dump(mode="json")
+
+    return await cached_json_response(
+        request,
+        cache_key=cache_key("events:detail", event_id),
+        ttl=300,
+        loader=loader,
     )

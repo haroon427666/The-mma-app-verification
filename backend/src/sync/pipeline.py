@@ -24,13 +24,13 @@ from typing import Any
 from src.sync.clock import Clock
 from src.sync.context import SyncContext
 from src.sync.events import SyncEventBus, SyncEventCtx
-from src.sync.failure import CircuitBreakerOpenError, FailureCategory
-from src.sync.job import JobResult, JobStatus, SyncJob
+from src.sync.failure import CircuitBreakerOpenError
+from src.sync.job import JobResult, SyncJob
 from src.sync.reliability import ReliabilityConfig
 from src.sync.retry import DEFAULT_RETRY, RetryPolicy
 from src.sync.state import SyncState
-from src.sync.strategy import SyncDecision, SyncStrategy
-from src.sync.types import SyncMode
+from src.sync.strategy import SyncStrategy
+from src.sync.types import JobStatus, SyncMode
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +94,7 @@ class SyncPipeline:
         )
         job_logger.info(
             f"{job.entity_type.value}: mode={decision.mode.value} "
-            f"reason="{decision.reason}" "
+            f"reason={decision.reason} "
             f"page={decision.start_page} offset={decision.start_offset}"
         )
 
@@ -231,13 +231,10 @@ class SyncPipeline:
         batch_size = self._job.batch_size
         total = len(dtos)
         totals = {"inserted": 0, "updated": 0, "skipped": 0, "errors": 0}
-        batch_num = 0
-
-        for start in range(0, total, batch_size):
+        for batch_num, start in enumerate(range(0, total, batch_size), start=1):
             # Check cancellation between batches
             ctx.token.check()
 
-            batch_num += 1
             batch = dtos[start : start + batch_size]
 
             result = await self._job._upsert(ctx, batch)

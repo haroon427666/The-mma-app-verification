@@ -78,7 +78,7 @@ def is_enabled(flag_name: str) -> bool:
     if env_val is not None:
         return env_val.lower() in ("1", "true", "yes", "on")
 
-    return flag["default"]
+    return bool(flag["default"])
 
 
 def set_flag(flag_name: str, value: bool) -> None:
@@ -87,7 +87,7 @@ def set_flag(flag_name: str, value: bool) -> None:
         FLAGS[flag_name]["default"] = value
 
 
-def list_flags() -> dict[str, dict]:
+def list_flags() -> dict[str, dict[str, bool | str]]:
     return {
         name: {"enabled": is_enabled(name), "description": f["description"]}
         for name, f in FLAGS.items()

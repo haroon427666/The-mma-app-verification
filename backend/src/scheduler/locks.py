@@ -8,8 +8,8 @@ import asyncio
 import logging
 import time
 import uuid
-from contextlib import asynccontextmanager
-from typing import Optional
+from types import TracebackType
+from typing import Any, Self
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +26,11 @@ class RedisLock:
             await sync_fighters()
     """
 
-    def __init__(self, redis, name: str, ttl_seconds: int = 300):
+    def __init__(self, redis: Any, name: str, ttl_seconds: int = 300):
         self._redis = redis
         self._name = f"mma:lock:{name}"
         self._ttl = ttl_seconds
-        self._token: Optional[str] = None
+        self._token: str | None = None
 
     async def acquire(self, timeout: float = 0) -> bool:
         """Try to acquire the lock. Returns True on success.
@@ -38,6 +38,11 @@ class RedisLock:
         Args:
             timeout: Seconds to wait. 0 = try once, don't wait.
         """
+        if self._redis is None:
+            # No Redis backend — cannot coordinate; skip rather than crash.
+            logger.debug(f"Lock '{self._name}' skipped — Redis not configured")
+            return False
+
         self._token = str(uuid.uuid4())
         deadline = time.monotonic() + timeout
 
@@ -68,7 +73,7 @@ class RedisLock:
         end
         """
         result = await self._redis.eval(script, 1, self._name, self._token)
-        released = result == 1
+        released: bool = result == 1
         if released:
             logger.debug(f"Lock released: {self._name}")
         self._token = None
@@ -76,23 +81,33 @@ class RedisLock:
 
     async def extend(self, extra_seconds: int = 60) -> bool:
         """Extend the lock TTL. Useful for long-running jobs."""
-        if self._token is None:
+        if self._redis is None or self._token is None:
             return False
         current = await self._redis.get(self._name)
-        if current and current.decode() == self._token:
-            await self._redis.expire(self._name, self._ttl + extra_seconds)
-            return True
+        if current is not None:
+            token = current.decode() if isinstance(current, bytes) else current
+            if token == self._token:
+                await self._redis.expire(self._name, self._ttl + extra_seconds)
+                return True
         return False
 
     async def is_locked(self) -> bool:
-        return await self._redis.exists(self._name) > 0
+        if self._redis is None:
+            return False
+        exists: int = await self._redis.exists(self._name)
+        return exists > 0
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> Self:
         if not await self.acquire():
             raise LockAcquisitionError(f"Could not acquire lock: {self._name}")
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> bool:
         await self.release()
         return False
 
@@ -104,7 +119,7 @@ class LockAcquisitionError(Exception):
 class LockManager:
     """Manages named locks for all sync jobs."""
 
-    def __init__(self, redis):
+    def __init__(self, redis: Any):
         self._redis = redis
         self._locks: dict[str, RedisLock] = {}
 

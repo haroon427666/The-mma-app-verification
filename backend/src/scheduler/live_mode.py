@@ -12,8 +12,8 @@ or if today has a SCHEDULED event that should be starting soon.
 """
 
 import logging
-from datetime import datetime, timezone, timedelta
-from typing import Optional
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -21,18 +21,18 @@ logger = logging.getLogger(__name__)
 class LiveModeDetector:
     """Detects when a UFC event is live and activates high-frequency polling."""
 
-    def __init__(self, db_session_factory):
+    def __init__(self, db_session_factory: Any) -> None:
         self._db_factory = db_session_factory
         self._in_live_mode = False
-        self._active_event_id: Optional[str] = None
-        self._live_started_at: Optional[datetime] = None
+        self._active_event_id: str | None = None
+        self._live_started_at: datetime | None = None
 
     @property
     def is_live(self) -> bool:
         return self._in_live_mode
 
     @property
-    def active_event_id(self) -> Optional[str]:
+    def active_event_id(self) -> str | None:
         return self._active_event_id
 
     async def check(self) -> bool:
@@ -42,7 +42,7 @@ class LiveModeDetector:
         """
         try:
             async with self._db_factory() as session:
-                from sqlalchemy import select, text
+                from sqlalchemy import text
                 result = await session.execute(
                     text(
                         "SELECT id, name FROM events "
@@ -84,11 +84,11 @@ class LiveModeDetector:
     def _enter_live_mode(self, event_id: str, event_name: str) -> None:
         self._in_live_mode = True
         self._active_event_id = event_id
-        self._live_started_at = datetime.now(timezone.utc)
+        self._live_started_at = datetime.now(UTC)
         logger.info(f"⚡ LIVE MODE ON — {event_name} ({event_id}) — 30s polling")
 
     async def _exit_live_mode(self) -> None:
-        duration = (datetime.now(timezone.utc) - self._live_started_at).total_seconds() if self._live_started_at else 0
+        duration = (datetime.now(UTC) - self._live_started_at).total_seconds() if self._live_started_at else 0
         logger.info(f"🔽 LIVE MODE OFF — was active for {duration:.0f}s")
         self._in_live_mode = False
         self._active_event_id = None

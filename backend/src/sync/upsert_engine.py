@@ -13,7 +13,10 @@ Features:
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from src.db.unit_of_work import UnitOfWork
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +128,7 @@ class UpsertEngine:
         )
         return result
 
-    def _get_repo(self, entity_type: str):
+    def _get_repo(self, entity_type: str) -> Any:
         repo_map = {
             "fighter": self._uow.fighters,
             "event": self._uow.events,

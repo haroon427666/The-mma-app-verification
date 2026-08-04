@@ -16,9 +16,9 @@ export function AuthNavigator() {
     >
       <Stack.Screen name="login" getComponent={() => require('@/components/auth/LoginScreen').LoginScreen} />
       <Stack.Screen name="register" getComponent={() => require('@/components/auth/RegisterScreen').RegisterScreen} />
-      <Stack.Screen name="forgotPassword" getComponent={() => require('@/components/auth/ForgotPasswordScreen').ForgotPasswordScreen} />
-      <Stack.Screen name="resetPassword" getComponent={() => require('@/components/auth/ResetPasswordScreen').ResetPasswordScreen} />
-      <Stack.Screen name="verifyEmail" getComponent={() => require('@/components/auth/VerifyEmailScreen').VerifyEmailScreen} />
+      <Stack.Screen name="forgotPassword" getComponent={() => require('@/components/auth/PasswordScreens').ForgotPasswordScreen} />
+      <Stack.Screen name="resetPassword" getComponent={() => require('@/components/auth/PasswordScreens').ResetPasswordScreen} />
+      <Stack.Screen name="verifyEmail" getComponent={() => require('@/components/auth/PasswordScreens').VerifyEmailScreen} />
     </Stack.Navigator>
   );
 }

@@ -15,8 +15,6 @@ Key design decisions:
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
-
 
 # ── Promotion ──────────────────────────────────────────────────────────────────
 
@@ -27,9 +25,9 @@ class PromotionDTO:
     external_id: str
     name: str
     slug: str
-    country: Optional[str] = None
-    logo_url: Optional[str] = None
-    season_year: Optional[int] = None
+    country: str | None = None
+    logo_url: str | None = None
+    season_year: int | None = None
 
 
 # ── Fighter ────────────────────────────────────────────────────────────────────
@@ -41,20 +39,22 @@ class FighterDTO:
     external_id: str
     first_name: str
     last_name: str
-    nickname: Optional[str] = None
-    short_name: Optional[str] = None
+    nickname: str | None = None
+    short_name: str | None = None
     record_wins: int = 0
     record_losses: int = 0
     record_draws: int = 0
     record_no_contests: int = 0
-    height_cm: Optional[float] = None
-    weight_kg: Optional[float] = None
-    reach_cm: Optional[float] = None
-    stance: Optional[str] = None
-    nationality: Optional[str] = None
-    birth_date: Optional[datetime] = None
-    headshot_url: Optional[str] = None
-    weight_class_external_id: Optional[str] = None  # resolved later by sync engine
+    height_cm: float | None = None
+    weight_kg: float | None = None
+    reach_cm: float | None = None
+    stance: str | None = None
+    nationality: str | None = None
+    birth_location: str | None = None
+    birth_date: datetime | None = None
+    headshot_url: str | None = None
+    is_active: bool = True
+    weight_class_external_id: str | None = None  # resolved later by sync engine
 
 
 # ── Weight Class ───────────────────────────────────────────────────────────────
@@ -66,9 +66,9 @@ class WeightClassDTO:
     external_id: str
     name: str
     abbreviation: str
-    min_weight_kg: Optional[float] = None
-    max_weight_kg: Optional[float] = None
-    gender: Optional[str] = None
+    min_weight_kg: float | None = None
+    max_weight_kg: float | None = None
+    gender: str | None = None
 
 
 # ── Venue ──────────────────────────────────────────────────────────────────────
@@ -79,12 +79,12 @@ class VenueDTO:
     provider: str
     external_id: str
     name: str
-    city: Optional[str] = None
-    state: Optional[str] = None
-    country: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    capacity: Optional[int] = None
+    city: str | None = None
+    state: str | None = None
+    country: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    capacity: int | None = None
 
 
 # ── Event ──────────────────────────────────────────────────────────────────────
@@ -95,12 +95,13 @@ class EventDTO:
     provider: str
     external_id: str
     name: str
-    short_name: Optional[str] = None
-    date: Optional[datetime] = None
+    short_name: str | None = None
+    date: datetime | None = None
     status: str = "SCHEDULED"  # SCHEDULED, FINAL, CANCELLED
-    slug: Optional[str] = None
-    promotion_external_id: Optional[str] = None
-    venue_external_id: Optional[str] = None
+    season: str | None = None
+    slug: str | None = None
+    promotion_external_id: str | None = None
+    venue_external_id: str | None = None
 
 
 # ── Broadcast ──────────────────────────────────────────────────────────────────
@@ -111,8 +112,8 @@ class BroadcastDTO:
     provider: str
     event_external_id: str
     network: str
-    region: Optional[str] = None
-    language: Optional[str] = None
+    region: str | None = None
+    language: str | None = None
     broadcast_type: str = "TV"  # TV, STREAMING, PPV
 
 
@@ -125,15 +126,15 @@ class CompetitionDTO:
     external_id: str
     event_external_id: str
     order_num: int = 0
-    card_segment: Optional[str] = None  # "main-card", "prelims", "early-prelims"
+    card_segment: str | None = None  # "main-card", "prelims", "early-prelims"
     status: str = "SCHEDULED"
     is_main_event: bool = False
     is_title_fight: bool = False
-    weight_class_external_id: Optional[str] = None
-    result_method: Optional[str] = None
-    result_detail: Optional[str] = None
-    result_round: Optional[int] = None
-    result_time: Optional[str] = None
+    weight_class_external_id: str | None = None
+    result_method: str | None = None
+    result_detail: str | None = None
+    result_round: int | None = None
+    result_time: str | None = None
     competitors: list["CompetitorDTO"] = field(default_factory=list)
 
 
@@ -144,7 +145,7 @@ class CompetitionDTO:
 class CompetitorDTO:
     fighter_external_id: str
     corner: str  # "RED" or "BLUE"
-    outcome: Optional[str] = None  # "WIN", "LOSS", "DRAW", "NO_CONTEST", None (SCHEDULED)
+    outcome: str | None = None  # "WIN", "LOSS", "DRAW", "NO_CONTEST", None (SCHEDULED)
 
 
 # ── Ranking ────────────────────────────────────────────────────────────────────
@@ -157,9 +158,9 @@ class RankingDTO:
     promotion_external_id: str
     category: str  # "pound-for-pound", "heavyweight", etc.
     rank: int
-    trend: Optional[str] = None  # "UP", "DOWN", "STEADY"
+    trend: str | None = None  # "UP", "DOWN", "STEADY"
     is_champion: bool = False
-    weight_class_external_id: Optional[str] = None  # NULL for P4P
+    weight_class_external_id: str | None = None  # NULL for P4P
 
 
 # ── Statistic ──────────────────────────────────────────────────────────────────
@@ -172,4 +173,4 @@ class StatisticDTO:
     category: str  # "GENERAL", "STRIKING", "GRAPPLING"
     label: str
     value: float
-    display_value: Optional[str] = None
+    display_value: str | None = None

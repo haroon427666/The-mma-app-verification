@@ -85,7 +85,7 @@ export function usePredictions(id: string) {
 export function useIsFavorite(id: string) {
   return useQuery({
     queryKey: favoriteKeys.check(id),
-    queryFn: async () => { try { const { data } = await api.get(`/v1/favorites/fighters/${id}/status`); return data?.favorited ?? false; } catch { return false; } },
+    queryFn: async () => { try { const { data } = await api.get(`/v1/me/favorites/fighters/${id}/status`); return data?.favorited ?? false; } catch { return false; } },
     staleTime: 60 * 1000,
   });
 }
@@ -103,4 +103,4 @@ export function useRankHistory(id: string) {
 import api from '@/services/api';
 
 // Re-export store actions
-export { fightersActions, compareActions, useCompareStore, useFavoritesStore };
+export { fightersActions, compareActions, useCompareStore, useFavoritesStore } from '../store';

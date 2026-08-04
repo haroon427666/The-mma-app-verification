@@ -10,14 +10,14 @@
       "order": 2,
       "winner": false,
       "athlete": {
-        "": "http://sports.core.api.espn.com/v2/sports/mma/athletes/4426312?lang=en"
+        "$ref": "http://sports.core.api.espn.com/v2/sports/mma/athletes/4426312?lang=en"
       }
     },
     {
       "order": 1,
       "winner": false,
       "athlete": {
-        "": "http://sports.core.api.espn.com/v2/sports/mma/athletes/4685870?lang=en"
+        "$ref": "http://sports.core.api.espn.com/v2/sports/mma/athletes/4685870?lang=en"
       }
     }
   ],

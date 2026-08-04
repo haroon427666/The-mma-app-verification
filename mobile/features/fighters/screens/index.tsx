@@ -5,21 +5,12 @@ import { View, Text, FlatList, TouchableOpacity, ScrollView, StyleSheet, Refresh
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { typography, spacing, radius } from '@/theme';
 import { useTheme } from '@/hooks/useTheme';
-import { useFighter, useStats, useHistory, useSimilarFighters, useStyleAnalysis, useRankHistory, fightersActions, useFightersStore } from '../hooks';
+import { useFighter, useStats, useHistory, useSimilarFighters, useStyleAnalysis, useRankHistory, useFighters, fightersActions } from '../hooks';
 import { useFavoriteFighter, useUnfavoriteFighter } from '../mutations';
-import { useIsFavorite } from '../hooks';
-import { FighterHeader } from '../components/FighterHeader';
-import { FighterRecord } from '../components/FighterRecord';
-import { FighterStats as FighterStatsComp } from '../components/FighterStats';
-import { FightHistoryRow } from '../components/FightHistoryRow';
-import { SimilarityCard } from '../components/SimilarityCard';
-import { FighterStyleBadge } from '../components/FighterStyleBadge';
-import { RankMovement } from '../components/RankMovement';
-import { FavoriteButton } from '../components/FavoriteButton';
-import { FighterCardSkeleton, ProfileSkeleton } from '../components/Skeletons';
-import { EmptyState, ErrorState } from '../components/ErrorStates';
-import { RadarChart } from '../charts/RadarChart';
-import { LineChart } from '../charts/LineChart';
+import { useIsFavorite, useFightersStore } from '../hooks';
+import { FighterHeader, FighterRecord, FighterStats as FighterStatsComp, FightHistoryRow, SimilarityCard, FighterStyleBadge, RankMovement, FavoriteButton } from '../components';
+import { FighterCardSkeleton, ProfileSkeleton, EmptyState, ErrorState } from '../components';
+import { RadarChart, LineChart } from '../charts';
 import { WEIGHT_CLASSES } from '../constants';
 
 // ── FightersScreen ──
@@ -105,7 +96,7 @@ export function FighterProfileScreen({ route, navigation }: any) {
         {/* Tabs */}
         <View style={st.tabs}>
           {(['overview', 'stats', 'history', 'similar', 'predictions'] as const).map((t) => (
-            <TouchableOpacity key={t} onPress={() => fightersActions.setTab(t as any)} style={[st.tab, fightersActions.setTab && tab === t && { borderBottomColor: palette.primary[400], borderBottomWidth: 2 }]}>
+            <TouchableOpacity key={t} onPress={() => fightersActions.setTab(t as any)} style={[st.tab, tab === t && { borderBottomColor: palette.primary[400], borderBottomWidth: 2 }]}>
               <Text style={[typography.bodySmall, { color: tab === t ? palette.primary[400] : palette.text.tertiary, fontWeight: '600', textTransform: 'capitalize' }]}>{t}</Text>
             </TouchableOpacity>
           ))}

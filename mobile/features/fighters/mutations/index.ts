@@ -8,7 +8,7 @@ import { fighterAnalytics } from '../services/cache';
 export function useFavoriteFighter() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (fighterId: string) => { await api.post(`/v1/favorites/fighters/${fighterId}`); },
+    mutationFn: async (fighterId: string) => { await api.post(`/v1/me/favorites/fighters/${fighterId}`); },
     onMutate: async (fighterId) => {
       await qc.cancelQueries({ queryKey: favoriteKeys.all });
       qc.setQueryData(favoriteKeys.check(fighterId), true);
@@ -22,7 +22,7 @@ export function useFavoriteFighter() {
 export function useUnfavoriteFighter() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (fighterId: string) => { await api.delete(`/v1/favorites/fighters/${fighterId}`); },
+    mutationFn: async (fighterId: string) => { await api.delete(`/v1/me/favorites/fighters/${fighterId}`); },
     onMutate: async (fighterId) => {
       await qc.cancelQueries({ queryKey: favoriteKeys.all });
       qc.setQueryData(favoriteKeys.check(fighterId), false);

@@ -6,6 +6,8 @@ with enrichment fields (media, bios, social links) that ESPN doesn't provide.
 They depend on the ESPN sync having completed first.
 """
 
+from typing import Any, cast
+
 from src.sync.job import SyncJob
 from src.sync.types import EntityType
 
@@ -19,14 +21,14 @@ class TSDB_PromotionEnrichmentJob(SyncJob):
     batch_size = 25
     supports_incremental = False
 
-    async def _fetch(self, ctx, state):
+    async def _fetch(self, ctx: Any, state: Any) -> list[Any]:
         provider = ctx.tsdb_provider
-        return await provider.fetch_promotions()
+        return cast(list[Any], await provider.fetch_promotions())
 
-    async def _upsert(self, ctx, dtos):
+    async def _upsert(self, ctx: Any, dtos: list[Any]) -> dict[str, int]:
         """MERGE only enrichment fields. Never overwrite ESPN fields."""
         from src.sync.upserts.id_resolver import IdResolver
-        resolver = IdResolver(ctx.db)
+        resolver: Any = IdResolver(ctx.db)
         enriched = 0
         for dto in dtos:
             try:
@@ -44,7 +46,7 @@ class TSDB_PromotionEnrichmentJob(SyncJob):
                 continue
         return {"inserted": 0, "updated": enriched, "skipped": 0, "errors": 0}
 
-    async def _merge_enrichment(self, db, internal_id: str, enrichment: dict):
+    async def _merge_enrichment(self, db: Any, internal_id: str, enrichment: dict[str, Any]) -> None:
         """UPDATE only TSDB-owned fields on the promotion record."""
         # Uses the merge logic from merge.py
         from src.providers.merge import merge_record
@@ -60,11 +62,11 @@ class TSDB_EventEnrichmentJob(SyncJob):
     batch_size = 25
     supports_incremental = False
 
-    async def _fetch(self, ctx, state):
+    async def _fetch(self, ctx: Any, state: Any) -> list[Any]:
         provider = ctx.tsdb_provider
-        return await provider.fetch_events()
+        return cast(list[Any], await provider.fetch_events())
 
-    async def _upsert(self, ctx, dtos):
+    async def _upsert(self, ctx: Any, dtos: list[Any]) -> dict[str, int]:
         from src.providers.merge import merge_record
         enriched = 0
         for dto in dtos:
@@ -84,11 +86,11 @@ class TSDB_FighterEnrichmentJob(SyncJob):
     batch_size = 100
     supports_incremental = False
 
-    async def _fetch(self, ctx, state):
+    async def _fetch(self, ctx: Any, state: Any) -> list[Any]:
         provider = ctx.tsdb_provider
-        return await provider.fetch_fighters()
+        return cast(list[Any], await provider.fetch_fighters())
 
-    async def _upsert(self, ctx, dtos):
+    async def _upsert(self, ctx: Any, dtos: list[Any]) -> dict[str, int]:
         from src.providers.merge import merge_record
         enriched = 0
         for dto in dtos:

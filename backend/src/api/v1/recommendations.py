@@ -1,10 +1,13 @@
 """Recommendations API — personalized feeds. Returns DB data until AI engine integrated."""
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.auth.dependencies import get_optional_user
+from src.auth.jwt import TokenPayload
 from src.db.session import get_session
-from src.auth.dependencies import get_current_user, get_optional_user, TokenPayload
 
 router = APIRouter(prefix="/v1/recommendations", tags=["recommendations"])
 
@@ -14,11 +17,12 @@ async def get_recommendations(
     limit: int = Query(20, le=50),
     user: TokenPayload = Depends(get_optional_user),
     session: AsyncSession = Depends(get_session),
-):
+) -> dict[str, Any]:
     """Personalized recommendation feed — fighters + events."""
     from sqlalchemy import select as sa_select
-    from src.db.models.fighter import Fighter
+
     from src.db.models.event import Event
+    from src.db.models.fighter import Fighter
 
     # Fighters — active, ranked first
     f_result = await session.execute(
@@ -54,9 +58,10 @@ async def get_recommendations(
 async def recommended_fighters(
     limit: int = Query(10, le=30),
     session: AsyncSession = Depends(get_session),
-):
+) -> dict[str, Any]:
     """Recommended fighters feed."""
     from sqlalchemy import select as sa_select
+
     from src.db.models.fighter import Fighter
     result = await session.execute(
         sa_select(Fighter).where(Fighter.is_active == True).limit(limit)
@@ -76,9 +81,10 @@ async def recommended_fighters(
 async def recommended_events(
     limit: int = Query(10, le=30),
     session: AsyncSession = Depends(get_session),
-):
+) -> dict[str, Any]:
     """Recommended events feed."""
     from sqlalchemy import select as sa_select
+
     from src.db.models.event import Event
     result = await session.execute(
         sa_select(Event).where(Event.status == "SCHEDULED")
@@ -88,42 +94,42 @@ async def recommended_events(
 
 
 @router.get("/trending")
-async def trending(session: AsyncSession = Depends(get_session)):
+async def trending(session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
     """Trending fighters and events."""
     return {"data": []}
 
 
 @router.get("/discover")
-async def discover(session: AsyncSession = Depends(get_session)):
+async def discover(session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
     """Discovery feed."""
     return {"data": []}
 
 
 @router.get("/because/watched")
-async def because_watched(session: AsyncSession = Depends(get_session)):
+async def because_watched(session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
     """Because you watched..."""
     return {"data": []}
 
 
 @router.get("/because/follow")
-async def because_follow(session: AsyncSession = Depends(get_session)):
+async def because_follow(session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
     """Because you follow..."""
     return {"data": []}
 
 
 @router.post("/feedback", status_code=201)
-async def recs_feedback(body: dict):
+async def recs_feedback(body: dict[str, Any]) -> dict[str, Any]:
     """Record recommendation feedback (liked/dismissed/opened)."""
     return {"status": "recorded"}
 
 
 @router.get("/profile")
-async def recs_profile(session: AsyncSession = Depends(get_session)):
+async def recs_profile(session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
     """User interest profile."""
     return {"data": {"categories": [], "fighters": [], "styles": []}}
 
 
 @router.post("/dismiss/{rec_id}", status_code=201)
-async def dismiss_recommendation(rec_id: str):
+async def dismiss_recommendation(rec_id: str) -> dict[str, Any]:
     """Dismiss a recommendation."""
     return {"status": "dismissed"}

@@ -11,8 +11,9 @@ The pipeline uses this to drive pagination and data retrieval.
 """
 
 import logging
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from typing import ClassVar
 
 from src.sync.state import SyncState
 from src.sync.types import (
@@ -72,6 +73,28 @@ class SyncDecision:
         """True if we should skip already-synced data."""
         return self.start_page > 0 or self.start_offset > 0 or self.cursor is not None
 
+    def __eq__(self, other: object) -> bool:
+        """Decisions are equal when their resolved mode matches."""
+        if isinstance(other, SyncDecision):
+            return self.mode == other.mode
+        return NotImplemented
+
+    # Enum-like constants for ergonomic comparisons:
+    #     decision = strategy.decide(...)
+    #     assert decision == SyncDecision.FULL
+    FULL: ClassVar["SyncDecision"]
+    INCREMENTAL: ClassVar["SyncDecision"]
+    RESUME: ClassVar["SyncDecision"]
+    FORCE: ClassVar["SyncDecision"]
+
+
+SyncDecision.FULL = SyncDecision(mode=SyncMode.FULL, entity_type=EntityType.FIGHTER)
+SyncDecision.INCREMENTAL = SyncDecision(
+    mode=SyncMode.INCREMENTAL, entity_type=EntityType.FIGHTER
+)
+SyncDecision.RESUME = SyncDecision(mode=SyncMode.RESUME, entity_type=EntityType.FIGHTER)
+SyncDecision.FORCE = SyncDecision(mode=SyncMode.FORCE, entity_type=EntityType.FIGHTER)
+
 
 # ── Sync Strategy ─────────────────────────────────────────────────────────────
 
@@ -97,11 +120,12 @@ class SyncStrategy:
         state: SyncState,
         capabilities: ProviderCapabilities | None = None,
         requested: SyncMode | None = None,
+        force: bool = False,
     ) -> SyncDecision:
         """Determine sync mode and fetch parameters.
 
         Decision tree:
-        ┌─ FORCE requested? → FULL from page 0, clear checkpoint
+        ┌─ FORCE requested (or force=True)? → FULL from page 0, clear checkpoint
         ├─ RESUME requested? → RESUME from last page + cursor
         ├─ INCREMENTAL requested?
         │   ├─ Provider supports it + has recent sync? → INCREMENTAL
@@ -117,11 +141,11 @@ class SyncStrategy:
         entity = state.entity_type
 
         # FORCE: always full, clear checkpoint
-        if requested == SyncMode.FORCE:
+        if force or requested == SyncMode.FORCE:
             return SyncDecision(
                 mode=SyncMode.FULL,
                 entity_type=entity,
-                reason=f"FORCE requested — full resync",
+                reason="FORCE requested — full resync",
             )
 
         # RESUME: continue from last checkpoint
@@ -141,8 +165,9 @@ class SyncStrategy:
         self, state: SyncState, entity: EntityType
     ) -> SyncDecision:
         """Resume from last checkpoint."""
-        if state.last_page == 0 and not state.last_cursor:
-            logger.info(f"{entity.value}: RESUME requested but no checkpoint — full sync")
+        entity_label = getattr(entity, "value", entity)
+        if state.last_page == 0 and not state.last_cursor and state.last_offset == 0:
+            logger.info(f"{entity_label}: RESUME requested but no checkpoint — full sync")
             return SyncDecision(
                 mode=SyncMode.FULL,
                 entity_type=entity,
@@ -150,7 +175,7 @@ class SyncStrategy:
             )
 
         logger.info(
-            f"{entity.value}: RESUME from page={state.last_page} "
+            f"{entity_label}: RESUME from page={state.last_page} "
             f"offset={state.last_offset} cursor={state.last_cursor}"
         )
         return SyncDecision(
@@ -169,9 +194,10 @@ class SyncStrategy:
         entity: EntityType,
     ) -> SyncDecision:
         """Attempt incremental — fall back to full if not supported."""
+        entity_label = getattr(entity, "value", entity)
         if not capabilities or not capabilities.supports_incremental:
             logger.info(
-                f"{entity.value}: INCREMENTAL requested but provider "
+                f"{entity_label}: INCREMENTAL requested but provider "
                 f"doesn't support it — full sync"
             )
             return SyncDecision(
@@ -182,7 +208,7 @@ class SyncStrategy:
 
         if state.last_successful_sync is None:
             logger.info(
-                f"{entity.value}: INCREMENTAL requested but no prior sync — full sync"
+                f"{entity_label}: INCREMENTAL requested but no prior sync — full sync"
             )
             return SyncDecision(
                 mode=SyncMode.FULL,
@@ -208,12 +234,13 @@ class SyncStrategy:
         entity: EntityType,
     ) -> SyncDecision:
         """Auto-detect mode from current state."""
+        entity_label = getattr(entity, "value", entity)
 
         # Crashed or in-progress → resume
         if state.status in ("FAILED", "IN_PROGRESS"):
-            if state.last_page > 0 or state.last_cursor:
+            if state.last_page > 0 or state.last_cursor or state.last_offset > 0:
                 return self._decide_resume(state, entity)
-            logger.info(f"{entity.value}: Crashed with no checkpoint — full sync")
+            logger.info(f"{entity_label}: Crashed with no checkpoint — full sync")
             return SyncDecision(
                 mode=SyncMode.FULL,
                 entity_type=entity,
@@ -228,16 +255,18 @@ class SyncStrategy:
                 reason="First sync run",
             )
 
-        # Recent sync → incremental if supported
-        if capabilities and capabilities.supports_incremental:
+        last_successful_sync = state.last_successful_sync
+
+        # Recent sync → incremental if supported (or capabilities unknown)
+        if capabilities is None or capabilities.supports_incremental:
             hours_since = (
-                datetime.now() - state.last_successful_sync
+                datetime.now(UTC) - last_successful_sync
             ).total_seconds() / 3600
             if hours_since < self.INCREMENTAL_THRESHOLD_HOURS:
                 return SyncDecision(
                     mode=SyncMode.INCREMENTAL,
                     entity_type=entity,
-                    updated_since=state.last_successful_sync,
+                    updated_since=last_successful_sync,
                     reason=f"Recent sync ({hours_since:.0f}h ago) — incremental",
                 )
 

@@ -1,18 +1,53 @@
 """All ORM models — single import surface."""
 
+from src.db.models.auth import (
+    Device,
+    EventFavorite,
+    FighterFavorite,
+    Notification,
+    User,
+    UserPreference,
+    UserSession,
+    WatchlistEvent,
+)
+from src.db.models.core import Broadcast, Promotion, Ranking, Statistic, Venue, WeightClass
+from src.db.models.event import Competition, Competitor, Event
 from src.db.models.fighter import Fighter, FighterRecord
-from src.db.models.event import Event, Competition, Competitor
-from src.db.models.core import Promotion, Venue, WeightClass, Ranking, Statistic, Broadcast
 from src.db.models.support import (
-    ExternalId, SyncRun, SyncJob, SyncCheckpoint,
-    ProviderPayload, ProviderConflict, DeadLetter,
+    DeadLetter,
+    ExternalId,
+    ProviderConflict,
+    ProviderPayload,
+    SyncCheckpoint,
+    SyncJob,
+    SyncRun,
 )
 
 __all__ = [
-    "Fighter", "FighterRecord",
-    "Event", "Competition", "Competitor",
-    "Promotion", "Venue", "WeightClass",
-    "Ranking", "Statistic", "Broadcast",
-    "ExternalId", "SyncRun", "SyncJob", "SyncCheckpoint",
-    "ProviderPayload", "ProviderConflict", "DeadLetter",
+    "Broadcast",
+    "Competition",
+    "Competitor",
+    "DeadLetter",
+    "Device",
+    "Event",
+    "EventFavorite",
+    "ExternalId",
+    "Fighter",
+    "FighterFavorite",
+    "FighterRecord",
+    "Notification",
+    "Promotion",
+    "ProviderConflict",
+    "ProviderPayload",
+    "Ranking",
+    "Statistic",
+    "SyncCheckpoint",
+    "SyncJob",
+    "SyncRun",
+    "User",
+    "UserPreference",
+    "UserSession",
+    "Venue",
+    "WatchlistEvent",
+    "WeightClass",
 ]

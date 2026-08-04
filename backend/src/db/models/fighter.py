@@ -1,19 +1,24 @@
 """Fighter ORM model."""
 
-import uuid
-from datetime import date, datetime, timezone
-from typing import Optional
+from datetime import date
+from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, Date, DateTime, Float, Integer, String, Text, ForeignKey
+from sqlalchemy import Boolean, Date, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.db.base import Base, SyncableMixin, new_uuid
+from src.db.base import Base, SyncableMixin, TimestampMixin, new_uuid
+
+if TYPE_CHECKING:
+    from src.db.models.core import Ranking, WeightClass
 
 
 class Fighter(Base, SyncableMixin):
     __tablename__ = "fighters"
     __table_args__ = (
+        Index("ix_fighters_weight_class_name", "weight_class_name"),
+        Index("ix_fighters_nationality", "nationality"),
+        Index("ix_fighters_full_name", "full_name"),
         {"comment": "MMA fighters — ESPN primary, TSDB/Octagon enrichment"},
     )
 
@@ -26,41 +31,41 @@ class Fighter(Base, SyncableMixin):
     # Identity
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    full_name: Mapped[Optional[str]] = mapped_column(String(200))
-    short_name: Mapped[Optional[str]] = mapped_column(String(50))
-    nickname: Mapped[Optional[str]] = mapped_column(String(100))
-    slug: Mapped[Optional[str]] = mapped_column(String(200))
+    full_name: Mapped[str | None] = mapped_column(String(200))
+    short_name: Mapped[str | None] = mapped_column(String(50))
+    nickname: Mapped[str | None] = mapped_column(String(100))
+    slug: Mapped[str | None] = mapped_column(String(200))
 
     # Physical
-    weight_kg: Mapped[Optional[float]] = mapped_column(Float)
-    height_cm: Mapped[Optional[float]] = mapped_column(Float)
-    reach_cm: Mapped[Optional[float]] = mapped_column(Float)
-    leg_reach_cm: Mapped[Optional[float]] = mapped_column(Float)
-    stance: Mapped[Optional[str]] = mapped_column(String(20))
+    weight_kg: Mapped[float | None] = mapped_column(Float)
+    height_cm: Mapped[float | None] = mapped_column(Float)
+    reach_cm: Mapped[float | None] = mapped_column(Float)
+    leg_reach_cm: Mapped[float | None] = mapped_column(Float)
+    stance: Mapped[str | None] = mapped_column(String(20))
 
     # Classification
-    weight_class_id: Mapped[Optional[str]] = mapped_column(
+    weight_class_id: Mapped[str | None] = mapped_column(
         UUID(as_uuid=False), ForeignKey("weight_classes.id"),
     )
-    weight_class_name: Mapped[Optional[str]] = mapped_column(String(50))
+    weight_class_name: Mapped[str | None] = mapped_column(String(50))
 
     # Personal
-    nationality: Mapped[Optional[str]] = mapped_column(String(100))
-    birth_date: Mapped[Optional[date]] = mapped_column(Date)
-    birth_location: Mapped[Optional[str]] = mapped_column(String(200))
+    nationality: Mapped[str | None] = mapped_column(String(100))
+    birth_date: Mapped[date | None] = mapped_column(Date)
+    birth_location: Mapped[str | None] = mapped_column(String(200))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # Media
-    headshot_url: Mapped[Optional[str]] = mapped_column(Text)
-    cutout_url: Mapped[Optional[str]] = mapped_column(Text)
-    render_url: Mapped[Optional[str]] = mapped_column(Text)
+    headshot_url: Mapped[str | None] = mapped_column(Text)
+    cutout_url: Mapped[str | None] = mapped_column(Text)
+    render_url: Mapped[str | None] = mapped_column(Text)
 
     # Bio
-    biography: Mapped[Optional[str]] = mapped_column(Text)
-    ethnicity: Mapped[Optional[str]] = mapped_column(String(50))
-    trains_at: Mapped[Optional[str]] = mapped_column(String(200))
-    fighting_style: Mapped[Optional[str]] = mapped_column(String(50))
-    debut_date: Mapped[Optional[date]] = mapped_column(Date)
+    biography: Mapped[str | None] = mapped_column(Text)
+    ethnicity: Mapped[str | None] = mapped_column(String(50))
+    trains_at: Mapped[str | None] = mapped_column(String(200))
+    fighting_style: Mapped[str | None] = mapped_column(String(50))
+    debut_date: Mapped[date | None] = mapped_column(Date)
 
     # Record (summary — breakdown in FighterRecord)
     record_wins: Mapped[int] = mapped_column(Integer, default=0)
@@ -69,10 +74,10 @@ class Fighter(Base, SyncableMixin):
     record_no_contests: Mapped[int] = mapped_column(Integer, default=0)
 
     # Social
-    facebook_url: Mapped[Optional[str]] = mapped_column(Text)
-    instagram_url: Mapped[Optional[str]] = mapped_column(Text)
-    twitter_url: Mapped[Optional[str]] = mapped_column(Text)
-    wikidata_id: Mapped[Optional[str]] = mapped_column(String(20))
+    facebook_url: Mapped[str | None] = mapped_column(Text)
+    instagram_url: Mapped[str | None] = mapped_column(Text)
+    twitter_url: Mapped[str | None] = mapped_column(Text)
+    wikidata_id: Mapped[str | None] = mapped_column(String(20))
 
     # Relationships
     weight_class: Mapped[Optional["WeightClass"]] = relationship(back_populates="fighters")
@@ -124,7 +129,7 @@ class FighterRecord(Base, TimestampMixin):
     finish_rate: Mapped[float] = mapped_column(Float, default=0.0)
 
     # Display
-    record_summary: Mapped[Optional[str]] = mapped_column(String(20))
+    record_summary: Mapped[str | None] = mapped_column(String(20))
 
     # Relationships
     fighter: Mapped["Fighter"] = relationship(back_populates="record_breakdown")

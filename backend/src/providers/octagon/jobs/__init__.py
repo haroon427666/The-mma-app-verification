@@ -4,6 +4,8 @@ Fighter enrichment: leg_reach, trains_at, fighting_style, debut_date, UFC render
 Rankings verification: compare with ESPN rankings, alert on mismatch.
 """
 
+from typing import Any, cast
+
 from src.sync.job import SyncJob
 from src.sync.types import EntityType
 
@@ -22,11 +24,11 @@ class Octagon_FighterEnrichmentJob(SyncJob):
     batch_size = 100
     supports_incremental = False
 
-    async def _fetch(self, ctx, state):
+    async def _fetch(self, ctx: Any, state: Any) -> list[Any]:
         provider = ctx.octagon_provider
-        return await provider.fetch_fighters()
+        return cast(list[Any], await provider.fetch_fighters())
 
-    async def _upsert(self, ctx, dtos):
+    async def _upsert(self, ctx: Any, dtos: list[Any]) -> dict[str, int]:
         from src.providers.merge import merge_record
         enriched = 0
         for dto in dtos:
@@ -51,11 +53,11 @@ class Octagon_RankingsVerificationJob(SyncJob):
     batch_size = 200
     supports_incremental = False
 
-    async def _fetch(self, ctx, state):
+    async def _fetch(self, ctx: Any, state: Any) -> list[Any]:
         provider = ctx.octagon_provider
-        return await provider.fetch_rankings()
+        return cast(list[Any], await provider.fetch_rankings())
 
-    async def _upsert(self, ctx, dtos):
+    async def _upsert(self, ctx: Any, dtos: list[Any]) -> dict[str, int]:
         """Compare with ESPN rankings from DB, log discrepancies."""
         logger = ctx.logger
         discrepancies = 0

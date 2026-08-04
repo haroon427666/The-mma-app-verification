@@ -7,13 +7,14 @@ Provides:
 """
 
 import logging
-from typing import Optional
+from collections.abc import Callable
+from typing import Any
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-
-from src.auth.jwt import verify_access_token, TokenPayload
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
+
+from src.auth.jwt import TokenPayload, verify_access_token
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +23,8 @@ security = HTTPBearer(auto_error=False)
 
 async def get_current_user(
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-) -> "User":
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+) -> TokenPayload:
     """Require valid JWT access token. Returns User or raises 401."""
     if credentials is None:
         raise HTTPException(
@@ -57,8 +58,8 @@ async def get_current_user(
 
 
 async def get_optional_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-) -> Optional[TokenPayload]:
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+) -> TokenPayload | None:
     """Optional auth — returns None if no token, User if valid token."""
     if credentials is None:
         return None
@@ -68,7 +69,7 @@ async def get_optional_user(
         return None
 
 
-def require_role(*roles: str):
+def require_role(*roles: str) -> Callable[..., Any]:
     """Dependency factory: require one of the specified roles.
 
     Usage:
@@ -102,7 +103,7 @@ def get_permissions_for_role(role: str) -> list[str]:
     return PERMISSIONS.get(role, ["metrics.read"])
 
 
-def require_permission(permission: str):
+def require_permission(permission: str) -> Callable[..., Any]:
     """Dependency factory: require a specific permission.
 
     Usage:

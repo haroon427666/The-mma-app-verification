@@ -1,5 +1,7 @@
 """ESPN Ranking sync job."""
 
+from typing import Any, cast
+
 from src.sync.job import SyncJob
 from src.sync.types import EntityType
 
@@ -11,11 +13,11 @@ class ESPN_RankingSyncJob(SyncJob):
     batch_size = 100
     supports_incremental = False
 
-    async def _fetch(self, ctx, state):
+    async def _fetch(self, ctx: Any, state: Any) -> list[Any]:
         provider = ctx.provider
-        return await provider.fetch_rankings()
+        return cast(list[Any], await provider.fetch_rankings())
 
-    async def _upsert(self, ctx, dtos):
+    async def _upsert(self, ctx: Any, dtos: list[Any]) -> dict[str, int]:
         from src.sync.upserts.id_resolver import IdResolver
         from src.sync.upserts.ranking import RankingUpsert
 

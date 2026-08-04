@@ -4,10 +4,9 @@ Tests real query construction, data flow, and error handling.
 Uses mocked async session to avoid needing a real PostgreSQL.
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, timezone
+from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FighterService API Queries
@@ -16,7 +15,6 @@ from datetime import datetime, timezone
 class TestFighterServiceQueries:
     def test_list_fighters_applies_all_filters(self):
         from src.services.fighter_service import FighterService
-        from unittest.mock import AsyncMock
 
         uow = MagicMock()
         uow.fighters = MagicMock()
@@ -35,14 +33,13 @@ class TestFighterServiceQueries:
             )
             return items, total
 
-        items, total = asyncio.run(run())
+        _items, total = asyncio.run(run())
         assert total == 0
         uow.fighters.list_filtered.assert_called_once()
         uow.fighters.count_filtered.assert_called_once()
 
     def test_get_fighter_detail_returns_none_for_missing(self):
         from src.services.fighter_service import FighterService
-        from unittest.mock import AsyncMock
 
         uow = MagicMock()
         uow.fighters.get_by_id = AsyncMock(return_value=None)
@@ -61,13 +58,14 @@ class TestFighterServiceQueries:
 
 class TestAuthServiceFlows:
     def test_login_rejects_wrong_password(self):
-        from src.services.auth_service import AuthService
-        from src.auth.password import hash_password
-        from src.db.models.auth import User
-        from unittest.mock import AsyncMock, MagicMock
+        import asyncio
+        from unittest.mock import MagicMock
+
         from sqlalchemy.ext.asyncio import AsyncSession
 
-        import asyncio
+        from src.auth.password import hash_password
+        from src.db.models.auth import User
+        from src.services.auth_service import AuthService
 
         async def run():
             session = AsyncMock(spec=AsyncSession)
@@ -94,27 +92,28 @@ class TestAuthServiceFlows:
         asyncio.run(run())
 
     def test_register_rejects_weak_password(self):
-        from src.services.auth_service import AuthService
-        from unittest.mock import AsyncMock
+        import asyncio
+
         from sqlalchemy.ext.asyncio import AsyncSession
 
-        import asyncio
+        from src.services.auth_service import AuthService
 
         async def run():
             session = AsyncMock(spec=AsyncSession)
             service = AuthService(session)
             with pytest.raises(ValueError, match="uppercase"):
-                await service.register("x@x.com", "testuser", "short")
+                await service.register("x@x.com", "testuser", "abcdefgh")
 
         asyncio.run(run())
 
     def test_register_rejects_duplicate_email(self):
-        from src.services.auth_service import AuthService
-        from src.db.models.auth import User
-        from unittest.mock import AsyncMock, MagicMock
+        import asyncio
+        from unittest.mock import MagicMock
+
         from sqlalchemy.ext.asyncio import AsyncSession
 
-        import asyncio
+        from src.db.models.auth import User
+        from src.services.auth_service import AuthService
 
         async def run():
             session = AsyncMock(spec=AsyncSession)
@@ -133,12 +132,12 @@ class TestAuthServiceFlows:
         asyncio.run(run())
 
     def test_account_locked_after_5_failures(self):
-        from src.services.auth_service import AuthService
+        import asyncio
+        from unittest.mock import MagicMock
+
         from src.auth.password import hash_password
         from src.db.models.auth import User
-        from unittest.mock import AsyncMock, MagicMock
-
-        import asyncio
+        from src.services.auth_service import AuthService
 
         async def run():
             session = AsyncMock()
@@ -182,29 +181,31 @@ class TestAuthServiceFlows:
 
 class TestErrorHandling:
     def test_not_found_error_has_rfc7807_shape(self):
-        from src.api.errors import NotFoundError, build_problem_response
-        from fastapi import Request
         from unittest.mock import MagicMock
+
+        from fastapi import Request
+
+        from src.api.errors import NotFoundError, build_problem_response
 
         exc = NotFoundError("Fighter", "abc-123")
         request = MagicMock(spec=Request)
         request.url = "https://api.example.com/v1/fighters/abc-123"
 
         resp = build_problem_response(exc, request, "req_xyz")
-        body = resp.body if hasattr(resp, 'body') else None
+        resp.body if hasattr(resp, 'body') else None
 
         # Check problem detail presence (body is a string in JSONResponse)
         from json import loads
-        data = loads(resp.body) if hasattr(resp, 'body') else {}
+        loads(resp.body) if hasattr(resp, 'body') else {}
 
         assert exc.status == 404
         assert exc.title == "Fighter not found"
 
     def test_domain_exceptions_inherit_problem_detail(self):
         from src.api.errors import (
-            NotFoundError, ValidationError, AuthenticationError,
-            AuthorizationError, ConflictError, RateLimitError,
-            SyncError, ExternalAPIError, DatabaseError,
+            AuthenticationError,
+            NotFoundError,
+            RateLimitError,
         )
 
         assert issubclass(NotFoundError, Exception)

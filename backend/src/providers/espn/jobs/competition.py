@@ -8,6 +8,8 @@ Competitions are EMBEDDED in event responses. This job:
 Competitors reference fighters via external_id → resolved by IdResolver.
 """
 
+from typing import Any
+
 from src.providers.dto import CompetitionDTO
 from src.sync.job import SyncJob
 from src.sync.types import EntityType
@@ -20,7 +22,7 @@ class ESPN_CompetitionSyncJob(SyncJob):
     batch_size = 50
     supports_incremental = False
 
-    async def _fetch(self, ctx, state):
+    async def _fetch(self, ctx: Any, state: Any) -> list[Any]:
         """Fetch competitions from events embedded data.
 
         For each event, fetch the full event detail (which includes
@@ -39,9 +41,9 @@ class ESPN_CompetitionSyncJob(SyncJob):
 
         return competitions
 
-    async def _upsert(self, ctx, dtos):
-        from src.sync.upserts.id_resolver import IdResolver
+    async def _upsert(self, ctx: Any, dtos: list[Any]) -> dict[str, int]:
         from src.sync.upserts.competition import CompetitionUpsert
+        from src.sync.upserts.id_resolver import IdResolver
 
         resolver = IdResolver(ctx.db)
         upsert = CompetitionUpsert(resolver)

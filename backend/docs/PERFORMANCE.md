@@ -45,6 +45,59 @@
 | Eviction rate | <1% |
 | Latency P99 | <1ms |
 
+## HTTP Caching (ETag / Conditional GET)
+
+Cached endpoints respond with `ETag` + `Cache-Control` and answer `If-None-Match`
+requests with `304 Not Modified`. ETags are content hashes — any data or schema
+change invalidates them automatically. List/detail endpoints additionally use
+cache-aside (memory or Redis) so a hit skips the DB query entirely.
+
+| Endpoint | Cache-aside TTL | ETag | Cache-Control |
+|---|---|---|---|
+| `GET /api/v1/events/{id}` | 300s | Yes | `public, max-age=300` |
+| `GET /api/v1/events` | 300s | Yes | `public, max-age=300` |
+| `GET /api/v1/events/upcoming` | 300s | Yes | `public, max-age=300` |
+| `GET /api/v1/events/live` | 60s | Yes | `public, max-age=60` |
+| `GET /api/v1/fighters/{id}` | 3600s | Yes | `public, max-age=3600` |
+| `GET /api/v1/fighters/{id}/statistics` | 3600s | Yes | `public, max-age=3600` |
+| `GET /api/v1/fighters/{id}/history` | 3600s | Yes | `public, max-age=3600` |
+| `GET /api/v1/fighters` | 300s | Yes | `public, max-age=300` |
+| `GET /api/v1/fights/{id}` | 300s | Yes | `public, max-age=300` |
+| `GET /api/v1/rankings*` | 600s | Yes | `public, max-age=600` |
+| `GET /api/v1/promotions` | 86400s | Yes | `public, max-age=3600` |
+| `GET /api/v1/venues` | 86400s | Yes | `public, max-age=3600` |
+
+Implementation: `src/api/etag.py` (ETag hashing + conditional response),
+`src/api/cache.py` (cache-aside helper + key building), backends in
+`src/middleware/cache.py` (memory / Redis, degrade-to-serve-through).
+
+## Cache Invalidation (sync → API)
+
+Every sync run busts the cache prefixes of the entities it wrote
+(`src/sync/cache_invalidation.py`, wired via the engine's `after_sync` event):
+
+- Fighter / statistic jobs → `mma:api:fighters*` (detail, statistics, history, list)
+- Event / competition / broadcast jobs → `mma:api:events*` (+ `fights` detail)
+- Ranking jobs → `mma:api:rankings*`
+- Promotion / venue jobs → `mma:api:promotions*` / `mma:api:venues*`
+
+Only `COMPLETED`/`PARTIAL` runs invalidate; failed runs keep previously cached
+data (stale-but-consistent). Invalidation failures log and never fail the sync.
+
+## Database Indexes
+
+Backing the hot query paths — migration `003_phase8_performance`:
+
+| Table | Indexed columns |
+|---|---|
+| events | promotion_id |
+| competitions | event_id |
+| competitors | competition_id, fighter_id |
+| rankings | fighter_id, category_name |
+| statistics | fighter_id, competitor_id |
+| broadcasts | event_id |
+| fighters | weight_class_name, nationality, full_name |
+
 ## Load Testing Results
 
 | Scenario | Target RPS | Result | Notes |

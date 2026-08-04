@@ -4,9 +4,15 @@ When ESPN says 178cm and Octagon says 180cm, we store the conflict
 and apply the authority rule. Conflicts are resolved, never pending.
 """
 
+from __future__ import annotations
+
 import logging
-from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+if TYPE_CHECKING:
+    from src.db.models.support import ProviderConflict
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +20,7 @@ logger = logging.getLogger(__name__)
 class ConflictTracker:
     """Tracks and stores provider conflicts in provider_conflicts table."""
 
-    def __init__(self, session):
+    def __init__(self, session: AsyncSession):
         self._session = session
 
     async def record_conflict(
@@ -31,6 +37,7 @@ class ConflictTracker:
     ) -> None:
         """Record a disagreement between two providers."""
         from sqlalchemy.dialects.postgresql import insert
+
         from src.db.models.support import ProviderConflict
 
         values = {
@@ -56,9 +63,12 @@ class ConflictTracker:
             f"chose {chosen_authority}={chosen_value}"
         )
 
-    async def get_unresolved(self, entity_type: str | None = None) -> list:
+    async def get_unresolved(
+        self, entity_type: str | None = None
+    ) -> list[ProviderConflict]:
         """Get unresolved conflicts — for manual review."""
         from sqlalchemy import select
+
         from src.db.models.support import ProviderConflict
 
         q = select(ProviderConflict).where(ProviderConflict.resolved == False)
@@ -71,6 +81,7 @@ class ConflictTracker:
     async def resolve_conflict(self, conflict_id: str, chosen_value: str) -> None:
         """Manually resolve a conflict."""
         from sqlalchemy import update
+
         from src.db.models.support import ProviderConflict
 
         await self._session.execute(

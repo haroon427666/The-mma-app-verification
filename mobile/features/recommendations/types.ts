@@ -1,6 +1,6 @@
 /** Recommendations module — complete types */
 
-import type { Fighter, Event, Fight } from '../../models';
+import type { Fighter, Event, Fight } from '../models';
 
 // ── Core Recommendation ──
 export interface Recommendation {

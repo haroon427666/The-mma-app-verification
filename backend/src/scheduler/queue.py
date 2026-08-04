@@ -14,9 +14,10 @@ import asyncio
 import heapq
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import IntEnum
-from typing import Any, Callable, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +37,9 @@ class QueueItem:
     enqueued_at: float = field(compare=False)
     job_id: str = field(compare=False)
     job_name: str = field(compare=False)
-    job_fn: Callable = field(compare=False, repr=False)
-    args: tuple = field(default_factory=tuple, compare=False, repr=False)
-    kwargs: dict = field(default_factory=dict, compare=False, repr=False)
+    job_fn: Callable[..., Any] = field(compare=False, repr=False)
+    args: tuple[Any, ...] = field(default_factory=tuple, compare=False, repr=False)
+    kwargs: dict[str, Any] = field(default_factory=dict, compare=False, repr=False)
 
 
 class PriorityQueue:
@@ -65,7 +66,7 @@ class PriorityQueue:
         return len(self._running)
 
     @property
-    def stats(self) -> dict:
+    def stats(self) -> dict[str, int]:
         return {
             "queued": self.size,
             "running": self.running_count,
@@ -75,8 +76,8 @@ class PriorityQueue:
         }
 
     async def enqueue(
-        self, job_name: str, fn: Callable, priority: Priority = Priority.NORMAL,
-        *args, **kwargs,
+        self, job_name: str, fn: Callable[..., Any], priority: Priority = Priority.NORMAL,
+        *args: Any, **kwargs: Any,
     ) -> str:
         """Add a job to the queue. Returns job_id."""
         import uuid
@@ -99,7 +100,7 @@ class PriorityQueue:
         logger.debug(f"Enqueued {job_name} [{job_id}] priority={priority.name}")
         return job_id
 
-    async def dequeue(self) -> Optional[QueueItem]:
+    async def dequeue(self) -> QueueItem | None:
         """Pop the highest-priority job. Returns None if at capacity or queue empty."""
         async with self._lock:
             if not self._heap:
@@ -131,7 +132,7 @@ class PriorityQueue:
             logger.info(f"Cancelled {removed} queued '{job_name}' jobs")
             return removed
 
-    async def queued_jobs(self) -> list[dict]:
+    async def queued_jobs(self) -> list[dict[str, str]]:
         """List all queued jobs (for dashboard)."""
         async with self._lock:
             return [

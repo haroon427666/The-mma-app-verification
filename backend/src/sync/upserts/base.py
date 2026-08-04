@@ -18,8 +18,8 @@ from uuid import UUID, uuid4
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from src.sync.upserts.id_resolver import IdResolver
 from src.sync.upsert import UpsertResult
+from src.sync.upserts.id_resolver import IdResolver
 
 logger = logging.getLogger(__name__)
 
@@ -209,8 +209,8 @@ class BaseUpsert(ABC):
     # ── Helpers ─────────────────────────────────────────────────────────────
 
     async def _load_existing(self, euuid: UUID) -> Any | None:
-        result = await self._resolver._db.execute(
-            select(self._model_class).where(self._model_class.id == euuid)
+        result: Any = await self._resolver._db.execute(
+            select(self._model_class).where(getattr(self._model_class, "id") == euuid)  # noqa: B009
         )
         return result.scalar_one_or_none()
 
@@ -242,7 +242,6 @@ class BaseUpsert(ABC):
 
     def _apply_special_fields(self, model: Any, dto: Any, fields: set[str]) -> None:
         """Apply fields computed from DTO rather than direct mapping."""
-        pass
 
     # ── Abstract ────────────────────────────────────────────────────────────
 

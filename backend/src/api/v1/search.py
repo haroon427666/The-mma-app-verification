@@ -1,10 +1,12 @@
 """Search API extensions — autocomplete, trending, popular, history."""
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.session import get_session
-from src.schemas.misc import SearchResponse, SearchResultItem
+from src.schemas.misc import SearchResultItem
 
 router = APIRouter(prefix="/v1/search", tags=["search"])
 
@@ -14,9 +16,10 @@ async def search_autocomplete(
     q: str = Query(..., min_length=2),
     limit: int = Query(10, le=20),
     session: AsyncSession = Depends(get_session),
-):
+) -> dict[str, Any]:
     """Autocomplete suggestions from fighter names."""
     from sqlalchemy import select as sa_select
+
     from src.db.models.fighter import Fighter
     result = await session.execute(
         sa_select(Fighter.full_name)
@@ -30,9 +33,11 @@ async def search_autocomplete(
 async def search_trending(
     limit: int = Query(10, le=20),
     session: AsyncSession = Depends(get_session),
-):
+) -> dict[str, Any]:
     """Trending searches (simplified — returns recently synced fighters)."""
-    from sqlalchemy import select as sa_select, desc
+    from sqlalchemy import desc
+    from sqlalchemy import select as sa_select
+
     from src.db.models.fighter import Fighter
     result = await session.execute(
         sa_select(Fighter.full_name, Fighter.headshot_url, Fighter.weight_class_name)
@@ -53,9 +58,11 @@ async def search_trending(
 async def search_popular(
     limit: int = Query(10, le=20),
     session: AsyncSession = Depends(get_session),
-):
+) -> dict[str, Any]:
     """Popular searches (simplified — returns top weight class names)."""
-    from sqlalchemy import select as sa_select, func
+    from sqlalchemy import func
+    from sqlalchemy import select as sa_select
+
     from src.db.models.fighter import Fighter
     result = await session.execute(
         sa_select(Fighter.weight_class_name, func.count(Fighter.id).label("cnt"))
@@ -68,12 +75,12 @@ async def search_popular(
 
 
 @router.get("/history")
-async def search_history():
+async def search_history() -> dict[str, Any]:
     """Recent searches — client-side only. Returns empty list for now."""
     return {"history": []}
 
 
 @router.delete("/history")
-async def clear_search_history():
+async def clear_search_history() -> dict[str, Any]:
     """Clear recent searches — client-side only."""
     return {"status": "cleared"}

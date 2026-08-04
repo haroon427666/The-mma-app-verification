@@ -7,7 +7,7 @@
       "current": 1,
       "trend": "-",
       "athlete": {
-        "": "http://sports.core.api.espn.com/v2/sports/mma/athletes/3088812?lang=en"
+        "$ref": "http://sports.core.api.espn.com/v2/sports/mma/athletes/3088812?lang=en"
       },
       "hasAccolade": true
     },
@@ -15,7 +15,7 @@
       "current": 8,
       "trend": "+2",
       "athlete": {
-        "": "http://sports.core.api.espn.com/v2/sports/mma/athletes/4189320?lang=en"
+        "$ref": "http://sports.core.api.espn.com/v2/sports/mma/athletes/4189320?lang=en"
       },
       "hasAccolade": true
     }

@@ -8,11 +8,15 @@ Does NOT extend BaseUpsert because broadcasts lack provider external IDs.
 """
 
 import logging
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from src.domain.models.broadcast import Broadcast
 from src.providers.dto import BroadcastDTO
 from src.sync.upsert import UpsertResult
+
+if TYPE_CHECKING:
+    from src.sync.upserts.id_resolver import IdResolver
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +30,6 @@ class BroadcastUpsert:
     _event_uuid_map: dict[str, UUID] = {}
 
     def __init__(self, resolver: "IdResolver") -> None:
-        from src.sync.upserts.id_resolver import IdResolver
         self._resolver: IdResolver = resolver
 
     def set_event_map(self, event_map: dict[str, UUID]) -> None:
@@ -66,8 +69,8 @@ class BroadcastUpsert:
                     if row.language != dto.language:
                         row.language = dto.language
                         changed = True
-                    if row.type != dto.broadcast_type:
-                        row.type = dto.broadcast_type
+                    if row.broadcast_type != dto.broadcast_type:
+                        row.broadcast_type = dto.broadcast_type
                         changed = True
                     if changed:
                         self._resolver._db.add(row)
@@ -80,7 +83,7 @@ class BroadcastUpsert:
                         network=dto.network,
                         region=dto.region,
                         language=dto.language,
-                        type=dto.broadcast_type,
+                        broadcast_type=dto.broadcast_type,
                     )
                     self._resolver._db.add(broadcast)
                     result.inserted += 1

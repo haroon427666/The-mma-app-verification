@@ -12,9 +12,13 @@ dependencies = [
     "httpx>=0.27.0",
     "pydantic>=2.8.0",
     "pydantic-settings>=2.4.0",
+    "email-validator>=2.1.0",
     "redis>=5.0.0",
     "structlog>=24.0.0",
     "python-dotenv>=1.0.0",
+    "apscheduler>=3.10.0",
+    "argon2-cffi>=23.1.0",
+    "pyjwt>=2.8.0",
 ]
 
 [project.optional-dependencies]
@@ -22,14 +26,64 @@ dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24.0",
     "pytest-cov>=5.0",
+    "aiosqlite>=0.20.0",
     "httpx>=0.27.0",
     "ruff>=0.5.0",
+    "mypy>=1.10.0",
+]
+observability = [
+    "opentelemetry-api>=1.25.0",
+    "opentelemetry-sdk>=1.25.0",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.25.0",
+    "opentelemetry-instrumentation-fastapi>=0.46b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.46b0",
+    "opentelemetry-instrumentation-redis>=0.46b0",
+    "opentelemetry-instrumentation-httpx>=0.46b0",
+    "prometheus-client>=0.20.0",
 ]
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
 
+[tool.ruff.lint]
+ignore = [
+    "BLE001",   # broad excepts are deliberate in failure-injection pipelines
+    "S110",     # deliberate exception swallowing in defensive code
+    "S112",
+    "RUF012",   # mutable class defaults are constant config lists (never mutated)
+    "B017",     # pytest.raises(Exception) is intentional in integration tests
+    "ASYNC230", # sync file I/O in infrequent dead-letter/payload-archive paths
+    "ASYNC251", # tests rely on time.sleep for circuit-breaker timing
+    "DTZ001",   # tests construct naive datetimes intentionally
+]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Body",
+    "fastapi.Header",
+    "fastapi.Cookie",
+    "fastapi.Form",
+    "fastapi.Security",
+    "src.auth.dependencies.require_permission",
+    "src.auth.dependencies.require_role",
+]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.12"
+explicit_package_bases = true
+mypy_path = "."
+plugins = ["pydantic.mypy"]
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+ignore_errors = true

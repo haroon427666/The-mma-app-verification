@@ -1,10 +1,9 @@
 """Health Monitor — tracks sync job health and provider status."""
 
 import logging
-import time
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Optional
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +12,9 @@ logger = logging.getLogger(__name__)
 class ProviderHealth:
     name: str
     is_up: bool = True
-    last_check: Optional[datetime] = None
-    last_success: Optional[datetime] = None
-    last_error: Optional[str] = None
+    last_check: datetime | None = None
+    last_success: datetime | None = None
+    last_error: str | None = None
     consecutive_failures: int = 0
     avg_latency_ms: float = 0.0
 
@@ -23,8 +22,8 @@ class ProviderHealth:
 @dataclass
 class JobHealth:
     name: str
-    last_run: Optional[datetime] = None
-    last_success: Optional[datetime] = None
+    last_run: datetime | None = None
+    last_success: datetime | None = None
     last_duration_ms: float = 0.0
     total_runs: int = 0
     total_successes: int = 0
@@ -36,10 +35,10 @@ class JobHealth:
 class HealthMonitor:
     """Tracks the health of all sync jobs and providers."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._jobs: dict[str, JobHealth] = {}
         self._providers: dict[str, ProviderHealth] = {}
-        self._started_at = datetime.now(timezone.utc)
+        self._started_at = datetime.now(UTC)
 
     # ── Job tracking ────────────────────────────────────────────────────
 
@@ -50,13 +49,13 @@ class HealthMonitor:
 
     def job_started(self, name: str) -> None:
         h = self.register_job(name)
-        h.last_run = datetime.now(timezone.utc)
+        h.last_run = datetime.now(UTC)
         h.total_runs += 1
         h.is_running = True
 
     def job_succeeded(self, name: str, duration_ms: float) -> None:
         h = self.register_job(name)
-        h.last_success = datetime.now(timezone.utc)
+        h.last_success = datetime.now(UTC)
         h.last_duration_ms = duration_ms
         h.total_successes += 1
         h.consecutive_failures = 0
@@ -69,6 +68,11 @@ class HealthMonitor:
         h.is_running = False
         logger.warning(f"Job '{name}' failed (consecutive: {h.consecutive_failures}): {error}")
 
+    def consecutive_failures(self, job_name: str) -> int:
+        """Consecutive failure count for a job (0 if never run)."""
+        h = self._jobs.get(job_name)
+        return h.consecutive_failures if h else 0
+
     # ── Provider tracking ───────────────────────────────────────────────
 
     def register_provider(self, name: str) -> ProviderHealth:
@@ -79,25 +83,25 @@ class HealthMonitor:
     def provider_ok(self, name: str, latency_ms: float) -> None:
         p = self.register_provider(name)
         p.is_up = True
-        p.last_check = datetime.now(timezone.utc)
-        p.last_success = datetime.now(timezone.utc)
+        p.last_check = datetime.now(UTC)
+        p.last_success = datetime.now(UTC)
         p.consecutive_failures = 0
         p.avg_latency_ms = (p.avg_latency_ms * 0.9) + (latency_ms * 0.1)  # EMA
 
     def provider_down(self, name: str, error: str) -> None:
         p = self.register_provider(name)
         p.is_up = False
-        p.last_check = datetime.now(timezone.utc)
+        p.last_check = datetime.now(UTC)
         p.last_error = error
         p.consecutive_failures += 1
         logger.warning(f"Provider '{name}' DOWN (x{p.consecutive_failures}): {error}")
 
     # ── Reports ─────────────────────────────────────────────────────────
 
-    def get_status(self) -> dict:
+    def get_status(self) -> dict[str, Any]:
         """Full health report for dashboard / API."""
         return {
-            "uptime_seconds": (datetime.now(timezone.utc) - self._started_at).total_seconds(),
+            "uptime_seconds": (datetime.now(UTC) - self._started_at).total_seconds(),
             "jobs": {
                 name: {
                     "last_run": h.last_run.isoformat() if h.last_run else None,

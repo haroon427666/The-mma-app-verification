@@ -139,7 +139,7 @@ export function FavoriteButton({ isFav, onToggle, palette }: { isFav: boolean; o
 }
 
 export { FighterCardSkeleton, ProfileSkeleton } from './Skeletons';
-export { EmptyState, ErrorState } from './ErrorStates';
+export { EmptyState, ErrorState } from './Skeletons';
 
 const cs = StyleSheet.create({
   banner: { padding: spacing.xl, alignItems: 'center', backgroundColor: '#1A1A2E' },

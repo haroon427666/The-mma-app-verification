@@ -10,8 +10,9 @@ Key findings from real API:
 - statistics IS a working $ref
 """
 
-from src.providers.dto import FighterDTO
+from typing import Any
 
+from src.providers.dto import FighterDTO
 
 # ── Unit conversions ───────────────────────────────────────────────────────────
 
@@ -26,7 +27,7 @@ def _inches_to_cm(inches: float | None) -> float | None:
 # ── Parser ─────────────────────────────────────────────────────────────────────
 
 
-def parse_fighter(data: dict) -> FighterDTO:
+def parse_fighter(data: dict[str, Any]) -> FighterDTO:
     """Parse ESPN athlete resource → FighterDTO. All fields verified against live API.
 
     Args:
@@ -55,9 +56,9 @@ def parse_fighter(data: dict) -> FighterDTO:
     height_in = data.get("height")   # float, inches
     reach_in = data.get("reach")     # float, inches
 
-    weight_kg = _lbs_to_kg(weight_lbs) if weight_lbs else None
-    height_cm = _inches_to_cm(height_in) if height_in else None
-    reach_cm = _inches_to_cm(reach_in) if reach_in else None
+    weight_kg = _lbs_to_kg(weight_lbs) if weight_lbs is not None else None
+    height_cm = _inches_to_cm(height_in) if height_in is not None else None
+    reach_cm = _inches_to_cm(reach_in) if reach_in is not None else None
 
     # Stance — INLINE object: {id: 75, text: "Orthodox"}
     stance = None
@@ -93,7 +94,7 @@ def parse_fighter(data: dict) -> FighterDTO:
     if dob:
         from datetime import datetime
         try:
-            birth_date = datetime.fromisoformat(dob.replace("Z", "+00:00"))
+            birth_date = datetime.fromisoformat(dob)
         except (ValueError, TypeError):
             pass
 
@@ -120,11 +121,12 @@ def parse_fighter(data: dict) -> FighterDTO:
         nationality=nationality,
         birth_date=birth_date,
         headshot_url=headshot_url,
+        is_active=is_active,
         weight_class_external_id=weight_class_external_id,
     )
 
 
-def parse_fighter_records(records_data: dict) -> dict[str, int]:
+def parse_fighter_records(records_data: dict[str, Any]) -> dict[str, int]:
     """Parse the /athletes/{id}/records response to extract W/L/D/NC.
 
     The response has items[{name:"overall", summary:"28-1-0",

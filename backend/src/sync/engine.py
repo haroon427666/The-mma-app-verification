@@ -16,10 +16,10 @@ All reuse this exact same engine.
 """
 
 import logging
-from datetime import datetime, timezone
 from typing import Any
 
 from src.providers.base import BaseDataProvider
+from src.sync.cache_invalidation import invalidate_after_sync
 from src.sync.clock import SystemClock
 from src.sync.context import CancellationToken, ProgressTracker, SyncContext
 from src.sync.dependency import DependencyGraph
@@ -28,11 +28,11 @@ from src.sync.job import JobResult, SyncJob
 from src.sync.metrics import SyncMetrics
 from src.sync.pipeline import SyncPipeline
 from src.sync.plan import SyncPlan
-from src.sync.result import SyncResult, SyncStatus
 from src.sync.reliability import ReliabilityConfig
+from src.sync.result import SyncResult
 from src.sync.state import SyncState
 from src.sync.state_store import SyncStateStore
-from src.sync.types import EntityType, JobStatus, SyncMode
+from src.sync.types import EntityType, JobStatus, SyncMode, SyncStatus
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +72,11 @@ class SyncEngine:
         self._statestore = statestore
         self._events = events or SyncEventBus()
         self._reliability = reliability
+
+        # Default instrumentation: bust API caches after a completed run so the
+        # read path never serves stale data past a sync. Handlers are registered
+        # on whatever event bus is in use (default or injected).
+        self._events.on_after_sync(invalidate_after_sync)
 
     # ── Public API ─────────────────────────────────────────────────────────
 
@@ -113,7 +118,6 @@ class SyncEngine:
         )
         run_id = ctx.run_id
 
-        lookback_seconds = 3600  # Default 1-hour deduplication window
 
         ctx.progress = ProgressTracker(total_jobs=plan.job_count)
         ctx.metrics = SyncMetrics()
@@ -146,15 +150,15 @@ class SyncEngine:
                     job=job,
                     reliability=self._reliability,
                 )
-                result = await pipeline.execute(
+                job_result = await pipeline.execute(
                     ctx, state, events=self._events, requested_mode=mode
                 )
-                job_results.append(result)
+                job_results.append(job_result)
 
                 # Persist state after each job
                 await self._save_state(state)
 
-                if result.status == JobStatus.FAILED and job.critical:
+                if job_result.status == JobStatus.FAILED and job.critical:
                     overall_status = SyncStatus.FAILED
                     logger.error(
                         f"Critical job failed: {job.entity_type.value}. "
@@ -165,9 +169,11 @@ class SyncEngine:
                 ctx.progress.mark_completed(job.entity_type.value)
 
             # Determine overall status
-            if overall_status == SyncStatus.COMPLETED:
-                if any(r.status == JobStatus.FAILED for r in job_results):
-                    overall_status = SyncStatus.PARTIAL
+            if (
+                overall_status == SyncStatus.COMPLETED
+                and any(r.status == JobStatus.FAILED for r in job_results)
+            ):
+                overall_status = SyncStatus.PARTIAL
 
         except Exception as e:
             overall_status = SyncStatus.CANCELLED
@@ -175,9 +181,7 @@ class SyncEngine:
 
         # Finalize
         completed_at = clock.now()
-        duration_ms = (clock.monotonic() - (started_at.timestamp() if hasattr(started_at, 'timestamp') else 0)) * 1000
-        # Use clock for accurate duration
-        duration_ms = (clock.now().timestamp() - started_at.timestamp()) * 1000 if clock.now() > started_at else 0
+        duration_ms = max(0.0, (clock.now() - started_at).total_seconds() * 1000)
 
         result = SyncResult(
             run_id=run_id,

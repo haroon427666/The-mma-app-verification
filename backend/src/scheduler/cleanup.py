@@ -8,7 +8,10 @@ Runs daily. Cleans up:
 """
 
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +19,7 @@ logger = logging.getLogger(__name__)
 class MaintenanceCleanup:
     """Daily maintenance — keeps the database lean."""
 
-    def __init__(self, session_factory):
+    def __init__(self, session_factory: Any) -> None:
         self._session_factory = session_factory
 
     async def run(self) -> dict[str, int]:
@@ -52,22 +55,21 @@ class MaintenanceCleanup:
 
     async def _prune_payloads(self) -> int:
         """Delete provider payloads older than 90 days."""
-        cutoff = datetime.now(timezone.utc) - timedelta(days=90)
+        cutoff = datetime.now(UTC) - timedelta(days=90)
         async with self._session_factory() as session:
-            from sqlalchemy import delete, text
             result = await session.execute(
                 text("DELETE FROM provider_payloads WHERE fetched_at < :cutoff"),
                 {"cutoff": cutoff},
             )
             await session.commit()
-            count = result.rowcount
+            count: int = result.rowcount
             if count:
                 logger.info(f"Pruned {count} old payloads")
             return count
 
     async def _clean_checkpoints(self) -> int:
         """Delete completed checkpoints older than 7 days."""
-        cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+        cutoff = datetime.now(UTC) - timedelta(days=7)
         async with self._session_factory() as session:
             result = await session.execute(
                 text(
@@ -77,11 +79,12 @@ class MaintenanceCleanup:
                 {"cutoff": cutoff},
             )
             await session.commit()
-            return result.rowcount
+            count: int = result.rowcount
+            return count
 
     async def _archive_dead_letters(self) -> int:
         """Delete replayed dead letters older than 30 days."""
-        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+        cutoff = datetime.now(UTC) - timedelta(days=30)
         async with self._session_factory() as session:
             result = await session.execute(
                 text(
@@ -91,15 +94,17 @@ class MaintenanceCleanup:
                 {"cutoff": cutoff},
             )
             await session.commit()
-            return result.rowcount
+            count: int = result.rowcount
+            return count
 
     async def _prune_sync_history(self) -> int:
         """Keep only last 30 days of sync history."""
-        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+        cutoff = datetime.now(UTC) - timedelta(days=30)
         async with self._session_factory() as session:
             result = await session.execute(
                 text("DELETE FROM sync_runs WHERE created_at < :cutoff"),
                 {"cutoff": cutoff},
             )
             await session.commit()
-            return result.rowcount
+            count: int = result.rowcount
+            return count

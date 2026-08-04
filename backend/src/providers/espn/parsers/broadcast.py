@@ -14,10 +14,12 @@ Response shape (VERIFIED):
 }
 """
 
+from typing import Any
+
 from src.providers.dto import BroadcastDTO
 
 
-def parse_broadcast(data: dict, event_external_id: str) -> BroadcastDTO:
+def parse_broadcast(data: dict[str, Any], event_external_id: str) -> BroadcastDTO:
     """Parse a single ESPN broadcast entry.
 
     Args:
@@ -61,7 +63,7 @@ def parse_broadcast(data: dict, event_external_id: str) -> BroadcastDTO:
     )
 
 
-def parse_broadcast_list(data: dict, event_external_id: str) -> list[BroadcastDTO]:
+def parse_broadcast_list(data: dict[str, Any], event_external_id: str) -> list[BroadcastDTO]:
     """Parse broadcast items from competition broadcasts response."""
     items = data.get("items", [])
     return [parse_broadcast(item, event_external_id) for item in items]

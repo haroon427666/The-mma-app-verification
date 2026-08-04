@@ -19,8 +19,6 @@ import logging
 import os
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { create } from 'zustand';
 import api from '@/services/api';
-import type { Fighter, Event, Fight } from '../../models';
+import type { Fighter, Event, Fight } from '../models';
 
 // ── Types ──
 export interface SearchResult {

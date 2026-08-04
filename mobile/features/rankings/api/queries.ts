@@ -11,7 +11,9 @@ export function useRankings(division: string) {
   return useQuery<Ranking[]>({
     queryKey: ['rankings', division],
     queryFn: async () => {
-      const url = division === 'Pound for Pound' ? '/v1/rankings?type=p4p' : `/v1/rankings?weight_class=${encodeURIComponent(division)}`;
+      const url = division === 'Pound for Pound'
+        ? '/v1/rankings/p4p'
+        : `/v1/rankings/${encodeURIComponent(division)}`;
       const { data } = await api.get(url); return data.data ?? [];
     },
     staleTime: 10 * 60 * 1000,

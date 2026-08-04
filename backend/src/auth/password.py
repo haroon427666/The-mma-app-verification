@@ -4,7 +4,10 @@ Never stores plaintext. Never uses bcrypt or SHA for passwords.
 Argon2id is memory-hard, GPU-resistant, and side-channel resistant.
 """
 
+from __future__ import annotations
+
 import logging
+from typing import cast
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +17,7 @@ logger = logging.getLogger(__name__)
 try:
     from argon2 import PasswordHasher
     from argon2.exceptions import VerifyMismatchError
-    _hasher = PasswordHasher(
+    _hasher: PasswordHasher | None = PasswordHasher(
         time_cost=3,        # Iterations
         memory_cost=65536,  # 64 MB
         parallelism=4,      # Threads
@@ -35,7 +38,7 @@ def hash_password(password: str) -> str:
     Fallback: SHA-256 with salt (NOT SECURE — dev only).
     """
     if ARGON2_AVAILABLE:
-        return _hasher.hash(password)
+        return cast(PasswordHasher, _hasher).hash(password)
 
     # ⚠️ DEV FALLBACK — NEVER USE IN PRODUCTION
     import hashlib
@@ -52,7 +55,7 @@ def verify_password(password: str, password_hash: str) -> bool:
     """
     if ARGON2_AVAILABLE:
         try:
-            _hasher.verify(password_hash, password)
+            cast(PasswordHasher, _hasher).verify(password_hash, password)
             return True
         except VerifyMismatchError:
             return False

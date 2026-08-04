@@ -18,7 +18,7 @@ class WeightClassUpsert(BaseUpsert):
     }
 
     @property
-    def _model_class(self) -> type:
+    def _model_class(self) -> type[WeightClass]:
         return WeightClass
 
     def _extract_external_id(self, dto: WeightClassDTO) -> str:

@@ -7,7 +7,6 @@ No magic strings anywhere in the sync engine.
 from dataclasses import dataclass
 from enum import Enum
 
-
 # ── Entity Types ──────────────────────────────────────────────────────────────
 
 

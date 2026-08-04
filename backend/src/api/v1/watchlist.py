@@ -1,10 +1,13 @@
 """Watchlist API — favorites, watchlist, reminders. Auth-required."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import Any
+
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.auth.dependencies import get_current_user
+from src.auth.jwt import TokenPayload
 from src.db.session import get_session
-from src.auth.dependencies import get_current_user, TokenPayload
 
 router = APIRouter(prefix="/v1/watchlist", tags=["watchlist"])
 
@@ -13,9 +16,10 @@ router = APIRouter(prefix="/v1/watchlist", tags=["watchlist"])
 async def watchlist_events(
     user: TokenPayload = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-):
+) -> dict[str, Any]:
     """User's watchlisted events."""
     from sqlalchemy import select as sa_select
+
     from src.db.models.auth import WatchlistEvent
     from src.db.models.event import Event
     result = await session.execute(
@@ -33,9 +37,10 @@ async def watchlist_events(
 async def watchlist_fighters(
     user: TokenPayload = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-):
+) -> dict[str, Any]:
     """User's favorited fighters."""
     from sqlalchemy import select as sa_select
+
     from src.db.models.auth import FighterFavorite
     from src.db.models.fighter import Fighter
     result = await session.execute(
@@ -53,7 +58,7 @@ async def add_event_watchlist(
     event_id: str,
     user: TokenPayload = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-):
+) -> dict[str, str]:
     """Add event to watchlist."""
     from src.db.models.auth import WatchlistEvent
     wl = WatchlistEvent(user_id=user.sub, event_id=event_id)
@@ -68,9 +73,10 @@ async def remove_event_watchlist(
     event_id: str,
     user: TokenPayload = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-):
+) -> None:
     """Remove event from watchlist."""
     from sqlalchemy import delete as sa_delete
+
     from src.db.models.auth import WatchlistEvent
     await session.execute(
         sa_delete(WatchlistEvent).where(
@@ -79,7 +85,6 @@ async def remove_event_watchlist(
         )
     )
     await session.commit()
-    return
 
 
 @router.post("/fighters/{fighter_id}", status_code=201)
@@ -87,7 +92,7 @@ async def add_fighter_favorite(
     fighter_id: str,
     user: TokenPayload = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-):
+) -> dict[str, str]:
     """Add fighter to favorites."""
     from src.db.models.auth import FighterFavorite
     fav = FighterFavorite(user_id=user.sub, fighter_id=fighter_id)
@@ -102,9 +107,10 @@ async def remove_fighter_favorite(
     fighter_id: str,
     user: TokenPayload = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-):
+) -> None:
     """Remove fighter from favorites."""
     from sqlalchemy import delete as sa_delete
+
     from src.db.models.auth import FighterFavorite
     await session.execute(
         sa_delete(FighterFavorite).where(
@@ -113,4 +119,3 @@ async def remove_fighter_favorite(
         )
     )
     await session.commit()
-    return

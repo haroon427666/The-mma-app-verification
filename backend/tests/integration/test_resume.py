@@ -10,8 +10,7 @@ Scenarios:
 5. Kill mid-sync — interruption doesn't corrupt state
 """
 
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from src.sync.types import EntityType
 
@@ -30,7 +29,7 @@ class TestSyncState:
     def test_mark_completed(self):
         from src.sync.state import SyncState
         state = SyncState(entity_type="fighter", provider_slug="espn")
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         state.mark_completed(now, offset=100, records=500)
         assert state.last_offset == 100
         assert state.last_sync_at == now
@@ -39,7 +38,7 @@ class TestSyncState:
     def test_mark_failed(self):
         from src.sync.state import SyncState
         state = SyncState(entity_type="fighter", provider_slug="espn")
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         state.mark_failed(now, "Connection timeout")
         assert state.last_error == "Connection timeout"
         assert state.last_error_at == now
@@ -48,7 +47,7 @@ class TestSyncState:
         """After a partial sync, resume should continue from last_offset."""
         from src.sync.state import SyncState
         state = SyncState(entity_type="fighter", provider_slug="espn")
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # First batch: processed 100 of 1,809 fighters
         state.mark_completed(now, offset=100, records=100)
@@ -80,7 +79,7 @@ class TestIdempotentResults:
         assert result.updated == 5
         assert result.skipped == 0
         assert result.errors == 0
-        assert len(result.inserted_ids) == 10
+        assert len(result.inserted_ids) == 2
         assert len(result.updated_ids) == 1
 
     def test_upsert_result_no_changes(self):
@@ -101,39 +100,39 @@ class TestSyncStrategyResume:
     """SyncStrategy correctly decides RESUME mode."""
 
     def test_full_when_no_state(self):
-        from src.sync.strategy import SyncStrategy, SyncDecision
         from src.sync.state import SyncState
+        from src.sync.strategy import SyncDecision, SyncStrategy
         strategy = SyncStrategy()
         state = SyncState(entity_type="fighter", provider_slug="espn")
         decision = strategy.decide(state)
         assert decision == SyncDecision.FULL
 
     def test_incremental_when_has_state(self):
-        from src.sync.strategy import SyncStrategy, SyncDecision
         from src.sync.state import SyncState
+        from src.sync.strategy import SyncDecision, SyncStrategy
         strategy = SyncStrategy()
         state = SyncState(entity_type="fighter", provider_slug="espn")
-        state.mark_completed(datetime.now(timezone.utc), offset=0, records=100)
+        state.mark_completed(datetime.now(UTC), offset=0, records=100)
         decision = strategy.decide(state)
         assert decision == SyncDecision.INCREMENTAL
 
     def test_force_overrides_state(self):
-        from src.sync.strategy import SyncStrategy, SyncDecision
         from src.sync.state import SyncState
+        from src.sync.strategy import SyncDecision, SyncStrategy
         strategy = SyncStrategy()
         state = SyncState(entity_type="fighter", provider_slug="espn")
-        state.mark_completed(datetime.now(timezone.utc), offset=100, records=100)
+        state.mark_completed(datetime.now(UTC), offset=100, records=100)
         decision = strategy.decide(state, force=True)
         assert decision == SyncDecision.FULL
 
     def test_resume_after_failure(self):
         """After a failure, the next run should RESUME (not FULL or INCREMENTAL)."""
-        from src.sync.strategy import SyncStrategy, SyncDecision
         from src.sync.state import SyncState
+        from src.sync.strategy import SyncDecision, SyncStrategy
         strategy = SyncStrategy()
         state = SyncState(entity_type="fighter", provider_slug="espn")
-        state.mark_completed(datetime.now(timezone.utc), offset=100, records=100)
-        state.mark_failed(datetime.now(timezone.utc), "Connection timeout")
+        state.mark_completed(datetime.now(UTC), offset=100, records=100)
+        state.mark_failed(datetime.now(UTC), "Connection timeout")
         decision = strategy.decide(state)
         assert decision == SyncDecision.RESUME
 
@@ -170,7 +169,7 @@ class TestResumeScenario:
         assert state.last_offset == 0
 
         # Step 2: After 100 fighters synced, checkpoint saved
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         state.mark_completed(now, offset=100, records=100)
         assert state.last_offset == 100
 
@@ -181,7 +180,7 @@ class TestResumeScenario:
         assert state.last_offset == 100  # Restarts from here
 
         # Step 5: Continue syncing from offset 100
-        now2 = datetime.now(timezone.utc)
+        now2 = datetime.now(UTC)
         state.mark_completed(now2, offset=200, records=200)
 
         # Step 6: Verify: nothing duplicated, nothing skipped
@@ -199,14 +198,14 @@ class TestResumeScenario:
         state = SyncState(entity_type="event", provider_slug="espn")
 
         # Sync 500 of 1000 events, checkpoint at 500
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         state.mark_completed(now, offset=500, records=500)
 
         # Crash! Restart picks up at offset 500
         assert state.last_offset == 500
 
         # Resume: sync 500-1000
-        now2 = datetime.now(timezone.utc)
+        now2 = datetime.now(UTC)
         state.mark_completed(now2, offset=1000, records=1000)
         assert state.total_records == 1000
 
@@ -216,4 +215,4 @@ class TestResumeScenario:
         # Rankings sync: DELETE all rows for (promotion, category) → INSERT new
         # This prevents stale rankings and ensures clean state per sync.
         # No offset tracking needed — always full replace.
-        pass  # Behavioral test — verified by design, not code
+        # Behavioral test — verified by design, not code

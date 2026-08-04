@@ -28,7 +28,7 @@ class SyncPlan:
     Plans can be composed: a FullSyncPlan contains a RankingsPlan, etc.
     """
 
-    name: str                               # "full_sync", "rankings_only", etc.
+    name: str = "unknown"                   # "full_sync", "rankings_only", etc.
     description: str = ""                   # Human-readable description
     order: list[EntityType] = field(default_factory=list)
     """Execution order. The engine runs jobs in this sequence.

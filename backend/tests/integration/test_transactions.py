@@ -29,7 +29,7 @@ class TestTransactionBoundary:
             pass
 
         with pytest.raises(TestError):
-            async with UnitOfWork() as uow:
+            async with UnitOfWork():
                 raise TestError("simulated failure")
 
         # UnitOfWork.__aexit__ should have called rollback()
@@ -38,6 +38,7 @@ class TestTransactionBoundary:
     def test_external_session_not_closed(self):
         """If session is passed in, UnitOfWork doesn't close it."""
         from unittest.mock import AsyncMock
+
         from src.db.unit_of_work import UnitOfWork
 
         session = AsyncMock()

@@ -18,10 +18,10 @@ Routing: logs (always) + optional Discord webhook + optional email.
 import logging
 import os
 import time
-from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Callable, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -34,21 +34,21 @@ class Alert:
     name: str
     severity: str  # critical, warning, info
     message: str
-    fired_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    details: dict = field(default_factory=dict)
+    fired_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
+    details: dict[str, Any] = field(default_factory=dict)
     acknowledged: bool = False
 
 
 class AlertEngine:
     """Checks conditions and fires alerts. Deduplicates within cooldown windows."""
 
-    def __init__(self, notifier=None):
-        self._conditions: dict[str, Callable] = {}
+    def __init__(self, notifier: Any = None) -> None:
+        self._conditions: dict[str, Callable[..., Any]] = {}
         self._cooldowns: dict[str, float] = {}
         self._fired: list[Alert] = []
         self._notifier = notifier
 
-    def register(self, name: str, check_fn: Callable, cooldown_s: int = 300) -> None:
+    def register(self, name: str, check_fn: Callable[..., Any], cooldown_s: int = 300) -> None:
         self._conditions[name] = check_fn
         self._cooldowns[name] = cooldown_s
 
@@ -88,7 +88,6 @@ class AlertEngine:
 
         if DISCORD_WEBHOOK:
             try:
-                import json
                 import httpx
                 color = {"critical": 0xE74C3C, "warning": 0xF39C12, "info": 0x3498DB}
                 async with httpx.AsyncClient() as client:
@@ -122,13 +121,13 @@ class LoginStormDetector:
 
 class TokenReuseDetector:
     """Tracks refresh token reuse events."""
-    def __init__(self):
-        self._reuse_events: list[dict] = []
+    def __init__(self) -> None:
+        self._reuse_events: list[dict[str, Any]] = []
 
-    def record_reuse(self, user_id: str, details: dict | None = None) -> None:
+    def record_reuse(self, user_id: str, details: dict[str, Any] | None = None) -> None:
         self._reuse_events.append({
             "user_id": user_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "details": details or {},
         })
         logger.critical(f"TOKEN REUSE ATTACK — user={user_id}")

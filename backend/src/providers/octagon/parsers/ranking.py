@@ -16,16 +16,18 @@ Octagon ranking format:
 ]
 """
 
+from typing import Any
+
 from src.providers.dto import RankingDTO
 
 
-def parse_rankings(data: list[dict], promotion_external_id: str = "ufc") -> list[RankingDTO]:
+def parse_rankings(data: list[dict[str, Any]], promotion_external_id: str = "ufc") -> list[RankingDTO]:
     rankings: list[RankingDTO] = []
     for category in data:
         if not isinstance(category, dict):
             continue
         category_name = category.get("categoryName", "")
-        category_type = category.get("id", "")
+        category.get("id", "")
 
         # Champion (rank 0, is_champion=True)
         champion = category.get("champion", {}) or {}

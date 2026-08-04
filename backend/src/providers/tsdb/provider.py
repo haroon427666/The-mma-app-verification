@@ -11,10 +11,10 @@ from typing import Any
 
 from src.providers.dto import EventDTO, FighterDTO, PromotionDTO
 from src.providers.tsdb.client import TSDBClient
-from src.providers.tsdb.config import TSDBClientConfig, ENDPOINTS, ESPN_TO_TSDB_LEAGUE_MAP
-from src.providers.tsdb.parsers.promotion import parse_promotion, parse_promotion_enrichment
+from src.providers.tsdb.config import ENDPOINTS, TSDBClientConfig
 from src.providers.tsdb.parsers.event import parse_event, parse_event_enrichment
 from src.providers.tsdb.parsers.fighter import parse_fighter, parse_fighter_enrichment
+from src.providers.tsdb.parsers.promotion import parse_promotion, parse_promotion_enrichment
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class TSDBProvider:
             logger.error(f"TSDB fetch_promotion({league_id}) failed: {e}")
         return None
 
-    async def fetch_promotion_enrichment(self, league_id: str) -> dict | None:
+    async def fetch_promotion_enrichment(self, league_id: str) -> dict[str, Any] | None:
         """Fetch enrichment-only fields for an existing promotion."""
         await self._ensure_started()
         path = ENDPOINTS["lookup_league"].format(league_id=league_id)
@@ -98,7 +98,7 @@ class TSDBProvider:
                 logger.error(f"TSDB {endpoint_key} failed: {e}")
         return events
 
-    async def fetch_event_enrichment(self, event_id: str) -> dict | None:
+    async def fetch_event_enrichment(self, event_id: str) -> dict[str, Any] | None:
         await self._ensure_started()
         path = ENDPOINTS["lookup_event"].format(event_id=event_id)
         try:
@@ -149,7 +149,7 @@ class TSDBProvider:
         logger.info(f"TSDB: fetched {len(fighters)} fighters")
         return fighters
 
-    async def fetch_fighter_enrichment(self, player_id: str) -> dict | None:
+    async def fetch_fighter_enrichment(self, player_id: str) -> dict[str, Any] | None:
         await self._ensure_started()
         path = ENDPOINTS["lookup_player"].format(player_id=player_id)
         try:

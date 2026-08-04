@@ -131,7 +131,7 @@ def upgrade() -> None:
     op.add_column("sync_runs", sa.Column("total_skipped", sa.Integer(), nullable=False, server_default=sa.text("0")))
     op.add_column("sync_runs", sa.Column("total_errors", sa.Integer(), nullable=False, server_default=sa.text("0")))
     op.add_column("sync_runs", sa.Column("api_calls", sa.Integer(), nullable=False, server_default=sa.text("0")))
-    op.add_column("sync_runs", sa.Column("duration_ms", sa.Integer(), nullable=False, server_default=sa.text("0")))
+    op.add_column("sync_runs", sa.Column("duration_ms", sa.Float(), nullable=False, server_default=sa.text("0")))
 
     # ══════════════════════════════════════════════════════════════════════════
     # 6. SyncableMixin columns on entity tables
@@ -144,8 +144,11 @@ def upgrade() -> None:
             sa.Column("version", sa.Integer(), nullable=False, server_default=sa.text("1")),
         ]
 
+    # NOTE: "rankings" intentionally excluded — 001_initial_schema already creates
+    # rankings.synced_at (line 219). Re-adding it here raises DuplicateColumnError
+    # on a fresh database. rankings.source_provider + version are added in 005.
     for table in ["fighters", "events", "competitions", "promotions", "venues",
-                   "broadcasts", "rankings", "weight_classes"]:
+                   "broadcasts", "weight_classes"]:
         for col in _make_syncable_columns():
             op.add_column(table, col)
 
@@ -161,8 +164,10 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     # Remove syncable columns from entity tables
+    # NOTE: "rankings" intentionally excluded — matches upgrade() (001 already
+    # creates rankings.synced_at; rankings.source_provider/version come from 005).
     for table in ["fighters", "events", "competitions", "promotions", "venues",
-                   "broadcasts", "rankings", "weight_classes"]:
+                   "broadcasts", "weight_classes"]:
         for col_name in ["synced_at", "source_provider", "version"]:
             op.drop_column(table, col_name)
 

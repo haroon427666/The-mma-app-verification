@@ -22,7 +22,7 @@ class TSDBClientConfig:
     request_timeout: float = 15.0
     max_retries: int = 3
     retry_backoff_base: float = 2.0
-    retry_status_codes: tuple = (429, 500, 502, 503, 504)
+    retry_status_codes: tuple[int, ...] = (429, 500, 502, 503, 504)
     user_agent: str = "MMA-Backend/1.0 (TheSportsDB Enrichment)"
 
 

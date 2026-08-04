@@ -5,14 +5,14 @@ Every flow: password hash → session save → token issue → audit log.
 """
 
 import logging
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.jwt import TokenPair
-from src.auth.dependencies import get_current_user, TokenPayload
+from src.auth.dependencies import get_current_user
+from src.auth.jwt import TokenPayload
 from src.db.session import get_session
 from src.services.auth_service import AuthService
 
@@ -58,7 +58,7 @@ class VerifyEmailRequest(BaseModel):
     token: str
 
 
-def _get_device_info(request: Request) -> dict:
+def _get_device_info(request: Request) -> dict[str, str]:
     return {
         "device": (request.headers.get("User-Agent") or "unknown")[:50],
         "browser": _parse_browser(request.headers.get("User-Agent", "")),
@@ -84,7 +84,7 @@ async def register(
     req: RegisterRequest,
     request: Request,
     session: AsyncSession = Depends(get_session),
-):
+) -> Any:
     """Create a new user account. Returns JWT tokens immediately."""
     service = AuthService(session)
     try:
@@ -104,7 +104,7 @@ async def login(
     req: LoginRequest,
     request: Request,
     session: AsyncSession = Depends(get_session),
-):
+) -> Any:
     """Authenticate. Returns JWT tokens + user data."""
     service = AuthService(session)
     try:
@@ -125,7 +125,7 @@ async def refresh(
     req: RefreshRequest,
     request: Request,
     session: AsyncSession = Depends(get_session),
-):
+) -> Any:
     """Refresh access token. Rotates refresh token (old → revoked, new → active)."""
     service = AuthService(session)
     try:
@@ -150,12 +150,11 @@ async def logout(
     request: Request,
     user: TokenPayload = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-):
+) -> None:
     """Logout: block access token JTI so it can't be reused."""
     service = AuthService(session)
     await service.logout(user.sub, access_token_jti=user.jti)
     await session.commit()
-    return
 
 
 @router.post("/logout-all", status_code=204)
@@ -163,32 +162,30 @@ async def logout_all(
     request: Request,
     user: TokenPayload = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-):
+) -> None:
     """Logout everywhere. Revokes ALL refresh tokens for this user."""
     service = AuthService(session)
     count = await service.logout_all(user.sub)
     await session.commit()
     logger.info(f"All sessions revoked for user={user.sub[:8]} ({count} sessions)")
-    return
 
 
 @router.post("/forgot-password", status_code=204)
 async def forgot_password(
     req: ForgotPasswordRequest,
     session: AsyncSession = Depends(get_session),
-):
+) -> None:
     """Send password reset email. Always returns 204 (anti-enumeration)."""
     service = AuthService(session)
     await service.forgot_password(req.email)
     await session.commit()
-    return
 
 
 @router.post("/reset-password", status_code=204)
 async def reset_password(
     req: ResetPasswordRequest,
     session: AsyncSession = Depends(get_session),
-):
+) -> None:
     """Reset password using emailed token. Revokes all sessions after."""
     service = AuthService(session)
     try:
@@ -197,7 +194,6 @@ async def reset_password(
     except ValueError as e:
         await session.rollback()
         raise HTTPException(400, str(e))
-    return
 
 
 @router.post("/change-password", status_code=204)
@@ -205,11 +201,12 @@ async def change_password(
     req: ChangePasswordRequest,
     user: TokenPayload = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-):
+) -> None:
     """Change password (authenticated). Requires current password."""
-    from src.auth.password import verify_password, hash_password, check_password_strength
-    from src.db.models.auth import User
     from sqlalchemy import select
+
+    from src.auth.password import check_password_strength, hash_password, verify_password
+    from src.db.models.auth import User
 
     valid, error = check_password_strength(req.new_password)
     if not valid:
@@ -225,14 +222,13 @@ async def change_password(
 
     db_user.password_hash = hash_password(req.new_password)
     await session.commit()
-    return
 
 
 @router.post("/verify-email")
 async def verify_email(
     req: VerifyEmailRequest,
     session: AsyncSession = Depends(get_session),
-):
+) -> dict[str, str]:
     """Verify email address using token sent after registration."""
     service = AuthService(session)
     success = await service.verify_email(req.token)

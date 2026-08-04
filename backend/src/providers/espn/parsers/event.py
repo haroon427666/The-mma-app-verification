@@ -6,13 +6,14 @@ Each competition has full inline data with: competitors, cardSegment, type (weig
 """
 
 from datetime import datetime
+from typing import Any
 
 from src.providers.dto import EventDTO
 from src.providers.espn.config import ESPN_STATUS_MAP
 from src.providers.espn.reference import extract_id_from_ref
 
 
-def parse_event(data: dict) -> EventDTO:
+def parse_event(data: dict[str, Any]) -> EventDTO:
     """Parse ESPN event resource → EventDTO.
 
     Args:
@@ -30,7 +31,7 @@ def parse_event(data: dict) -> EventDTO:
     raw_date = data.get("date")
     if raw_date:
         try:
-            date = datetime.fromisoformat(raw_date.replace("Z", "+00:00"))
+            date = datetime.fromisoformat(raw_date)
         except (ValueError, TypeError):
             pass
 
@@ -82,7 +83,7 @@ def _build_slug(name: str, date: datetime | None) -> str:
     return f"{base}-{year}"
 
 
-def extract_competitions_from_event(event_data: dict) -> list[dict]:
+def extract_competitions_from_event(event_data: dict[str, Any]) -> list[dict[str, Any]]:
     """Extract the embedded competitions array from an event response.
 
     Args:
@@ -94,7 +95,7 @@ def extract_competitions_from_event(event_data: dict) -> list[dict]:
     return event_data.get("competitions", []) or []
 
 
-def extract_venue_id_from_competition(comp_data: dict) -> str | None:
+def extract_venue_id_from_competition(comp_data: dict[str, Any]) -> str | None:
     """Extract venue external ID from an embedded competition.
 
     Venue is embedded in each competition: venue.{id, fullName, address}

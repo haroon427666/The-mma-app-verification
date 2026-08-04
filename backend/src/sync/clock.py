@@ -12,7 +12,7 @@ Usage:
 
 import time
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 class Clock(ABC):
@@ -28,6 +28,7 @@ class Clock(ABC):
         """Monotonic seconds (for measuring durations)."""
         ...
 
+    @property
     @abstractmethod
     def elapsed(self) -> float:
         """Seconds since this clock was created."""
@@ -41,7 +42,7 @@ class SystemClock(Clock):
         self._start = time.monotonic()
 
     def now(self) -> datetime:
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
 
     def monotonic(self) -> float:
         return time.monotonic()
@@ -55,7 +56,7 @@ class FrozenClock(Clock):
     """Test clock — time is frozen at a fixed point. Advance manually."""
 
     def __init__(self, frozen_at: datetime | None = None) -> None:
-        self._now = frozen_at or datetime(2026, 1, 1, tzinfo=timezone.utc)
+        self._now = frozen_at or datetime(2026, 1, 1, tzinfo=UTC)
         self._ticks: float = 0.0  # Monotonic counter
 
     def now(self) -> datetime:

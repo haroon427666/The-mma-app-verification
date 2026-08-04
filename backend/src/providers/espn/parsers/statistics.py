@@ -89,7 +89,7 @@ class FighterStatistics:
 
 
 def parse_statistics(
-    data: dict,
+    data: dict[str, Any],
     fighter_external_id: str,
     competition_external_id: str = "",
 ) -> FighterStatistics:
@@ -136,7 +136,7 @@ def parse_statistics(
             norm = normalize_stat_name(raw_name)
             label = norm["label"] if norm else (stat.get("displayName") or raw_name)
             cat = norm["category"] if norm else category_name
-            unit = norm["unit"] if norm else ""
+            norm["unit"] if norm else ""
 
             result.raw_dtos.append(StatisticDTO(
                 fighter_external_id=fighter_external_id,
@@ -164,7 +164,7 @@ def parse_statistics(
 
 
 def parse_statistics_legacy(
-    data: dict,
+    data: dict[str, Any],
     fighter_external_id: str,
     competition_external_id: str = "",
 ) -> list[StatisticDTO]:

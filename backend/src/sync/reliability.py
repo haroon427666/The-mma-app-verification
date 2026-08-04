@@ -14,7 +14,6 @@ from src.sync.dead_letter import DeadLetterQueue, DeadLetterRecord
 from src.sync.events import SyncEventBus, SyncEventCtx
 from src.sync.failure import (
     CircuitBreaker,
-    CircuitBreakerOpenError,
     FailureCategory,
     FailureClassifier,
 )
@@ -94,8 +93,12 @@ class ReliabilityConfig:
             self.circuit_breaker.on_failure(category)
 
         # Dead letter: store PERMANENT and DATA_ERROR DTOs
-        if category in (FailureCategory.PERMANENT, FailureCategory.DATA_ERROR):
-            if self.dead_letter and dto is not None and entity_type is not None:
+        if (
+            category in (FailureCategory.PERMANENT, FailureCategory.DATA_ERROR)
+            and self.dead_letter
+            and dto is not None
+            and entity_type is not None
+        ):
                 await self._dead_letter_dto(
                     entity_type=entity_type,
                     external_id=dto_external_id or "unknown",

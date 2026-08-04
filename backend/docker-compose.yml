@@ -13,6 +13,7 @@ services:
       - OCTAGON_BASE_URL=https://api.octagon-api.com
       - LOG_LEVEL=INFO
       - ENVIRONMENT=development
+      - SYNC_ENABLED=true
     depends_on:
       db:
         condition: service_healthy

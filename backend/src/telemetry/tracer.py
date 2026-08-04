@@ -14,8 +14,9 @@ Each span is timed and linked by trace_id.
 
 import logging
 import os
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +24,12 @@ OTEL_AVAILABLE = False
 
 try:
     from opentelemetry import trace
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
     from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
     from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-    from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-    from opentelemetry.instrumentation.redis import RedisInstrumentor
     from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+    from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
     OTEL_AVAILABLE = True
 except ImportError:
     pass
@@ -37,9 +37,9 @@ except ImportError:
 
 def setup_tracing(
     app_name: str = "mma-backend",
-    otlp_endpoint: Optional[str] = None,
+    otlp_endpoint: str | None = None,
     console: bool = False,
-) -> Optional[Any]:
+) -> Any | None:
     """Initialize OpenTelemetry tracing. Returns tracer if available."""
     if not OTEL_AVAILABLE:
         logger.warning("opentelemetry packages not installed — tracing disabled")
@@ -68,7 +68,7 @@ def setup_tracing(
     return tracer
 
 
-def instrument_app(app) -> None:
+def instrument_app(app: Any) -> None:
     """Auto-instrument FastAPI app for OpenTelemetry tracing."""
     if not OTEL_AVAILABLE:
         return
@@ -76,7 +76,7 @@ def instrument_app(app) -> None:
     logger.info("FastAPI auto-instrumented for OpenTelemetry")
 
 
-def instrument_sqlalchemy(engine) -> None:
+def instrument_sqlalchemy(engine: Any) -> None:
     """Auto-instrument SQLAlchemy for query tracing."""
     if not OTEL_AVAILABLE:
         return
@@ -94,7 +94,7 @@ def instrument_httpx() -> None:
 
 # ── Manual Span Helpers ──────────────────────────────────────────────────────
 
-def tracer() -> Optional[Any]:
+def tracer() -> Any | None:
     """Get the current tracer for manual span creation."""
     if not OTEL_AVAILABLE:
         return None
@@ -102,7 +102,7 @@ def tracer() -> Optional[Any]:
 
 
 @contextmanager
-def span(name: str, **attributes):
+def span(name: str, **attributes: Any) -> Iterator[None]:
     """Context manager for manual spans.
 
     Usage:

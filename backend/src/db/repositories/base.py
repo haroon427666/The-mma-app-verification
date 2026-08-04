@@ -4,10 +4,11 @@ Hides SQLAlchemy completely from business logic.
 All methods accept DTOs and return domain models or counts.
 """
 
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar, cast
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.base import Base
@@ -15,7 +16,7 @@ from src.db.base import Base
 T = TypeVar("T", bound=Base)
 
 
-class BaseRepository(Generic[T]):
+class BaseRepository[T: Base]:
     """Generic async repository with idempotent upsert support."""
 
     model: type[T]
@@ -27,15 +28,15 @@ class BaseRepository(Generic[T]):
 
     async def get_by_id(self, entity_id: str) -> T | None:
         result = await self._session.execute(
-            select(self.model).where(self.model.id == entity_id)
+            select(self.model).where(getattr(self.model, "id") == entity_id)  # noqa: B009
         )
         return result.scalar_one_or_none()
 
     async def get_by_external_id(self, provider: str, external_id: str) -> T | None:
         result = await self._session.execute(
             select(self.model).where(
-                self.model.provider == provider,
-                self.model.external_id == external_id,
+                getattr(self.model, "provider") == provider,  # noqa: B009
+                getattr(self.model, "external_id") == external_id,  # noqa: B009
             )
         )
         return result.scalar_one_or_none()
@@ -82,16 +83,17 @@ class BaseRepository(Generic[T]):
             )
 
             result = await self._session.execute(stmt)
-            affected += result.rowcount
+            cursor = cast(CursorResult[Any], result)
+            affected += int(cursor.rowcount or 0)
             await self._session.flush()
 
         return affected
 
-    async def update_fields(self, entity_id: str, **fields) -> None:
+    async def update_fields(self, entity_id: str, **fields: Any) -> None:
         """Update specific fields on an entity."""
         stmt = (
             update(self.model)
-            .where(self.model.id == entity_id)
+            .where(getattr(self.model, "id") == entity_id)  # noqa: B009
             .values(**fields)
         )
         await self._session.execute(stmt)
@@ -102,7 +104,7 @@ class BaseRepository(Generic[T]):
         """Convert a DTO to a dict of column values. Override per entity."""
         raise NotImplementedError
 
-    def _upsert_update_values(self, values: dict) -> dict:
+    def _upsert_update_values(self, values: dict[str, Any]) -> dict[str, Any]:
         """Fields to update on conflict. Excludes PK and identity columns.
         By default, updates everything except provider and external_id.
         """

@@ -7,11 +7,10 @@ Configure via environment:
     ALERT_EMAIL=ops@example.com
 """
 
-import json
 import logging
 import os
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -23,15 +22,15 @@ ALERT_EMAIL = os.environ.get("ALERT_EMAIL", "")
 class Notifier:
     """Sends notifications about sync events."""
 
-    def __init__(self):
-        self._http_client = None
+    def __init__(self) -> None:
+        self._http_client: Any = None
 
-    async def _ensure_client(self):
+    async def _ensure_client(self) -> None:
         if self._http_client is None:
             import httpx
             self._http_client = httpx.AsyncClient(timeout=10.0)
 
-    async def close(self):
+    async def close(self) -> None:
         if self._http_client:
             await self._http_client.aclose()
 
@@ -103,7 +102,7 @@ class Notifier:
                     "title": title,
                     "description": message,
                     "color": color,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }]
             }
             await self._http_client.post(DISCORD_WEBHOOK_URL, json=payload)

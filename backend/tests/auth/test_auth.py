@@ -1,10 +1,9 @@
 """Phase 9 Auth Tests — JWT, password, tokens, RBAC, sessions."""
 
-import pytest
 import time
-from datetime import datetime, timezone, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime, timedelta
 
+import pytest
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # JWT Tests
@@ -30,16 +29,18 @@ class TestJWT:
         assert pair.access_token != pair.refresh_token
 
     def test_refresh_token_rejected_as_access(self):
-        from src.auth.jwt import create_refresh_token, verify_access_token
         import jwt as pyjwt
+
+        from src.auth.jwt import create_refresh_token, verify_access_token
 
         refresh = create_refresh_token("user-1")
         with pytest.raises(pyjwt.exceptions.InvalidTokenError):
             verify_access_token(refresh)
 
     def test_token_with_wrong_secret_rejected(self):
-        from src.auth.jwt import create_access_token, SECRET_KEY, ALGORITHM
         import jwt as pyjwt
+
+        from src.auth.jwt import ALGORITHM, create_access_token
 
         token = create_access_token("user-1", "x@x.com")
         with pytest.raises(pyjwt.exceptions.InvalidTokenError):
@@ -198,11 +199,12 @@ class TestTokenRotation:
         verify_refresh_token(pair2.refresh_token)
 
     def test_expired_refresh_token_rejected(self):
-        from src.auth.jwt import create_access_token, verify_refresh_token, SECRET_KEY, ALGORITHM
         import jwt as pyjwt
 
+        from src.auth.jwt import ALGORITHM, SECRET_KEY, verify_refresh_token
+
         # Create an expired token manually
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         payload = {
             "sub": "user-1", "iat": now, "token_type": "refresh",
             "exp": now - timedelta(days=1),  # Expired yesterday

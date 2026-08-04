@@ -69,6 +69,7 @@ class SyncState:
 
     # ── Aggregate Stats ────────────────────────────────────────────────────
     total_synced: int = 0               # Cumulative rows synced across all runs
+    total_records: int = 0              # Records processed in the last completed run
     total_errors: int = 0               # Cumulative errors
 
     # ── Factory ────────────────────────────────────────────────────────────
@@ -89,16 +90,31 @@ class SyncState:
         self.status = "IN_PROGRESS"
         self.last_attempt = now
 
-    def mark_completed(self, now: datetime) -> None:
-        """Called when a sync job finishes successfully."""
+    def mark_completed(
+        self,
+        now: datetime,
+        offset: int | None = None,
+        records: int | None = None,
+    ) -> None:
+        """Called when a sync job finishes successfully.
+
+        When ``offset``/``records`` are provided the checkpoint advances to the
+        new position (offset-based resume). Without them the pagination state
+        is reset, as the run consumed the full range.
+        """
         self.status = "COMPLETED"
         self.last_successful_sync = now
         self.consecutive_failures = 0
         self.error_msg = None
-        # Reset pagination progress on successful completion
-        self.last_page = 0
-        self.last_offset = 0
-        self.last_cursor = None
+        if offset is not None:
+            self.last_offset = offset
+        else:
+            # Reset pagination progress on successful completion
+            self.last_page = 0
+            self.last_offset = 0
+            self.last_cursor = None
+        if records is not None:
+            self.total_records = records
 
     def mark_failed(self, now: datetime, error: str) -> None:
         """Called when a sync job fails.
@@ -110,6 +126,27 @@ class SyncState:
         self.last_failure = now
         self.error_msg = error
         self.consecutive_failures += 1
+
+    # ── Convenience aliases ─────────────────────────────────────────────
+
+    @property
+    def last_sync_at(self) -> datetime | None:
+        """Alias of last_successful_sync."""
+        return self.last_successful_sync
+
+    @last_sync_at.setter
+    def last_sync_at(self, value: datetime | None) -> None:
+        self.last_successful_sync = value
+
+    @property
+    def last_error(self) -> str | None:
+        """Alias of error_msg."""
+        return self.error_msg
+
+    @property
+    def last_error_at(self) -> datetime | None:
+        """Alias of last_failure."""
+        return self.last_failure
 
     def update_progress(
         self,
@@ -125,7 +162,7 @@ class SyncState:
         if cursor:
             self.last_cursor = cursor
 
-    def prepare_for_resume(self) -> dict:
+    def prepare_for_resume(self) -> dict[str, Any]:
         """Return pagination parameters for resuming a crashed sync.
         
         The job uses these to skip already-synced pages.
@@ -133,14 +170,14 @@ class SyncState:
         """
         if self.last_page == 0 and not self.last_cursor:
             return {}
-        params: dict = {
+        params: dict[str, Any] = {
             "offset": self.last_offset,
         }
         if self.last_cursor:
             params["cursor"] = self.last_cursor
         return params
 
-    def prepare_for_incremental(self) -> dict:
+    def prepare_for_incremental(self) -> dict[str, Any]:
         """Return parameters for an incremental delta sync.
         
         If updated_since is set, pass it to the provider.

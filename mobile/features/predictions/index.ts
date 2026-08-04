@@ -1,1 +1,69 @@
-/** Predictions Module — barrel export \n\n// ── Types ── \nexport type * from './types'; \n// ── API ── \nexport { predictionsApi } from './api/predictions.api'; \n// ── Repository ── \nexport { predictionsRepo } from './repository'; \n// ── Services ── \nexport { predictionKeys, predictionCache } from './services/queryKeys'; \n// ── Store ── \nexport { usePredictionsStore, predictionsActions } from './stores/predictions.store'; \n// ── Hooks ── \nexport { useFightPrediction, useEventPredictions, usePredictionDashboard, usePredictionHighlights, usePredictionHistory, usePredictionAccuracy, useMatchupPrediction, useMonteCarlo, usePredictionFactors, usePredictionOdds, useSavedPredictions, useSavePrediction, useUnsavePrediction, useSharePrediction } from './hooks/usePredictions'; \n// ── Navigation ── \nexport { PredictionsStack } from './navigation/PredictionsStack'; \nexport type { PredictionsStackParamList } from './navigation/PredictionsStack'; \n// ── Screens ── \nexport { PredictionsDashboardScreen, FightPredictionScreen, PredictionReportScreen, MonteCarloScreen, PredictionHistoryScreen, SavedPredictionsScreen, ComparePredictionsScreen } from './screens/PredictionsScreen'; \n// ── Components ── \nexport { WinProbabilityCard, ConfidenceBadge, FinishProbabilityBars, FactorsList, MonteCarloCard, PredictionOddsCard, AccuracyCard, PredictionCard, PredictionSkeleton, PredictionEmpty } from './components/PredictionsComponents'; \n// ── Theme & Utils ── \nexport { predictionColors, predictionLabels, predictionAnalytics, PredictionUnavailable } from './components/PredictionsComponents';
+/** Predictions Module — barrel export */
+
+export type * from './types';
+
+// ── API / Repository / Services / Store / Hooks (consolidated in ./api) ──
+export {
+  predictionsApi,
+  predictionsRepo,
+  predictionKeys,
+  predictionCache,
+  predictionAnalytics,
+  predictionDeeplinks,
+  usePredictionStore,
+  predictionActions,
+  useFightPrediction,
+  useEventPredictions,
+  usePredictionDashboard,
+  usePredictionHighlights,
+  usePredictionHistory,
+  usePredictionAccuracy,
+  useMatchupPrediction,
+  useSavedPredictions,
+  useSavePrediction,
+  useUnsavePrediction,
+} from './api';
+
+// ── Supplemental hooks (defined in ./hooks/usePredictions) ──
+export {
+  useMonteCarlo,
+  usePredictionFactors,
+  usePredictionOdds,
+  useSharePrediction,
+} from './hooks/usePredictions';
+
+// ── Navigation ──
+export { PredictionsStack } from './navigation/PredictionsStack';
+export type { PredictionsStackParamList } from './navigation/PredictionsStack';
+
+// ── Screens ──
+export {
+  PredictionsDashboardScreen,
+  FightPredictionScreen,
+  PredictionReportScreen,
+  MonteCarloScreen,
+  PredictionHistoryScreen,
+  SavedPredictionsScreen,
+  ComparePredictionsScreen,
+} from './screens/PredictionsScreen';
+
+// ── Components ──
+export {
+  WinProbabilityCard,
+  ConfidenceBadge,
+  FinishProbabilityBars,
+  FactorsList,
+  MonteCarloCard,
+  PredictionOddsCard,
+  AccuracyCard,
+  PredictionCard,
+  PredictionSkeleton,
+  PredictionEmpty,
+  PredictionUnavailable,
+} from './components/PredictionsComponents';
+
+// ── Theme ──
+export { predictionColors, predictionLabels } from './components/PredictionsComponents';
+
+// ── Store ──
+export { usePredictionsStore, predictionsActions } from './stores/predictions.store';

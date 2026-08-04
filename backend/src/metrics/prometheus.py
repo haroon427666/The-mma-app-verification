@@ -28,12 +28,10 @@ Metrics:
 """
 
 import logging
-import time
-from contextlib import contextmanager
-from typing import Optional
+from typing import Any
 
 try:
-    from prometheus_client import Counter, Gauge, Histogram, generate_latest, REGISTRY
+    from prometheus_client import REGISTRY, Counter, Gauge, Histogram, generate_latest
     PROMETHEUS_AVAILABLE = True
 except ImportError:
     PROMETHEUS_AVAILABLE = False
@@ -41,11 +39,69 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class Metrics:
-    """Central metrics registry — all application metrics in one place."""
+class _NoOpMetric:
+    """Dummy metric that silently accepts calls (no prometheus_client)."""
 
-    def __init__(self):
+    def labels(self, **kw: Any) -> Any:
+        return self
+
+    def inc(self, amount: int = 1) -> None:
+        pass
+
+    def dec(self, amount: int = 1) -> None:
+        pass
+
+    def set(self, value: Any) -> None:
+        pass
+
+    def observe(self, value: Any) -> None:
+        pass
+
+    def time(self) -> Any:
+        return _NoOpTimer()
+
+
+class _NoOpTimer:
+    def __enter__(self) -> Any:
+        return self
+
+    def __exit__(self, *a: object) -> None:
+        pass
+
+
+class Metrics:
+    """Central metrics registry — all application metrics in one place.
+
+    All metrics default to no-ops so they are safe to touch before
+    ``setup()`` runs (e.g. during tests or before app startup).
+    """
+
+    api_requests: Any
+    api_latency: Any
+    sync_job_duration: Any
+    sync_jobs_total: Any
+    sync_records_total: Any
+    provider_requests: Any
+    provider_latency: Any
+    scheduler_running: Any
+    scheduler_queued: Any
+    scheduler_failed: Any
+    scheduler_retries: Any
+    cache_hits: Any
+    cache_misses: Any
+    db_connections_active: Any
+    db_connections_idle: Any
+    db_query_duration: Any
+    login_attempts: Any
+    failed_logins: Any
+    jwt_created: Any
+    jwt_revoked: Any
+    notifications_sent: Any
+    payload_archive_size: Any
+
+    def __init__(self) -> None:
         self._started = False
+        self._init_mock()
 
     def setup(self) -> None:
         """Initialize all metrics. Call once at startup."""
@@ -55,13 +111,12 @@ class Metrics:
 
         if not PROMETHEUS_AVAILABLE:
             logger.warning("prometheus_client not installed — metrics disabled")
-            self._init_mock()
             return
 
         self._init_real()
         logger.info("Prometheus metrics initialized")
 
-    def _init_real(self):
+    def _init_real(self) -> None:
         # ── API ────────────────────────────────────────────────────
         self.api_requests = Counter(
             "api_requests_total", "Total API requests",
@@ -148,43 +203,30 @@ class Metrics:
             "payload_archive_size_bytes", "Estimated payload archive size",
         )
 
-    def _init_mock(self):
-        """Dummy metrics that silently accept calls (no prometheus_client)."""
-
-        class _NoOp:
-            def labels(self, **kw): return self
-            def inc(self, amount=1): pass
-            def dec(self, amount=1): pass
-            def set(self, value): pass
-            def observe(self, value): pass
-            def time(self): return _Timer()
-
-        class _Timer:
-            def __enter__(self): return self
-            def __exit__(self, *a): pass
-
-        self.api_requests = _NoOp()
-        self.api_latency = _NoOp()
-        self.sync_job_duration = _NoOp()
-        self.sync_jobs_total = _NoOp()
-        self.sync_records_total = _NoOp()
-        self.provider_requests = _NoOp()
-        self.provider_latency = _NoOp()
-        self.scheduler_running = _NoOp()
-        self.scheduler_queued = _NoOp()
-        self.scheduler_failed = _NoOp()
-        self.scheduler_retries = _NoOp()
-        self.cache_hits = _NoOp()
-        self.cache_misses = _NoOp()
-        self.db_connections_active = _NoOp()
-        self.db_connections_idle = _NoOp()
-        self.db_query_duration = _NoOp()
-        self.login_attempts = _NoOp()
-        self.failed_logins = _NoOp()
-        self.jwt_created = _NoOp()
-        self.jwt_revoked = _NoOp()
-        self.notifications_sent = _NoOp()
-        self.payload_archive_size = _NoOp()
+    def _init_mock(self) -> None:
+        """Wire up no-op metrics (default until ``setup()`` runs)."""
+        self.api_requests = _NoOpMetric()
+        self.api_latency = _NoOpMetric()
+        self.sync_job_duration = _NoOpMetric()
+        self.sync_jobs_total = _NoOpMetric()
+        self.sync_records_total = _NoOpMetric()
+        self.provider_requests = _NoOpMetric()
+        self.provider_latency = _NoOpMetric()
+        self.scheduler_running = _NoOpMetric()
+        self.scheduler_queued = _NoOpMetric()
+        self.scheduler_failed = _NoOpMetric()
+        self.scheduler_retries = _NoOpMetric()
+        self.cache_hits = _NoOpMetric()
+        self.cache_misses = _NoOpMetric()
+        self.db_connections_active = _NoOpMetric()
+        self.db_connections_idle = _NoOpMetric()
+        self.db_query_duration = _NoOpMetric()
+        self.login_attempts = _NoOpMetric()
+        self.failed_logins = _NoOpMetric()
+        self.jwt_created = _NoOpMetric()
+        self.jwt_revoked = _NoOpMetric()
+        self.notifications_sent = _NoOpMetric()
+        self.payload_archive_size = _NoOpMetric()
 
     def export(self) -> str:
         if PROMETHEUS_AVAILABLE:

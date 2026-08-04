@@ -5,8 +5,10 @@ records created/updated/skipped/errored, API calls made.
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -14,23 +16,24 @@ logger = logging.getLogger(__name__)
 class SyncHistoryRecorder:
     """Records sync run and job history."""
 
-    def __init__(self, session):
+    def __init__(self, session: AsyncSession):
         self._session = session
         self._active_run_id: str | None = None
 
     async def start_run(self, mode: str, provider: str | None = None) -> str:
         """Begin a new sync run. Returns run ID."""
         from sqlalchemy.dialects.postgresql import insert
-        from src.db.models.support import SyncRun
+
         from src.db.base import new_uuid
+        from src.db.models.support import SyncRun
 
         run_id = new_uuid()
-        values = {
+        values: dict[str, Any] = {
             "id": run_id,
             "status": "RUNNING",
             "mode": mode,
             "provider": provider,
-            "started_at": datetime.now(),
+            "started_at": datetime.now(UTC),
         }
 
         await self._session.execute(insert(SyncRun).values(**values))
@@ -43,12 +46,13 @@ class SyncHistoryRecorder:
         self,
         entity_type: str,
         status: str = "PENDING",
-        **metrics,
+        **metrics: Any,
     ) -> str:
         """Record a per-entity job within the active run."""
         from sqlalchemy.dialects.postgresql import insert
-        from src.db.models.support import SyncJob
+
         from src.db.base import new_uuid
+        from src.db.models.support import SyncJob
 
         if self._active_run_id is None:
             raise RuntimeError("No active sync run")
@@ -71,10 +75,11 @@ class SyncHistoryRecorder:
     async def complete_job(self, job_id: str, error: str | None = None) -> None:
         """Mark a job as completed or failed."""
         from sqlalchemy import update
+
         from src.db.models.support import SyncJob
 
         values = {
-            "completed_at": datetime.now(),
+            "completed_at": datetime.now(UTC),
             "status": "FAILED" if error else "COMPLETED",
         }
         if error:
@@ -96,13 +101,14 @@ class SyncHistoryRecorder:
     ) -> None:
         """Complete the active sync run."""
         from sqlalchemy import update
+
         from src.db.models.support import SyncRun
 
         if self._active_run_id is None:
             return
 
         values = {
-            "completed_at": datetime.now(),
+            "completed_at": datetime.now(UTC),
             "status": "FAILED" if error else "COMPLETED",
             "total_inserted": total_inserted,
             "total_updated": total_updated,

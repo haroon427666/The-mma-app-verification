@@ -16,10 +16,15 @@ export interface WatchItem { id: string; title: string; subtitle: string | null;
 export interface WatchReminder { id: string; targetId: string; type: WTab; remindAt: string; active: boolean; }
 
 // ── API ──
+const watchPath = (type: WTab) =>
+  type === 'events' ? '/v1/me/watchlist/events'
+  : type === 'fighters' ? '/v1/me/favorites/fighters'
+  : `/v1/watchlist/${type}`; // phantom tab (fights/promotions) — no backend route, reported in contract diff
+
 export const watchApi = {
-  list: (type: WTab) => api.get(`/v1/watchlist/${type}`),
-  add: (type: WTab, id: string) => api.post(`/v1/watchlist/${type}/${id}`),
-  remove: (type: WTab, id: string) => api.delete(`/v1/watchlist/${type}/${id}`),
+  list: (type: WTab) => api.get(watchPath(type)),
+  add: (type: WTab, id: string) => api.post(`${watchPath(type)}/${id}`),
+  remove: (type: WTab, id: string) => api.delete(`${watchPath(type)}/${id}`),
   reminders: () => api.get('/v1/watchlist/reminders'),
   createReminder: (targetId: string, type: WTab, remindAt: string) => api.post('/v1/watchlist/reminders', { target_id: targetId, type, remind_at: remindAt }),
   cancelReminder: (id: string) => api.delete(`/v1/watchlist/reminders/${id}`),

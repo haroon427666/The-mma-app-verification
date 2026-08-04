@@ -5,9 +5,8 @@ import { useAuthStore } from '@/stores/auth';
 import { useConnectivityStore } from '@/stores/connectivity';
 import type { ApiError, AuthTokens } from '@/types';
 
-const BASE_URL = __DEV__
-  ? 'http://localhost:8000/api'
-  : 'https://api.mma-platform.com/api';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL
+  ?? (__DEV__ ? 'http://localhost:8000/api' : 'https://api.mma-platform.com/api');
 
 const api = axios.create({
   baseURL: BASE_URL,

@@ -4,7 +4,7 @@ import api from '@/services/api';
 
 export const rankingsApi = {
   p4p: () => api.get('/v1/rankings/p4p'),
-  byDivision: (division: string) => api.get(`/v1/rankings/division/${encodeURIComponent(division)}`),
+  byDivision: (division: string) => api.get(`/v1/rankings/${encodeURIComponent(division)}`),
   list: (params?: { type?: string; weight_class?: string; limit?: number }) => {
     const q = new URLSearchParams();
     if (params?.type) q.set('type', params.type);

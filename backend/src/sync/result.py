@@ -4,6 +4,7 @@ Sync result — immutable aggregate outcome of a full sync run.
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 from src.sync.job import JobResult
 from src.sync.types import SyncStatus
@@ -58,7 +59,7 @@ class SyncResult:
 
     # ── Summary ────────────────────────────────────────────────────────────
 
-    def summary(self) -> dict:
+    def summary(self) -> dict[str, Any]:
         """JSON-serializable summary for logging."""
         return {
             "run_id": self.run_id,

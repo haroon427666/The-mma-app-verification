@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '@/hooks/useTheme';
 import { typography, spacing, radius, shadows } from '@/theme';
-import type { Fighter, Event, Fight } from '../../models';
+import type { Fighter, Event, Fight } from '../models';
 
 // ── Types ──
 export type WatchlistTab = 'events' | 'fighters' | 'fights' | 'promotions';
@@ -18,11 +18,17 @@ export interface WatchlistReminder { id: string; targetId: string; type: Watchli
 export interface WatchlistCollection { id: string; name: string; items: string[]; type: WatchlistTab; }
 
 // ── API ──
+// ── API ──
+const watchlistPath = (type: WatchlistTab) =>
+  type === 'events' ? '/v1/me/watchlist/events'
+  : type === 'fighters' ? '/v1/me/favorites/fighters'
+  : `/v1/watchlist/${type}`; // phantom tab — no backend route, reported in contract diff
+
 export const watchlistApi = {
-  list: (type: WatchlistTab) => api.get(`/v1/watchlist/${type}`),
-  add: (type: WatchlistTab, id: string) => api.post(`/v1/watchlist/${type}/${id}`),
-  remove: (type: WatchlistTab, id: string) => api.delete(`/v1/watchlist/${type}/${id}`),
-  check: (type: WatchlistTab, id: string) => api.get(`/v1/watchlist/${type}/${id}/status`),
+  list: (type: WatchlistTab) => api.get(watchlistPath(type)),
+  add: (type: WatchlistTab, id: string) => api.post(`${watchlistPath(type)}/${id}`),
+  remove: (type: WatchlistTab, id: string) => api.delete(`${watchlistPath(type)}/${id}`),
+  check: (type: WatchlistTab, id: string) => api.get(`${watchlistPath(type)}/${id}/status`),
   reminders: () => api.get('/v1/watchlist/reminders'),
   createReminder: (targetId: string, type: WatchlistTab, remindAt: string) => api.post('/v1/watchlist/reminders', { target_id: targetId, type, remind_at: remindAt }),
   cancelReminder: (id: string) => api.delete(`/v1/watchlist/reminders/${id}`),

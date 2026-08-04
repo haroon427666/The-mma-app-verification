@@ -18,12 +18,15 @@ Frequency table:
     cleanup             daily             — old payloads, temp files
 """
 
-import asyncio
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from src.scheduler.retry import RetryPolicy
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +54,8 @@ class JobResult:
 class JobConfig:
     name: str
     description: str = ""
-    cron: Optional[str] = None           # APScheduler cron expression
-    interval_seconds: Optional[int] = None  # Alternative to cron
+    cron: str | None = None           # APScheduler cron expression
+    interval_seconds: int | None = None  # Alternative to cron
     max_runtime_seconds: int = 600       # Kill job if it runs longer than this
     lock_ttl: int = 300                  # Distributed lock TTL
     retry_policy: Optional["RetryPolicy"] = None
@@ -62,7 +65,7 @@ class JobConfig:
 
 # ── Job Coroutine Definitions ──────────────────────────────────────────────────
 
-async def sync_events_upcoming(ctx: "SyncContext") -> JobResult:
+async def sync_events_upcoming(ctx: Any) -> JobResult:
     """Fetch upcoming UFC events from ESPN + enrich from TSDB."""
     start = time.monotonic()
     try:
@@ -81,7 +84,7 @@ async def sync_events_upcoming(ctx: "SyncContext") -> JobResult:
         )
 
 
-async def sync_events_live(ctx: "SyncContext") -> JobResult:
+async def sync_events_live(ctx: Any) -> JobResult:
     """High-frequency poll for active event results."""
     start = time.monotonic()
     try:
@@ -93,7 +96,7 @@ async def sync_events_live(ctx: "SyncContext") -> JobResult:
         events = await ctx.espn_provider.fetch_events()
         for event in events:
             if event.status == "FINAL" or event.status == "IN_PROGRESS":
-                competitions = await ctx.espn_provider.fetch_competitions(str(event.external_id))
+                await ctx.espn_provider.fetch_competitions(str(event.external_id))
                 # Upsert competitions with results
 
         duration = (time.monotonic() - start) * 1000
@@ -106,7 +109,7 @@ async def sync_events_live(ctx: "SyncContext") -> JobResult:
                         errors=1, error_message=str(e))
 
 
-async def sync_results(ctx: "SyncContext") -> JobResult:
+async def sync_results(ctx: Any) -> JobResult:
     """Poll for completed fights — update winners, methods, times."""
     start = time.monotonic()
     try:
@@ -120,7 +123,7 @@ async def sync_results(ctx: "SyncContext") -> JobResult:
                         errors=1, error_message=str(e))
 
 
-async def sync_rankings(ctx: "SyncContext") -> JobResult:
+async def sync_rankings(ctx: Any) -> JobResult:
     """Daily rankings sync — ESPN + Octagon verification."""
     start = time.monotonic()
     try:
@@ -134,7 +137,7 @@ async def sync_rankings(ctx: "SyncContext") -> JobResult:
                         errors=1, error_message=str(e))
 
 
-async def sync_fighter_enrichment(ctx: "SyncContext") -> JobResult:
+async def sync_fighter_enrichment(ctx: Any) -> JobResult:
     """Weekly enrichment from TSDB + Octagon — bios, images, gym, style."""
     start = time.monotonic()
     try:
@@ -154,7 +157,7 @@ async def sync_fighter_enrichment(ctx: "SyncContext") -> JobResult:
                         errors=1, error_message=str(e))
 
 
-async def sync_promotion_meta(ctx: "SyncContext") -> JobResult:
+async def sync_promotion_meta(ctx: Any) -> JobResult:
     """Weekly promotion branding refresh from TSDB."""
     start = time.monotonic()
     try:
@@ -167,7 +170,7 @@ async def sync_promotion_meta(ctx: "SyncContext") -> JobResult:
                         errors=1, error_message=str(e))
 
 
-async def sync_cleanup(ctx: "SyncContext") -> JobResult:
+async def sync_cleanup(ctx: Any) -> JobResult:
     """Daily cleanup — old payloads, expired checkpoints."""
     start = time.monotonic()
     try:
@@ -231,7 +234,7 @@ JOB_REGISTRY: dict[str, JobConfig] = {
     ),
 }
 
-JOB_FUNCTIONS: dict[str, Callable] = {
+JOB_FUNCTIONS: dict[str, Callable[..., Any]] = {
     "events_upcoming": sync_events_upcoming,
     "events_live": sync_events_live,
     "results": sync_results,

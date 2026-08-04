@@ -1,3 +1,3 @@
-from src.features.flags import is_enabled, set_flag, list_flags, FLAGS
+from src.features.flags import FLAGS, is_enabled, list_flags, set_flag
 
-__all__ = ["is_enabled", "set_flag", "list_flags", "FLAGS"]
+__all__ = ["FLAGS", "is_enabled", "list_flags", "set_flag"]

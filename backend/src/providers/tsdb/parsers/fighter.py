@@ -6,11 +6,12 @@ ethnicity, wikidata_id, social links (often empty for MMA).
 """
 
 from datetime import datetime
+from typing import Any
 
 from src.providers.dto import FighterDTO
 
 
-def parse_fighter(data: dict) -> FighterDTO:
+def parse_fighter(data: dict[str, Any]) -> FighterDTO:
     external_id = str(data.get("idPlayer", ""))
     full_name = data.get("strPlayer", "")
     last_name = data.get("strLastName", "") or ""
@@ -20,7 +21,7 @@ def parse_fighter(data: dict) -> FighterDTO:
     raw_dob = data.get("dateBorn")
     if raw_dob:
         try:
-            birth_date = datetime.strptime(raw_dob, "%Y-%m-%d")
+            birth_date = datetime.fromisoformat(raw_dob)
         except (ValueError, TypeError):
             pass
 
@@ -43,7 +44,7 @@ def parse_fighter(data: dict) -> FighterDTO:
     )
 
 
-def parse_fighter_enrichment(data: dict) -> dict:
+def parse_fighter_enrichment(data: dict[str, Any]) -> dict[str, Any]:
     """Enrichment-only fields from TSDB that supplement ESPN/Octagon."""
     return {
         "nickname": data.get("strPlayerAlternate") or None,

@@ -35,10 +35,9 @@ Usage:
     await scheduler.shutdown()
 """
 
-import asyncio
 import logging
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -46,7 +45,6 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.date import DateTrigger
 
 from src.providers.base import BaseDataProvider
-from src.sync.context import CancellationToken
 from src.sync.engine import SyncEngine
 from src.sync.lock import ExecutionLock, InMemoryLock
 from src.sync.observability import AlertManager, StructuredLogger
@@ -59,7 +57,7 @@ from src.sync.plan import (
     SyncPlan,
 )
 from src.sync.retry import RetryPolicy
-from src.sync.types import SyncMode, SyncStatus
+from src.sync.types import SyncMode
 
 logger = logging.getLogger(__name__)
 
@@ -396,7 +394,7 @@ class SyncScheduler:
                 plan_name=d.plan_name,
                 mode=mode,
                 run_id="",
-                started_at=datetime.now(timezone.utc),
+                started_at=datetime.now(UTC),
                 is_manual=is_manual,
             )
             self._running[definition_id] = record
@@ -415,7 +413,7 @@ class SyncScheduler:
 
             # ── Record result ───────────────────────────────────────────
             record.run_id = result.run_id
-            record.completed_at = result.completed_at or datetime.now(timezone.utc)
+            record.completed_at = result.completed_at or datetime.now(UTC)
             record.duration_ms = result.duration_ms
             record.status = result.overall_status.value
 
@@ -434,13 +432,13 @@ class SyncScheduler:
             return result.run_id
 
         except Exception as e:
-            logger.error(f"Job '{definition_id}' failed: {e}", exc_info=True)
-            record = self._running.get(definition_id)
-            if record:
-                record.status = "FAILED"
-                record.error = str(e)
-                record.completed_at = datetime.now(timezone.utc)
-                self._add_to_history(record)
+            logger.exception(f"Job '{definition_id}' failed")
+            rec = self._running.get(definition_id)
+            if rec:
+                rec.status = "FAILED"
+                rec.error = str(e)
+                rec.completed_at = datetime.now(UTC)
+                self._add_to_history(rec)
             return None
 
         finally:

@@ -9,8 +9,6 @@ Tests validate:
 - No crashes on malformed data
 """
 
-import pytest
-from datetime import datetime
 
 
 class TestPromotionParser:

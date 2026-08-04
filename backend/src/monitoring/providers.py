@@ -6,10 +6,9 @@ last success/failure timestamps, rate limit hits.
 """
 
 import logging
-import time
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Optional
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -27,15 +26,15 @@ class ProviderMetrics:
     total_errors: int = 0
     consecutive_failures: int = 0
     rate_limit_hits: int = 0
-    last_success: Optional[datetime] = None
-    last_failure: Optional[datetime] = None
+    last_success: datetime | None = None
+    last_failure: datetime | None = None
     last_error: str = ""
 
     def record_success(self, latency_ms: float) -> None:
         self.is_up = True
         self.total_requests += 1
         self.consecutive_failures = 0
-        self.last_success = datetime.now(timezone.utc)
+        self.last_success = datetime.now(UTC)
         # Exponential moving average
         self.avg_latency_ms = (self.avg_latency_ms * 0.9) + (latency_ms * 0.1)
         self.error_rate = (self.total_errors / self.total_requests * 100) if self.total_requests > 0 else 0
@@ -44,7 +43,7 @@ class ProviderMetrics:
         self.total_requests += 1
         self.total_errors += 1
         self.consecutive_failures += 1
-        self.last_failure = datetime.now(timezone.utc)
+        self.last_failure = datetime.now(UTC)
         self.last_error = error
         self.error_rate = (self.total_errors / self.total_requests * 100)
         if self.consecutive_failures >= 3:
@@ -58,7 +57,7 @@ class ProviderMetrics:
 class ProviderMonitor:
     """Tracks health of all external providers."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._providers: dict[str, ProviderMetrics] = {}
 
     def register(self, name: str, base_url: str = "") -> ProviderMetrics:
@@ -69,7 +68,7 @@ class ProviderMonitor:
     def get(self, name: str) -> ProviderMetrics:
         return self._providers.get(name) or self.register(name)
 
-    def status(self) -> dict:
+    def status(self) -> dict[str, dict[str, Any]]:
         return {
             name: {
                 "is_up": p.is_up,

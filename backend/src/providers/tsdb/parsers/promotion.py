@@ -4,10 +4,12 @@ Maps TSDB league fields → PromotionDTO (same DTO as ESPN).
 TSDB provides: media assets, social links, descriptions, historical data.
 """
 
+from typing import Any
+
 from src.providers.dto import PromotionDTO
 
 
-def parse_promotion(data: dict) -> PromotionDTO:
+def parse_promotion(data: dict[str, Any]) -> PromotionDTO:
     """Parse TSDB league → PromotionDTO (enrichment fields only).
 
     ESPN is the authority for: id, name, slug, abbreviation, short_name.
@@ -31,7 +33,7 @@ def parse_promotion(data: dict) -> PromotionDTO:
     )
 
 
-def parse_promotion_enrichment(data: dict) -> dict:
+def parse_promotion_enrichment(data: dict[str, Any]) -> dict[str, Any]:
     """Extract enrichment-only fields that supplement the ESPN PromotionDTO."""
     return {
         "poster_url": data.get("strPoster"),

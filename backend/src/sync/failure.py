@@ -14,11 +14,8 @@ dead-letter additions, and retry exhaustion.
 import asyncio
 import logging
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any
-
-from src.sync.events import SyncEventBus, SyncEventCtx
 
 logger = logging.getLogger(__name__)
 
@@ -284,7 +281,6 @@ class CircuitBreaker:
     # ── Internal ───────────────────────────────────────────────────────────
 
     def _trip(self) -> None:
-        was_state = self._state
         self._state = CircuitState.OPEN
         self._total_trips += 1
         logger.warning(
@@ -299,4 +295,3 @@ class CircuitBreaker:
 
 class CircuitBreakerOpenError(Exception):
     """Raised when a call is attempted while the circuit breaker is OPEN."""
-    pass

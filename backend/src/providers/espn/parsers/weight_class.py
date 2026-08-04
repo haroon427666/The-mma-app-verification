@@ -8,10 +8,12 @@ Weight classes are extracted from INLINE data in:
 There is no dedicated weight class endpoint; they're collected during sync.
 """
 
+from typing import Any
+
 from src.providers.dto import WeightClassDTO
 
 
-def parse_weight_class(data: dict) -> WeightClassDTO:
+def parse_weight_class(data: dict[str, Any]) -> WeightClassDTO:
     """Parse weight class from inline data (athlete or competition).
 
     Args:
@@ -35,7 +37,7 @@ def parse_weight_class(data: dict) -> WeightClassDTO:
     )
 
 
-def parse_weight_class_from_athlete(athlete_data: dict) -> WeightClassDTO | None:
+def parse_weight_class_from_athlete(athlete_data: dict[str, Any]) -> WeightClassDTO | None:
     """Extract weight class from athlete.weightClass inline object."""
     wc = athlete_data.get("weightClass", {}) or {}
     if isinstance(wc, dict) and wc.get("id"):
@@ -43,7 +45,7 @@ def parse_weight_class_from_athlete(athlete_data: dict) -> WeightClassDTO | None
     return None
 
 
-def parse_weight_class_from_competition(comp_data: dict) -> WeightClassDTO | None:
+def parse_weight_class_from_competition(comp_data: dict[str, Any]) -> WeightClassDTO | None:
     """Extract weight class from competition.type inline object."""
     wc = comp_data.get("type", {}) or {}
     if isinstance(wc, dict) and wc.get("id"):

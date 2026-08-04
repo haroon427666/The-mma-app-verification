@@ -14,9 +14,10 @@ Each returns: {"status": "healthy", "checks": {...}} or "degraded" / "failed"
 
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Callable, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +39,11 @@ class HealthCheck:
 class HealthChecker:
     """Runs all health checks and aggregates results."""
 
-    def __init__(self):
-        self._checks: dict[str, Callable] = {}
-        self._started_at = datetime.now(timezone.utc)
+    def __init__(self) -> None:
+        self._checks: dict[str, Callable[..., Any]] = {}
+        self._started_at = datetime.now(UTC)
 
-    def register(self, name: str, check_fn: Callable) -> None:
+    def register(self, name: str, check_fn: Callable[..., Any]) -> None:
         self._checks[name] = check_fn
 
     async def run_check(self, name: str) -> HealthCheck:
@@ -67,7 +68,7 @@ class HealthChecker:
                 duration_ms=(time.monotonic() - start) * 1000,
             )
 
-    async def run_all(self) -> dict:
+    async def run_all(self) -> dict[str, Any]:
         checks = {}
         for name in self._checks:
             checks[name] = await self.run_check(name)
@@ -83,19 +84,19 @@ class HealthChecker:
 
         return {
             "status": overall,
-            "uptime_seconds": (datetime.now(timezone.utc) - self._started_at).total_seconds(),
+            "uptime_seconds": (datetime.now(UTC) - self._started_at).total_seconds(),
             "checks": {
                 name: {"status": c.status, "detail": c.detail, "duration_ms": round(c.duration_ms, 2)}
                 for name, c in checks.items()
             },
         }
 
-    async def run_liveness(self) -> dict:
+    async def run_liveness(self) -> dict[str, Any]:
         """Kubernetes liveness — just confirms the process is alive."""
         return {"status": HealthStatus.HEALTHY, "uptime_seconds":
-                (datetime.now(timezone.utc) - self._started_at).total_seconds()}
+                (datetime.now(UTC) - self._started_at).total_seconds()}
 
-    async def run_readiness(self) -> dict:
+    async def run_readiness(self) -> dict[str, Any]:
         """Kubernetes readiness — DB + Redis must be up."""
         checks = {}
         for name in ("database", "redis"):
@@ -114,7 +115,7 @@ class HealthChecker:
 
 # ── Pre-built health check functions ──────────────────────────────────────
 
-async def check_database(db_session_factory=None) -> bool:
+async def check_database(db_session_factory: Any = None) -> bool:
     """Ping the database."""
     if db_session_factory is None:
         return False  # Not configured
@@ -127,17 +128,17 @@ async def check_database(db_session_factory=None) -> bool:
         return False
 
 
-async def check_redis(redis_client=None) -> bool:
+async def check_redis(redis_client: Any = None) -> bool:
     """Ping Redis."""
     if redis_client is None:
         return False
     try:
-        return await redis_client.ping()
+        return bool(await redis_client.ping())
     except Exception:
         return False
 
 
-async def check_provider_espn(http_client=None) -> bool:
+async def check_provider_espn(http_client: Any = None) -> bool:
     """Check ESPN API reachability."""
     if http_client is None:
         return True  # Assume OK if no client configured
@@ -146,21 +147,21 @@ async def check_provider_espn(http_client=None) -> bool:
             "https://sports.core.api.espn.com/v2/sports/mma/leagues/ufc?limit=1",
             timeout=10,
         )
-        return resp.status_code == 200
+        return bool(resp.status_code == 200)
     except Exception:
         return False
 
 
-async def check_scheduler(manager=None) -> bool:
+async def check_scheduler(manager: Any = None) -> bool:
     """Check scheduler is running and not stuck."""
     if manager is None:
         return True
     try:
         status = await manager.get_status()
         # Degraded if any job has 3+ consecutive failures
-        for job_name, job in status.get("health", {}).get("jobs", {}).items():
+        for job in status.get("health", {}).get("jobs", {}).values():
             if job.get("consecutive_failures", 0) >= 3:
                 return False
-        return status.get("running", False)
+        return bool(status.get("running", False))
     except Exception:
         return False

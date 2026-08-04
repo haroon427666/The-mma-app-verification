@@ -13,8 +13,8 @@ Consistent error schema across every endpoint:
 """
 
 import logging
-from datetime import datetime, timezone
-from typing import Optional, Any
+from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -52,7 +52,7 @@ class NotFoundError(ProblemDetail):
             title=f"{entity} not found",
             status=404,
             detail=f"No {entity.lower()} found{f' for: {identifier}' if identifier else ''}",
-            error_type=f"https://mma-api.example.com/errors/not-found",
+            error_type="https://mma-api.example.com/errors/not-found",
         )
 
 
@@ -162,7 +162,7 @@ def build_problem_response(
         "status": exc.status,
         "detail": exc.detail,
         "instance": str(request.url),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
     if request_id:
         body["request_id"] = request_id

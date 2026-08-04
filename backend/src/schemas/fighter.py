@@ -4,12 +4,8 @@ These are what the frontend receives. Never expose SQLAlchemy objects.
 """
 
 from datetime import date, datetime
-from typing import Optional
 
-from pydantic import BaseModel, Field
-
-from src.schemas.common import Stance
-
+from pydantic import BaseModel
 
 # ── List Item (for /fighters listing) ───────────────────────────────────────
 
@@ -32,7 +28,7 @@ class FighterListItem(BaseModel):
     latest_rank: int | None = None
     latest_rank_category: str | None = None
 
-    model_config = {"from_attributes": True}
+    model_config = {"extra": "forbid"}
 
 
 # ── Record ──────────────────────────────────────────────────────────────────

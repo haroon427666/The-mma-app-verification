@@ -1,5 +1,5 @@
-from src.providers.tsdb.provider import TSDBProvider
 from src.providers.tsdb.client import TSDBClient
 from src.providers.tsdb.config import TSDBClientConfig
+from src.providers.tsdb.provider import TSDBProvider
 
-__all__ = ["TSDBProvider", "TSDBClient", "TSDBClientConfig"]
+__all__ = ["TSDBClient", "TSDBClientConfig", "TSDBProvider"]

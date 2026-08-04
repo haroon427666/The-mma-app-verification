@@ -11,8 +11,7 @@ Slow queries are logged at:
 
 import logging
 import time
-from contextlib import asynccontextmanager
-from typing import Optional
+from typing import Any
 
 from sqlalchemy import event
 
@@ -26,14 +25,14 @@ SLOW_QUERY_THRESHOLDS = [
 ]
 
 
-def _get_level_for_duration(ms: float) -> tuple[str, Optional[str]]:
+def _get_level_for_duration(ms: float) -> tuple[str, str | None]:
     for threshold, level in reversed(SLOW_QUERY_THRESHOLDS):
         if ms >= threshold:
             return level, f">={threshold}ms"
     return "DEBUG", None
 
 
-def install_slow_query_detector(engine) -> None:
+def install_slow_query_detector(engine: Any) -> None:
     """Install SQLAlchemy event hooks for query timing.
 
     Logs every query that exceeds thresholds with SQL, parameters, and duration.
@@ -45,13 +44,13 @@ def install_slow_query_detector(engine) -> None:
     """
 
     @event.listens_for(engine.sync_engine, "before_cursor_execute")
-    def before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+    def before_cursor_execute(conn: Any, cursor: Any, statement: Any, parameters: Any, context: Any, executemany: Any) -> None:
         conn.info["query_start"] = time.monotonic()
         conn.info["query_sql"] = statement[:500]
         conn.info["query_params"] = str(parameters)[:200]
 
     @event.listens_for(engine.sync_engine, "after_cursor_execute")
-    def after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+    def after_cursor_execute(conn: Any, cursor: Any, statement: Any, parameters: Any, context: Any, executemany: Any) -> None:
         start = conn.info.pop("query_start", None)
         if start is None:
             return
@@ -85,14 +84,14 @@ def install_slow_query_detector(engine) -> None:
     logger.info("Slow query detector installed")
 
 
-def install_connection_pool_monitor(engine) -> None:
+def install_connection_pool_monitor(engine: Any) -> None:
     """Track active/idle DB connections via SQLAlchemy pool events.
 
     Updates gauge metrics for Grafana dashboard.
     """
 
     @event.listens_for(engine.sync_engine, "checkout")
-    def on_checkout(dbapi_connection, connection_record, connection_proxy):
+    def on_checkout(dbapi_connection: Any, connection_record: Any, connection_proxy: Any) -> None:
         try:
             pool = engine.sync_engine.pool
             from src.metrics.prometheus import get_metrics
@@ -103,7 +102,7 @@ def install_connection_pool_monitor(engine) -> None:
             pass
 
     @event.listens_for(engine.sync_engine, "checkin")
-    def on_checkin(dbapi_connection, connection_record):
+    def on_checkin(dbapi_connection: Any, connection_record: Any) -> None:
         try:
             pool = engine.sync_engine.pool
             from src.metrics.prometheus import get_metrics

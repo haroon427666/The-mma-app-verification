@@ -9,13 +9,15 @@ Key findings:
 - Result comes from competition status endpoint (separate fetch)
 """
 
+from typing import Any
+
 from src.providers.dto import CompetitionDTO, CompetitorDTO
 from src.providers.espn.config import CARD_SEGMENT_MAP
 from src.providers.espn.reference import extract_id_from_ref
 
 
 def parse_competition(
-    comp_data: dict,
+    comp_data: dict[str, Any],
     event_external_id: str = "",
     league_slug: str = "ufc",
 ) -> CompetitionDTO:
@@ -64,7 +66,7 @@ def parse_competition(
                 status = "FINAL"
 
     # Description: "3 Rnd (5-5-5)" or "5 Rnd (5-5-5-5-5)"
-    description = comp_data.get("description", "")
+    comp_data.get("description", "")
 
     # Competitors
     competitors = _parse_competitors(comp_data.get("competitors", []))
@@ -88,7 +90,7 @@ def parse_competition(
     )
 
 
-def parse_competition_status(status_data: dict, comp_dto: CompetitionDTO) -> CompetitionDTO:
+def parse_competition_status(status_data: dict[str, Any], comp_dto: CompetitionDTO) -> CompetitionDTO:
     """Enrich a CompetitionDTO with result data from the competition status endpoint.
 
     Called after fetching: /competitions/{id}/status
@@ -126,7 +128,7 @@ def parse_competition_status(status_data: dict, comp_dto: CompetitionDTO) -> Com
     return comp_dto
 
 
-def _parse_competitors(competitors_data: list) -> list[CompetitorDTO]:
+def _parse_competitors(competitors_data: list[dict[str, Any]]) -> list[CompetitorDTO]:
     """Parse competitors from an embedded competition.
 
     Each competitor (VERIFIED):
@@ -173,7 +175,7 @@ def _parse_competitors(competitors_data: list) -> list[CompetitorDTO]:
     return result
 
 
-def extract_weight_class_from_comp(comp_data: dict) -> dict | None:
+def extract_weight_class_from_comp(comp_data: dict[str, Any]) -> dict[str, Any] | None:
     """Extract weight class info from embedded competition type field.
 
     Returns dict with keys: external_id, name, abbreviation — or None.

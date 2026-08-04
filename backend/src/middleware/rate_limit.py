@@ -5,21 +5,24 @@
 
 import time
 from collections import defaultdict
+from collections.abc import Awaitable, Callable
+from typing import Any
 
-from fastapi import Request, HTTPException
+from fastapi import HTTPException, Request
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 
 
 class RateLimiter(BaseHTTPMiddleware):
     """Sliding window rate limiter per client IP."""
 
-    def __init__(self, app, max_requests: int = 100, window_seconds: int = 60):
+    def __init__(self, app: Any, max_requests: int = 100, window_seconds: int = 60):
         super().__init__(app)
         self.max_requests = max_requests
         self.window = window_seconds
         self._clients: dict[str, list[float]] = defaultdict(list)
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         client_ip = request.client.host if request.client else "unknown"
         now = time.monotonic()
 

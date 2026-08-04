@@ -182,4 +182,4 @@ class IdResolver:
 # ExternalId model lives in db.models.support — imported at module bottom
 # to avoid circular imports with the repository / ORM layer.
 
-from src.db.models.support import ExternalId  # noqa: E402
+from src.db.models.support import ExternalId

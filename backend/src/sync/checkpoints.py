@@ -6,8 +6,9 @@ can resume without losing progress or creating duplicates.
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Optional
+from typing import Any
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -27,15 +28,16 @@ class Checkpoint:
 class CheckpointManager:
     """Persists and loads sync checkpoints."""
 
-    def __init__(self, session):
+    def __init__(self, session: AsyncSession):
         self._session = session
 
     async def save(self, checkpoint: Checkpoint) -> None:
         """Upsert a checkpoint."""
         from sqlalchemy.dialects.postgresql import insert
+
         from src.db.models.support import SyncCheckpoint
 
-        values = {
+        values: dict[str, Any] = {
             "entity_type": checkpoint.entity_type,
             "provider": checkpoint.provider,
             "last_offset": checkpoint.last_offset,
@@ -65,6 +67,7 @@ class CheckpointManager:
     ) -> Checkpoint | None:
         """Load the last checkpoint for an entity+provider."""
         from sqlalchemy import select
+
         from src.db.models.support import SyncCheckpoint
 
         result = await self._session.execute(
@@ -91,6 +94,7 @@ class CheckpointManager:
     async def mark_completed(self, entity_type: str, provider: str) -> None:
         """Mark a checkpoint as finished."""
         from sqlalchemy import update
+
         from src.db.models.support import SyncCheckpoint
 
         await self._session.execute(
@@ -107,6 +111,7 @@ class CheckpointManager:
     ) -> None:
         """Mark a checkpoint as failed (will resume from last offset)."""
         from sqlalchemy import update
+
         from src.db.models.support import SyncCheckpoint
 
         await self._session.execute(

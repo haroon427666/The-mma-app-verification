@@ -9,11 +9,9 @@ Every log line is a JSON object with:
 
 import json
 import logging
-import time
 import uuid
 from contextvars import ContextVar
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
 
 # ── Context Variables (thread-safe, async-safe) ──────────────────────────
 
@@ -56,7 +54,7 @@ class JsonFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         log_entry = {
-            "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
+            "timestamp": datetime.fromtimestamp(record.created, tz=UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
@@ -93,7 +91,7 @@ class JsonFormatter(logging.Formatter):
 
 # ── Config ───────────────────────────────────────────────────────────────
 
-def configure_logging(level: str = "INFO", json_output: bool = True):
+def configure_logging(level: str = "INFO", json_output: bool = True) -> None:
     """Configure root logger with JSON formatting."""
     root = logging.getLogger()
     root.setLevel(getattr(logging, level.upper(), logging.INFO))

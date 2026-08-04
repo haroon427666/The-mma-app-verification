@@ -10,9 +10,10 @@ import asyncio
 import logging
 import random
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class RetryPolicy:
     retry_budget: int = 10       # Max total retries across all runs per hour
 
     # Transient errors worth retrying
-    retryable_exceptions: tuple = (
+    retryable_exceptions: tuple[type[BaseException], ...] = (
         asyncio.TimeoutError,
         ConnectionError,
         OSError,
@@ -81,12 +82,12 @@ class RetryState:
         base = self.policy.base_seconds * (2 ** (self.attempt - 1))
         capped = min(base, self.policy.max_backoff)
         jitter = capped * self.policy.jitter_factor * random.uniform(-1, 1)
-        delay = max(0.1, capped + jitter)
+        delay: float = max(0.1, capped + jitter)
 
         logger.debug(f"Retry {self.attempt}/{self.policy.max_attempts}: waiting {delay:.1f}s")
         return delay
 
-    async def execute(self, fn: Callable, *args, **kwargs) -> Any:
+    async def execute(self, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         """Execute fn with retries. Returns result or raises on failure."""
         while True:
             try:

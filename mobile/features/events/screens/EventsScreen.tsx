@@ -8,9 +8,9 @@ import { typography, spacing, radius } from '@/theme';
 import { useEvents, useLiveEvents } from '../hooks';
 import { useEventsStore, eventsActions } from '../store/events.store';
 import { EventCard } from '../components/EventCard';
-import { LiveEventBanner } from '../components/LiveEventBanner';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { ErrorState } from '../components/ErrorState';
+import { LiveBanner } from '../components/LiveBanner';
+import { EventCardSkeleton } from '../skeletons';
+import { ErrorCard } from '../components/SupportComponents';
 import type { EventFilter, ExtendedEvent } from '../types';
 
 const FILTERS: { key: EventFilter; label: string }[] = [
@@ -52,7 +52,11 @@ export function EventsScreen({ navigation }: any) {
 
       {/* Live banner */}
       {liveEvents && liveEvents.length > 0 && activeFilter !== 'past' && (
-        <LiveEventBanner events={liveEvents as ExtendedEvent[]} palette={palette} onPress={(id) => navigation.navigate('EventDetail', { eventId: id })} />
+        <LiveBanner
+          event={liveEvents[0] as ExtendedEvent}
+          palette={palette}
+          onPress={() => navigation.navigate('EventDetail', { eventId: liveEvents[0].id })}
+        />
       )}
 
       {/* Event list */}
@@ -68,9 +72,9 @@ export function EventsScreen({ navigation }: any) {
         ListEmptyComponent={!isLoading && !isError ? (
           <Text style={[typography.body, { color: palette.text.secondary, textAlign: 'center', marginTop: 60 }]}>No events found</Text>
         ) : null}
-        ListHeaderComponent={isLoading ? <SkeletonLoader /> : null}
+        ListHeaderComponent={isLoading ? <EventCardSkeleton /> : null}
       />
-      {isError && <ErrorState onRetry={refetch} />}
+      {isError && <ErrorCard onRetry={refetch} />}
     </SafeAreaView>
   );
 }

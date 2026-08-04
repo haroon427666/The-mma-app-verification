@@ -12,7 +12,7 @@ This module provides:
 """
 
 import logging
-from typing import Any
+from typing import Any, cast
 
 from src.providers.espn.client import ESPNClient
 
@@ -30,7 +30,7 @@ def is_ref(obj: Any) -> bool:
 def extract_ref(obj: Any) -> str | None:
     """Extract the $ref URL from an object, or None if it's not a $ref."""
     if is_ref(obj):
-        return obj["$ref"]
+        return cast(str, obj["$ref"])
     return None
 
 
@@ -80,7 +80,7 @@ class RefResolver:
             The full JSON payload, or the original object if it wasn't a $ref.
         """
         if not is_ref(ref_obj):
-            return ref_obj
+            return cast(dict[str, Any], ref_obj)
 
         ref_url: str = ref_obj["$ref"]
 
@@ -109,7 +109,7 @@ class RefResolver:
         return await asyncio.gather(*tasks)
 
     @property
-    def stats(self) -> dict[str, int]:
+    def stats(self) -> dict[str, Any]:
         """Cache statistics for logging."""
         return {
             "hits": self._hits,

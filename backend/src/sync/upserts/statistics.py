@@ -9,11 +9,15 @@ Wrong attribution is worse than a delayed stat.
 """
 
 import logging
+from typing import TYPE_CHECKING
 
 from src.domain.models.competitor import Competitor
 from src.domain.models.statistic import Statistic
 from src.providers.dto import StatisticDTO
 from src.sync.upsert import UpsertResult
+
+if TYPE_CHECKING:
+    from src.sync.upserts.id_resolver import IdResolver
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +33,6 @@ class StatisticsUpsert:
     provider = "espn"
 
     def __init__(self, resolver: "IdResolver") -> None:
-        from src.sync.upserts.id_resolver import IdResolver
         self._resolver: IdResolver = resolver
 
     async def upsert_batch(self, dtos: list[StatisticDTO]) -> UpsertResult:

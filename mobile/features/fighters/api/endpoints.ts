@@ -8,7 +8,7 @@ export const fighterEndpoints = {
   history: (id: string) => `/v1/fighters/${id}/fights`,
   predictions: (id: string) => `/v1/predictions/fighter/${id}`,
   similar: (id: string) => `/v1/fighters/${id}/similar?limit=10`,
-  favorite: (id: string) => `/v1/favorites/fighters/${id}`,
-  favorites: '/v1/favorites/fighters',
+  favorite: (id: string) => `/v1/me/favorites/fighters/${id}`,
+  favorites: '/v1/me/favorites/fighters',
   search: (q: string) => `/v1/fighters?search=${encodeURIComponent(q)}`,
 } as const;

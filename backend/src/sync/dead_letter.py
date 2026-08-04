@@ -15,13 +15,10 @@ Integrates with SyncEventBus: fires on_dead_letter events.
 
 import json
 import logging
-import os
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-
-from src.sync.types import EntityType
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +41,7 @@ class DeadLetterRecord:
     failure_category: str
 
     recorded_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
     retry_count: int = 0
     max_retries: int = 3
@@ -189,7 +186,7 @@ class DeadLetterQueue:
                             None = purge all matching records.
         """
         purged = 0
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         if provider_slug:
             dirs = [self._base_dir / provider_slug]

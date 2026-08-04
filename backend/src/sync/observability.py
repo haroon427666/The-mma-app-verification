@@ -14,7 +14,7 @@ All components are read-only observers — they never mutate sync state.
 import logging
 import time as _time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from src.sync.dead_letter import DeadLetterQueue
@@ -344,7 +344,7 @@ class SystemHealth:
 
     status: str = "healthy"  # healthy, degraded, unhealthy
     checked_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
     providers: dict[str, ProviderHealth] = field(default_factory=dict)
     scheduler: SchedulerHealth = field(default_factory=SchedulerHealth)
@@ -412,7 +412,7 @@ class HealthChecker:
     ) -> ProviderHealth:
         """Check if a provider is reachable with a lightweight request."""
         p_health = ProviderHealth(provider_slug=slug)
-        p_health.last_check = datetime.now(timezone.utc)
+        p_health.last_check = datetime.now(UTC)
 
         # Check circuit breaker first
         cb = self._circuit_breakers.get(slug)
@@ -437,6 +437,8 @@ class HealthChecker:
 
     def _check_scheduler(self) -> SchedulerHealth:
         """Check scheduler status."""
+        if self._scheduler is None:
+            return SchedulerHealth(running=False)
         try:
             status = self._scheduler.get_status()
             return SchedulerHealth(
@@ -484,9 +486,9 @@ class Alert:
     severity: str  # info, warning, critical
     message: str
     triggered_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
-    detail: dict = field(default_factory=dict)
+    detail: dict[str, Any] = field(default_factory=dict)
 
 
 class AlertManager:

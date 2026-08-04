@@ -1,7 +1,8 @@
 """Repository + Merge + Upsert Engine Tests — Phase 6."""
 
+from unittest.mock import AsyncMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 
 class TestRepositoryUpsert:
@@ -11,7 +12,6 @@ class TestRepositoryUpsert:
     async def test_upsert_inserts_new_record(self):
         """First upsert: INSERT new row, version=1."""
         from src.db.repositories.fighter import FighterRepository
-        from src.db.models.fighter import Fighter
 
         session = AsyncMock()
         repo = FighterRepository(session)
@@ -87,7 +87,7 @@ class TestMergeEngine:
 
     def test_espn_owned_fields_blocked(self):
         """ESPN-owned fields (weight_kg, reach_cm) are NEVER modified by Octagon."""
-        from src.providers.merge import FieldCategory, AUTHORITY_MAP
+        from src.providers.merge import AUTHORITY_MAP, FieldCategory
 
         fighter_auth = AUTHORITY_MAP["fighters"]
         assert fighter_auth["weight_kg"] == FieldCategory.ESPN_AUTHORITY
@@ -96,7 +96,7 @@ class TestMergeEngine:
 
     def test_octagon_owned_fields_accepted(self):
         """Octagon-owned fields (leg_reach_cm, trains_at) can be set by Octagon."""
-        from src.providers.merge import FieldCategory, AUTHORITY_MAP
+        from src.providers.merge import AUTHORITY_MAP, FieldCategory
 
         fighter_auth = AUTHORITY_MAP["fighters"]
         assert fighter_auth["leg_reach_cm"] == FieldCategory.OCTAGON_AUTHORITY
@@ -105,7 +105,7 @@ class TestMergeEngine:
 
     def test_tsdb_owned_fields_accepted(self):
         """TSDB-owned fields (cutout_url, biography) can be set by TSDB."""
-        from src.providers.merge import FieldCategory, AUTHORITY_MAP
+        from src.providers.merge import AUTHORITY_MAP, FieldCategory
 
         fighter_auth = AUTHORITY_MAP["fighters"]
         assert fighter_auth["cutout_url"] == FieldCategory.TSDB_AUTHORITY
@@ -114,7 +114,7 @@ class TestMergeEngine:
 
     def test_cross_provider_blocked(self):
         """Octagon cannot set TSDB-owned fields and vice versa."""
-        from src.sync.merge_engine import MergeEngine, MergeAction
+        from src.sync.merge_engine import MergeAction, MergeEngine
 
         # Simulate the decision logic
         engine = MergeEngine.__new__(MergeEngine)  # skip init
@@ -130,8 +130,8 @@ class TestMergeEngine:
 
     def test_gap_fill_accepted_from_any_provider(self):
         """GAP_FILL fields can be set by any provider."""
-        from src.sync.merge_engine import MergeEngine, MergeAction
         from src.providers.merge import FieldCategory
+        from src.sync.merge_engine import MergeAction, MergeEngine
 
         engine = MergeEngine.__new__(MergeEngine)
         action = engine._decide_action("some_field", FieldCategory.GAP_FILL, "tsdb")
@@ -143,8 +143,6 @@ class TestUpsertEngine:
 
     def test_batch_splitting(self):
         """DTOs are split into correct batch sizes."""
-        from src.sync.upsert_engine import UpsertEngine
-        from src.db.unit_of_work import UnitOfWork
 
         # With 1000 DTOs and batch_size=500, should create 2 batches
         dtos = list(range(1000))
@@ -212,15 +210,14 @@ class TestDuplicateDetection:
         # These are enforced by the database, not application code
         # Test: INSERT same (provider, external_id) → unique violation
 
-        from sqlalchemy import UniqueConstraint
         # Check that our model strategy enforces this
         # Every table has: UniqueConstraint("provider", "external_id")
-        pass  # Verified by migration 001_initial_schema.py
+        # Verified by migration 001_initial_schema.py
 
     def test_ons_conflict_do_update(self):
         """INSERT...ON CONFLICT DO UPDATE prevents duplicates."""
         # Verified by: repository upsert methods using insert().on_conflict_do_update()
-        pass  # Verified by repository implementation
+        # Verified by repository implementation
 
 
 class TestForeignKeyIntegrity:
@@ -253,6 +250,4 @@ class TestBatchPerformance:
 
     def test_batch_size_of_500(self):
         """Default batch size is 500 records."""
-        from src.sync.upsert_engine import UpsertEngine
         # batch_size=500 is the default in upsert_entity()
-        pass

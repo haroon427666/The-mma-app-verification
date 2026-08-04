@@ -26,7 +26,7 @@ class FighterUpsert(BaseUpsert):
     }
 
     @property
-    def _model_class(self) -> type:
+    def _model_class(self) -> type[Fighter]:
         return Fighter
 
     def _extract_external_id(self, dto: FighterDTO) -> str:

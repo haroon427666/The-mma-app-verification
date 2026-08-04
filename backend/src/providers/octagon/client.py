@@ -10,7 +10,7 @@ from typing import Any
 
 import httpx
 
-from src.providers.octagon.config import OctagonClientConfig, OCTAGON_BASE
+from src.providers.octagon.config import OctagonClientConfig
 
 logger = logging.getLogger(__name__)
 
@@ -41,11 +41,10 @@ class OctagonClient:
                 response = await self._http.get(path)
                 if response.is_success:
                     return response
-                if response.status_code in (429, 500, 502, 503):
-                    if attempt < self.config.max_retries:
-                        import asyncio
-                        await asyncio.sleep(self.config.retry_backoff_base ** attempt)
-                        continue
+                if response.status_code in (429, 500, 502, 503) and attempt < self.config.max_retries:
+                    import asyncio
+                    await asyncio.sleep(self.config.retry_backoff_base ** attempt)
+                    continue
                 response.raise_for_status()
             except (httpx.TimeoutException, httpx.ConnectError):
                 if attempt < self.config.max_retries:

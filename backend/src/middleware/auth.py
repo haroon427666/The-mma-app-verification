@@ -3,9 +3,13 @@
 import logging
 import time
 from collections import defaultdict
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from fastapi import Request
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 
 logger = logging.getLogger(__name__)
 
@@ -20,12 +24,12 @@ class BruteForceProtection(BaseHTTPMiddleware):
     WINDOW_SECONDS = 900  # 15 min
     LOCKOUT_SECONDS = 900  # 15 min
 
-    def __init__(self, app):
+    def __init__(self, app: Any) -> None:
         super().__init__(app)
         self._failures: dict[str, list[float]] = defaultdict(list)
         self._lockouts: dict[str, float] = {}
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         if request.url.path == "/api/v1/auth/login" and request.method == "POST":
             ip = request.client.host if request.client else "unknown"
 
@@ -45,7 +49,7 @@ class BruteForceProtection(BaseHTTPMiddleware):
 
         return await call_next(request)
 
-    async def _record_failure(self, ip: str):
+    async def _record_failure(self, ip: str) -> None:
         now = time.monotonic()
         cutoff = now - self.WINDOW_SECONDS
         self._failures[ip] = [t for t in self._failures[ip] if t > cutoff]
@@ -55,8 +59,7 @@ class BruteForceProtection(BaseHTTPMiddleware):
             self._lockouts[ip] = now + self.LOCKOUT_SECONDS
             logger.warning(f"Brute-force lockout: IP {ip} locked for {self.LOCKOUT_SECONDS}s")
 
-    def _rate_limit_response(self, retry_after: int):
-        from fastapi.responses import JSONResponse
+    def _rate_limit_response(self, retry_after: int) -> JSONResponse:
         return JSONResponse(
             status_code=429,
             content={
