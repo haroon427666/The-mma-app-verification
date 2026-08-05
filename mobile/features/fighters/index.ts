@@ -1,10 +1,10 @@
-/** Fighters module — complete barrel export (80+ symbols) */
+/** Fighters module — barrel export */
 
 // ── API ──
-export { fightersApi, statsApi, historyApi, rankingsApi, similarityApi, predictionApi, recommendationApi } from './api/fighters.api';
+export { fightersApi, statsApi, historyApi, similarityApi, favoritesApi } from './api/fighters.api';
 
 // ── Repository ──
-export { fightersRepo, statsRepo, historyRepo, similarityRepo, predictionRepo, recommendationRepo } from './repository';
+export { fightersRepo, statsRepo, historyRepo, similarityRepo, favoritesRepo } from './repository';
 
 // ── Services ──
 export { fighterKeys, fighterStatsKeys, fighterHistoryKeys, similarityKeys, predictionKeys, favoriteKeys } from './services/queryKeys';
@@ -12,13 +12,13 @@ export { fighterCache, fighterAnalytics, useFighterOfflineStore } from './servic
 export { fighterDeeplinks, fighterSharing } from './services/deeplink';
 
 // ── Mutations ──
-export { useFavoriteFighter, useUnfavoriteFighter, useFollowFighter, useUnfollowFighter, useCompareFighters } from './mutations';
+export { useFavoriteFighter, useUnfavoriteFighter } from './mutations';
 
 // ── Stores ──
 export { useFightersStore, fightersActions, useCompareStore, compareActions, useFavoritesStore } from './store';
 
 // ── Hooks ──
-export { useFighters, useFighter, useStats, useHistory, useSimilarFighters, useStyleAnalysis, usePredictions, useIsFavorite, useRankHistory } from './hooks';
+export { useFighters, useFighter, useStats, useHistory, useSimilarFighters, useIsFavorite } from './hooks';
 export { useFighterList, useFighterDetail } from './hooks/useFighters';
 
 // ── Navigation ──
@@ -29,7 +29,7 @@ export type { FightersStackParamList } from './navigation/FightersStack';
 export { FightersScreen, FighterProfileScreen, FighterStatsScreen, FighterComparisonScreen, SimilarFightersScreen, AchievementsScreen, MediaScreen } from './screens';
 
 // ── Components ──
-export { FighterHeader, FighterRecord, FighterStats, FightHistoryRow, SimilarityCard, FighterStyleBadge, RankMovement, FavoriteButton } from './components';
+export { FighterHeader, FighterRecord, FighterStats, FightHistoryRow, SimilarityCard, FavoriteButton } from './components';
 export { FighterCardSkeleton, ProfileSkeleton, EmptyState, ErrorState } from './components/Skeletons';
 
 // ── Charts ──

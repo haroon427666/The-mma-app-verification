@@ -1,6 +1,6 @@
 /** Home feature — barrel export */
 
-export { useHome, useLiveEvents, useTrendingFighters, useRecommendedFighters, usePredictionHighlights } from './hooks/useHome';
+export { useHome, useLiveEvents, useRecommendedFighters } from './hooks/useHome';
 export { useHomeStore, homeActions } from './store/homeStore';
 export { useHomeFeed } from './api/queries';
 export { homeEndpoints } from './api/endpoints';

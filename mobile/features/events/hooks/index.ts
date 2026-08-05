@@ -8,5 +8,3 @@ export { useLiveEvents } from './useLiveEvents';
 export { useFightCard } from './useFightCard';
 export { useCountdown } from './useCountdown';
 export { useWatchlist } from './useWatchlist';
-export { useReminder } from './useReminder';
-export { usePredictions } from './usePredictions';

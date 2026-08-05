@@ -1,11 +1,10 @@
 /** Offline sync — queue mutations when offline, replay when connected */
 
 import { useConnectivityStore } from '@/stores/connectivity';
-import type { Reminder } from '../types';
 
 interface QueuedAction {
   id: string;
-  type: 'watchlist_add' | 'watchlist_remove' | 'reminder_create' | 'reminder_cancel';
+  type: 'watchlist_add' | 'watchlist_remove';
   payload: Record<string, unknown>;
   createdAt: number;
   retryCount: number;

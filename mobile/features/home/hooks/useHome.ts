@@ -3,8 +3,8 @@
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  useHomeFeed, useLiveEvents, useTrendingFighters,
-  useRecommendedFighters, usePredictionHighlights,
+  useHomeFeed, useLiveEvents,
+  useRecommendedFighters,
 } from '../api/queries';
 import { useHomeStore, homeActions } from '../store/homeStore';
 import { useConnectivityStore } from '@/stores/connectivity';
@@ -38,4 +38,4 @@ export function useHome() {
   };
 }
 
-export { useLiveEvents, useTrendingFighters, useRecommendedFighters, usePredictionHighlights };
+export { useLiveEvents, useRecommendedFighters };

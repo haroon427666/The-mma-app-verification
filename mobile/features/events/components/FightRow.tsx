@@ -1,14 +1,13 @@
-/** FightRow — single fight row with names, ranks, result, prediction */
+/** FightRow — single fight row with names, ranks, result */
 import React, { memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { typography, spacing, radius } from '@/theme';
 
-export const FightRow = memo(({ fight, prediction, palette, onPress }: any) => (
+export const FightRow = memo(({ fight, palette, onPress }: any) => (
   <TouchableOpacity onPress={onPress} style={[s.row, { backgroundColor: palette.surface.card, borderColor: palette.surface.border }]} accessibilityRole="button">
     <View style={s.meta}>
       <Text style={[typography.caption, { color: palette.text.tertiary }]}>{fight.weightClass} • {fight.rounds}R</Text>
       {fight.isTitleFight && <Text style={s.champ}>🏆</Text>}
-      {prediction && <Text style={[typography.caption, { color: palette.primary[400], fontWeight: '700' }]}>{Math.round(Math.max(prediction.probA ?? 0, prediction.probB ?? 0) * 100)}%</Text>}
     </View>
     <FName name={fight.fighterA?.fullName || fight.fighterAName} rank={fight.fighterA?.rank ?? fight.fighterARank} won={fight.result?.winnerId === fight.fighterA?.id} palette={palette} />
     <Text style={[typography.caption, { color: palette.text.tertiary, marginVertical: 3, marginLeft: 20 }]}>VS</Text>

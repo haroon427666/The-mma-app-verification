@@ -161,18 +161,18 @@ function StatsTab({ fighter, palette }: any) {
 
 function HistoryTab({ fighter, palette }: any) {
   const { data: fights } = useQuery({
-    queryKey: ['fighterFights', fighter.id],
-    queryFn: async () => { const { data } = await api.get(`/v1/fighters/${fighter.id}/fights`); return data.data ?? []; },
+    queryKey: ['fighterHistory', fighter.id],
+    queryFn: async () => { const { data } = await api.get(`/v1/fighters/${fighter.id}/history`); return data.data ?? data ?? []; },
   });
   const fightsList = (fights ?? []) as any[];
   if (fightsList.length === 0) return <Text style={[typography.body, { color: palette.text.secondary, textAlign: 'center', padding: 40 }]}>No fight history</Text>;
   return (
     <View style={{ padding: spacing.lg }}>
       {fightsList.slice(0, 10).map((f: any, i: number) => {
-        const won = f.winnerId === fighter.id;
+        const won = f.outcome === 'WIN';
         return (
           <View key={i} style={[st.historyRow, { borderLeftColor: won ? '#10B981' : '#EF4444', backgroundColor: palette.surface.card }]}>
-            <Text style={[typography.bodySmall, { color: palette.text.primary, fontWeight: '600' }]}>{f.opponentName || f.fighterBName || f.fighterBName}</Text>
+            <Text style={[typography.bodySmall, { color: palette.text.primary, fontWeight: '600' }]}>{f.opponentName || '—'}</Text>
             <Text style={[typography.caption, { color: won ? '#10B981' : '#EF4444' }]}>{won ? 'W' : 'L'} {f.method || ''} {f.round ? `R${f.round}` : ''}</Text>
           </View>
         );

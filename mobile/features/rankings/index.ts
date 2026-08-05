@@ -10,7 +10,7 @@ export { rankingsRepo } from './repository';
 export { rankingKeys, rankingCache, rankingAnalytics, rankingDeeplinks } from './services';
 
 // ── Hooks ──
-export { useP4P, useDivisionRankings, useRankingHistory, useGOAT, useProspects, useRankingMovement, useStreaks, useChampions, useChampionsHistory, useTitleDefenses, useEloRankings, useCompositeRankings, useFavoriteRanking } from './hooks';
+export { useP4P, useDivisionRankings, useGOAT, useProspects, useRankingMovement, useStreaks, useChampions, useTitleDefenses, useFavoriteRanking } from './hooks';
 
 // ── Stores ──
 export { useRankingsStore, rankingsActions, useRankingsOffline } from './stores';
@@ -20,7 +20,7 @@ export { RankingsStack } from './navigation/RankingsStack';
 export type { RankingsStackParamList } from './navigation/RankingsStack';
 
 // ── Screens ──
-export { RankingsScreen, RankingHistoryScreen, ChampionHistoryScreen, TitleDefensesScreen, PoundForPoundScreen, DivisionRankingsScreen, RankMovementScreen, GOATRankingsScreen, ProspectsScreen, CompareRankingsScreen } from './screens';
+export { RankingsScreen, TitleDefensesScreen, PoundForPoundScreen, DivisionRankingsScreen, RankMovementScreen, GOATRankingsScreen, ProspectsScreen, CompareRankingsScreen } from './screens';
 
 // ── Components ──
 export { RankingCard, ChampionCard, DivisionSelector, MovementArrow, RankBadge, StreakBadge, EloBadge, CompositeBadge, RankingsSkeleton, RankingEmpty, RankingError } from './components';

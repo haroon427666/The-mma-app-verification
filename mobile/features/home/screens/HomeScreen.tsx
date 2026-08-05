@@ -1,30 +1,30 @@
-/** Home screen — live events, recommended, trending, predictions */
+/** Home screen — live events, upcoming, recommendations */
 
 import React, { useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { useTheme } from '@/hooks/useTheme';
 import api from '@/services/api';
 import { typography, spacing, radius } from '@/theme';
-import type { HomeFeed, Fighter, Event } from '@/features/models';
-
+import type { HomeFeed, Event } from '@/features/models';
 export function HomeScreen({ navigation }: any) {
   const { palette } = useTheme();
   const { data, isLoading, isError, refetch } = useQuery<HomeFeed>({
     queryKey: ['home'],
     queryFn: async () => {
-      const [{ data: live }, { data: upcoming }, { data: trending }] = await Promise.all([
-        api.get('/v1/events?status=LIVE,IN_PROGRESS&limit=3'),
+      const [{ data: live }, { data: upcoming }, { data: recs }, { data: titles }] = await Promise.all([
+        api.get('/v1/events/live?limit=3'),
         api.get('/v1/events/upcoming?limit=5'),
-        api.get('/v1/fighters/trending?limit=6'),
+        api.get('/v1/recommendations/fighters?limit=6'),
+        api.get('/v1/fights?is_title=true&status=SCHEDULED&limit=5'),
       ]);
       return {
         liveEvents: live?.data ?? [],
         upcomingEvents: upcoming?.data ?? [],
-        trendingFighters: trending?.data ?? [],
-        recommendedFighters: [],
-        upcomingTitleFights: [],
+        trendingFighters: [],
+        recommendedFighters: recs?.data ?? [],
+        upcomingTitleFights: titles?.data ?? [],
         predictionHighlights: [],
         recentRankingChanges: [],
       };
@@ -54,13 +54,6 @@ export function HomeScreen({ navigation }: any) {
           </Section>
         )}
 
-        {data?.trendingFighters && data.trendingFighters.length > 0 && (
-          <Section title="📈 Trending Fighters" palette={palette}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.hScroll}>
-              {data.trendingFighters.map((f) => <FighterCard key={f.id} fighter={f} palette={palette} />)}
-            </ScrollView>
-          </Section>
-        )}
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
@@ -99,19 +92,6 @@ function EventRow({ event, palette }: { event: Event; palette: any }) {
   );
 }
 
-function FighterCard({ fighter, palette }: { fighter: Fighter; palette: any }) {
-  return (
-    <TouchableOpacity style={[s.fighterCard, { backgroundColor: palette.surface.card, borderColor: palette.surface.border }]}>
-      <View style={[s.avatar, { backgroundColor: palette.surface.elevated }]}>
-        <Text style={{ fontSize: 24 }}>🥊</Text>
-      </View>
-      <Text style={[typography.bodySmall, { color: palette.text.primary, fontWeight: '600', marginTop: 8 }]} numberOfLines={2}>{fighter.fullName || fighter.lastName}</Text>
-      <Text style={[typography.caption, { color: palette.text.secondary }]}>{fighter.record}</Text>
-      {fighter.latestRank && <Text style={[typography.caption, { color: '#F59E0B' }]}>#{fighter.latestRank} {fighter.weightClass}</Text>}
-    </TouchableOpacity>
-  );
-}
-
 function HomeSkeleton({ palette }: any) {
   return (
     <SafeAreaView style={[s.root, { backgroundColor: palette.surface.bg }]}>
@@ -143,8 +123,6 @@ const s = StyleSheet.create({
   cardLarge: { width: 220, padding: spacing.lg, borderRadius: radius.lg, borderWidth: 0.5, marginRight: 12 },
   liveDot: { width: 8, height: 8, borderRadius: 4, marginBottom: 8 },
   row: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderRadius: radius.md, borderWidth: 0.5, marginBottom: 8 },
-  fighterCard: { width: 120, padding: spacing.md, borderRadius: radius.lg, borderWidth: 0.5, marginRight: 12, alignItems: 'center' },
-  avatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   skelBlock: { height: 80, borderRadius: radius.md, marginBottom: 12 },
   retryBtn: { marginTop: 24, paddingVertical: 14, paddingHorizontal: 32, borderRadius: radius.md },
 });

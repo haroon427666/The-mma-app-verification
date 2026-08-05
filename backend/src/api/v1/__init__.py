@@ -11,6 +11,7 @@ from src.api.v1.other import (
     promo_router,
     ranking_router,
     search_router,
+    title_router,
     venue_router,
 )
 from src.api.v1.recommendations import router as recommendations_router
@@ -34,6 +35,7 @@ routers = [
     fight_router,
     ranking_router,
     champion_router,
+    title_router,
     promo_router,
     venue_router,
     search_router,

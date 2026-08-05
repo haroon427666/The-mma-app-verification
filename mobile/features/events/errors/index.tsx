@@ -26,14 +26,6 @@ export function NetworkError({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-export function PredictionUnavailable() {
-  return (
-    <View style={[es.center, { paddingVertical: 20 }]}>
-      <Text style={[typography.bodySmall, { color: '#6B7280', textAlign: 'center' }]}>Prediction not available for this fight yet</Text>
-    </View>
-  );
-}
-
 const es = StyleSheet.create({
   center: { alignItems: 'center', padding: spacing.xxxl },
   btn: { marginTop: 20, paddingVertical: 12, paddingHorizontal: 24, backgroundColor: '#3B82F6', borderRadius: 8 },

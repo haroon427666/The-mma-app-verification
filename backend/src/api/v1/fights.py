@@ -54,6 +54,7 @@ async def list_fights(
     fighter_id: str | None = Query(None),
     outcome: str | None = Query(None),
     method: str | None = Query(None),
+    is_title: bool | None = Query(None, description="Filter to title fights only"),
     uow: UnitOfWork = Depends(get_uow),
 ) -> PaginatedResponse[FightListItem]:
     """List fights with filters."""
@@ -67,6 +68,8 @@ async def list_fights(
         stmt = stmt.where(Competition.event_id == event_id)
     if method:
         stmt = stmt.where(Competition.result_method == method)
+    if is_title is not None:
+        stmt = stmt.where(Competition.is_title_fight.is_(is_title))
 
     # Fighter filter via subquery
     if fighter_id:
@@ -81,6 +84,8 @@ async def list_fights(
         count_stmt = count_stmt.where(Competition.weight_class_name == weight_class)
     if event_id:
         count_stmt = count_stmt.where(Competition.event_id == event_id)
+    if is_title is not None:
+        count_stmt = count_stmt.where(Competition.is_title_fight.is_(is_title))
     if fighter_id:
         sub = sa_select(Competitor.competition_id).where(Competitor.fighter_id == fighter_id)
         count_stmt = count_stmt.where(Competition.id.in_(sub))

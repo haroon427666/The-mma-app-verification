@@ -39,9 +39,9 @@ export const notificationService = {
     const user = useAuthStore.getState().user;
     if (user) {
       try {
-        await api.post('/v1/me/devices', {
+        await api.post('/v1/notifications/push-token', {
+          token: token.data,
           platform: Platform.OS,
-          device_token: token.data,
         });
       } catch {
         // Non-blocking — retry on next app open
@@ -52,10 +52,7 @@ export const notificationService = {
   },
 
   async unregister(): Promise<void> {
-    const token = await Notifications.getExpoPushTokenAsync();
-    try {
-      await api.delete(`/v1/me/devices/${token.data}`);
-    } catch { /* fire-and-forget */ }
+    // Backend has no device-unregister endpoint; token becomes stale server-side.
   },
 
   addNotificationListener(

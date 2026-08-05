@@ -17,7 +17,7 @@ test (SQLAlchemy `inspect` on SQLite against models where portable) + existing g
 | 1 — Schema resolution | ✅ Backend complete — 002 rankings/synced_at + duration_ms Float fixed; 004 auth tables; 005 schema fixes; `--sql` chain 001→005 coherent |
 | 2 — Sync write path | ✅ Backend complete — `sync.py` on real SyncEngine/SyncPlan; scheduler wiring via `SYNC_ENABLED`; Redis None-guards confirmed. Full run against live Postgres still NOT executed (no DB here) |
 | 3 — Rankings & champions | ✅ Complete — `GET /v1/champions`, `/v1/champions/{division}` return 200 (10 tests). `/v1/champions/history` is an explicit empty stub (lineage table unmodeled) |
-| 4 — Mobile bootability | ✅ Typecheck-level complete (2026-08-05) — `tsc --noEmit` = **0 errors** (was 67). Proven at typecheck only; route files/assets/expo-asset still not added and no Metro build run. Remaining runtime gaps documented in `session-ses_0387.md` (`/v1/favorites` vs `/v1/me/favorites`, etc.) |
+| 4 — Mobile bootability | ✅ Complete (2026-08-05) — `tsc --noEmit` = **0 errors** (was 67); `npx expo export` bundles web + android + iOS successfully. Items 1–7 verified already-present (routes, assets, expo-asset/react-native-web, `.tsx` renames) or fixed this session (favorites prefix `/v1/favorites` → `/v1/me/favorites` in `features/rankings/hooks/index.ts`; un-resolvable `./README.md` doc export removed from `app/bootstrap/index.ts`). Phantom paths deferred to Phase 7 item 5 keep/delete report |
 | 5 — Policy removals (AI/betting) | ⛔ **SUPERSEDED (2026-08-05)** — deletion directive revoked by user; all 161 AI files restored from checkpoint `ff74cd8` + validated (see `SESSION_STATE.md` §5). Do NOT re-apply |
 | 6 — Tests & docs | ✅ Backend complete — migration-coverage (9) + champions (10) tests added; suite **319 passed**; docs updated this session |
 | 7 — Final verification | 🔄 Backend portion done (compileall, `--sql`, import scan, ruff clean); restoration verified (V9↔V10 diff + per-package self-checks + backend gates); mobile tsc re-verified 0 errors. Live-Postgres apply remains when a Postgres is available |
@@ -69,19 +69,40 @@ test (SQLAlchemy `inspect` on SQLite against models where portable) + existing g
 3. **Acceptance:** `curl /api/v1/champions` → 200 schema (empty or populated); tests added.
 
 ## Phase 4 — Mobile bootability (baseline restore/build) [~1–2 days]
+
+> ✅ **COMPLETE (2026-08-05)** — typecheck + Metro export acceptance both green. Status per item:
+
 1. Create `mobile/app/*.tsx` routes (index=Home, events, fighters, rankings, search,
    profile, notifications, watchlist) with default exports → screen components.
+   — ✅ already present (all 10 route files tracked, incl. `_layout.tsx` + `+not-found.tsx`).
 2. Create `mobile/components/shell/MaintenanceScreen.tsx` + `OfflineBanner.tsx`.
+   — ✅ already present (also `ErrorBoundary.tsx`, `SplashScreen.tsx`).
 3. Rename 6 JSX-containing `.ts` → `.tsx` (design-system/images, design-system/stories,
    features/fighters/theme, features/rankings/theme, app/analytics/AnalyticsManager,
    app/notifications/NotifManager).
+   — ✅ already renamed; all tracked.
 4. `mobile/package.json`: add `expo-asset`, `react-native-web` (web), remove Predict deps.
+   — ✅ already present (`expo-asset ~11.0.1`, `react-native-web ^0.19.13`).
 5. Add `mobile/assets/` (icon/splash/adaptive) or strip refs from `app.json`.
+   — ✅ already present (icon.png, splash.png, adaptive-icon.png; referenced in `app.json`).
 6. Single API base URL via `EXPO_PUBLIC_API_URL`; delete dead `app/_infra.ts`.
+   — ✅ `app/_infra.ts` never existed; live client `services/api.ts` + `NetworkConfig.ts`
+      both key off `EXPO_PUBLIC_API_URL`. `app/networking` barrel (AxiosClient/Endpoints/
+      RequestBuilder) had no importers — **deleted in Phase 7 item 5**.
 7. Align favorites (`/v1/me/favorites/*`), watchlist (concrete), rankings
    (`/rankings/{division}`) calls.
+   — ✅ fixed `features/rankings/hooks/index.ts:61` `/v1/favorites/fighters/{id}` →
+     `/v1/me/favorites/fighters/{id}`. Watchlist concrete calls (`/v1/me/watchlist/events`)
+     verified everywhere live; rankings live client uses `/v1/rankings/{division}` +
+      `/v1/rankings/p4p`. Phantom paths (status/goat/prospects/movement/streaks/history/
+      changes) → resolved in Phase 7 item 5 (goat/prospects/movement/streaks now real
+      backend endpoints; history/changes/status removed or list-derived).
 8. **Acceptance:** `npx tsc --noEmit` → 0 project errors; `npx expo export` completes
    (subject to sandbox memory).
+   — ✅ `tsc --noEmit` = 0 errors; `npx expo export` → Web 3435ms / Android 6528ms / iOS 10185ms
+     bundled, 47 assets, exported to `dist/`. One blocker fixed en route: `app/bootstrap/index.ts`
+     exported `BootstrapDocs` from `./README.md` (Metro cannot resolve `.md` runtime imports;
+     no metro.config registers the ext; export was unreferenced → removed, tsc still 0).
 
 ## Phase 5 — Policy removals (no AI / no betting) [~hours day]
 
@@ -117,8 +138,33 @@ test (SQLAlchemy `inspect` on SQLite against models where portable) + existing g
 4. Circular-import + duplicate-export scan (grep `from src.domain` resolves; no `prediction`
    refs remain in `pyproject`, Docker, docker-compose, docs).
 5. Contract re-diff (mobile vs OpenAPI) after Phase 4 → report remaining phantoms with a
-   keep/delete decision.
-6. `pytest -q` final → target 300+ / 0 fail.
+   keep/delete decision. **✅ Complete (2026-08-05) — implemented:** `/v1/rankings/goat|prospects|movement|streaks`,
+   `/v1/title-defenses`, `/v1/fighters/{id}/similar` (+ `is_title` filter on `/v1/fights`) —
+   13 new tests, pytest **332 passed**, ruff/mypy clean. **Removed as not-feasible (no data model):**
+   rank/champion history screens+hooks (no snapshot lineage; `/v1/champions/history` is an empty
+   stub), `/v1/predictions/*`, `/v1/fighters/trending`, style-analysis, timeline/achievements,
+   `elo`/`composite` rankings, watchlist reminders, follows, `/status` membership checks (now
+   list-derived). **Fixed wrong paths:** home live → `/v1/events/live`, fighter stats/history →
+   `/statistics`/`/history`, watchlist list → `/v1/watchlist/events`, favorites → `/v1/me/favorites`.
+    **Deleted dead code:** `app/networking/`, `components/screens/HomeScreen.tsx`,
+    `features/rankings/screens/RankingsScreen.tsx`, `features/rankings/api/queries.ts`,
+    `features/watchlist/WatchlistModule.tsx`, phantom fighter/rankings API constants + hooks.
+    Mobile: `tsc --noEmit` **0 errors**, `npx expo export` bundles web/android/iOS.
+    **Round 2 (2026-08-05) — full contract audit:** scripted cross-reference of all **100 backend
+    routes** vs mobile literal URLs found **39 phantom paths**; all resolved. **Implemented**
+    `GET /v1/events/{id}/fights|results|statistics` (+`EventStatisticsResponse` schema, 7 tests in
+    `backend/tests/api/test_event_extras.py`); **fixed** fighters history (`/v1/fighters/{id}/fights`
+    → `/history`), watchlist list (`/v1/me/watchlist/events` → `/v1/watchlist/events`), favorites
+    list (`/v1/me/favorites/fighters` → `/v1/me/favorites`, ID→detail mapping), push-token register
+    (`/v1/me/devices` → `/v1/notifications/push-token`); **deleted as dead/unwired** the
+    `features/predictions/` + `features/recommendations/` modules (latter imported but never
+    rendered — no tab), events reminder/prediction api+hooks+mutation+store+components, dead
+    `watchlist/api/queries.ts`, `search/types-and-api.ts`, `profile/index.ts` +
+    `profile/screens/ProfileScreen.tsx` + `profile/api/queries.ts`, profile `/v1/me/stats|export`
+    calls, notifications device-unregister call (no backend route). Re-audit:
+    **PHANTOM_COUNT 0**. Gates: pytest **339 passed**, ruff clean, mypy clean (184 files),
+    tsc 0 errors, expo export green.
+6. `pytest -q` final → target 300+ / 0 fail. **✅ 339 passed / 0 fail.**
 
 ---
 

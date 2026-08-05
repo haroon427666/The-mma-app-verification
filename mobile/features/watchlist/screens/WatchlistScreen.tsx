@@ -14,17 +14,28 @@ export interface FavoriteFighter { id: string; fullName?: string; lastName?: str
 
 // ── API + Repository ──
 export const watchlistApi = {
-  events: () => api.get('/v1/me/watchlist/events'),
+  events: () => api.get('/v1/watchlist/events'),
   addEvent: (id: string) => api.post(`/v1/me/watchlist/events/${id}`),
   removeEvent: (id: string) => api.delete(`/v1/me/watchlist/events/${id}`),
-  fighters: () => api.get('/v1/me/favorites/fighters'),
+  fighters: () => api.get('/v1/me/favorites'),
   removeFighter: (id: string) => api.delete(`/v1/me/favorites/fighters/${id}`),
 };
 export const watchlistRepo = {
   events: async () => { const { data } = await watchlistApi.events(); return (data?.data ?? data) as WatchlistEvent[]; },
   addEvent: async (id: string) => { await watchlistApi.addEvent(id); },
   removeEvent: async (id: string) => { await watchlistApi.removeEvent(id); },
-  fighters: async () => { const { data } = await watchlistApi.fighters(); return (data?.data ?? data) as FavoriteFighter[]; },
+  fighters: async () => {
+    const { data } = await api.get('/v1/me/favorites');
+    const ids = ((data?.data ?? data)?.fighters ?? []) as string[];
+    const items = await Promise.all(ids.map(async (id: string): Promise<FavoriteFighter> => {
+      try {
+        const { data: f } = await api.get(`/v1/fighters/${id}`);
+        const d = f?.data ?? f;
+        return { id, fullName: d.fullName, lastName: d.lastName, record: d.record, weightClass: d.weightClass };
+      } catch { return { id }; }
+    }));
+    return items;
+  },
   removeFighter: async (id: string) => { await watchlistApi.removeFighter(id); },
 };
 

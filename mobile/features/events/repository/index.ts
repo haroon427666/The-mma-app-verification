@@ -2,10 +2,8 @@
 
 import { eventsApi } from '../api/events.api';
 import { fightsApi } from '../api/fights.api';
-import { predictionsApi } from '../api/predictions.api';
 import { watchlistApi } from '../api/watchlist.api';
-import { remindersApi } from '../api/reminders.api';
-import type { ExtendedEvent, FightCardEntry, FightPrediction, Reminder } from '../types';
+import type { ExtendedEvent, FightCardEntry } from '../types';
 
 export const eventsRepo = {
   list: async (params: {
@@ -53,18 +51,6 @@ export const fightsRepo = {
   },
 };
 
-export const predictionsRepo = {
-  forEvent: async (eventId: string) => {
-    const { data } = await predictionsApi.forEvent(eventId);
-    return (data ?? {}) as Record<string, FightPrediction>;
-  },
-
-  forFight: async (fightId: string) => {
-    const { data } = await predictionsApi.forFight(fightId);
-    return data as FightPrediction;
-  },
-};
-
 export const watchlistRepo = {
   list: async () => {
     const { data } = await watchlistApi.list();
@@ -77,26 +63,5 @@ export const watchlistRepo = {
 
   remove: async (eventId: string) => {
     await watchlistApi.remove(eventId);
-  },
-
-  check: async (eventId: string) => {
-    const { data } = await watchlistApi.isWatched(eventId);
-    return (data?.watched ?? false) as boolean;
-  },
-};
-
-export const remindersRepo = {
-  list: async () => {
-    const { data } = await remindersApi.list();
-    return (data?.data ?? []) as Reminder[];
-  },
-
-  create: async (eventId: string, remindAt: string, type: string) => {
-    const { data } = await remindersApi.create(eventId, remindAt, type);
-    return data as Reminder;
-  },
-
-  cancel: async (reminderId: string) => {
-    await remindersApi.cancel(reminderId);
   },
 };

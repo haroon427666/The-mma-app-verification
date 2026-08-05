@@ -1,4 +1,4 @@
-/** Main navigator — 9 tabs wiring all production feature stacks */
+/** Main navigator — 8 tabs wiring all production feature stacks */
 
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -8,8 +8,6 @@ import { HomeScreen } from '@/features/home';
 import { EventsStack } from '@/features/events';
 import { FightersStack } from '@/features/fighters';
 import { RankingsStack } from '@/features/rankings';
-import { PredictionsStack } from '@/features/predictions';
-import { RecommendationsStack } from '@/features/recommendations/RecsModule';
 import { SearchStack } from '@/features/search/SearchModule';
 import { WatchlistStack } from '@/features/watchlist/WatchModule';
 import { NotificationsStack } from '@/features/notifications/NotifsModule';
@@ -20,7 +18,7 @@ const Tab = createBottomTabNavigator();
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
   const icons: Record<string, string> = {
     home: '🥊', events: '📅', fighters: '👤',
-    rankings: '🏆', predictions: '🔮', search: '🔍',
+    rankings: '🏆', search: '🔍',
     watchlist: '👁', notifications: '🔔', profile: '⚙',
   };
   return (
@@ -50,7 +48,6 @@ export function MainNavigator() {
       <Tab.Screen name="events" component={EventsStack} options={{ tabBarLabel: 'Events' }} />
       <Tab.Screen name="fighters" component={FightersStack} options={{ tabBarLabel: 'Fighters' }} />
       <Tab.Screen name="rankings" component={RankingsStack} options={{ tabBarLabel: 'Rank' }} />
-      <Tab.Screen name="predictions" component={PredictionsStack} options={{ tabBarLabel: 'Predict' }} />
       <Tab.Screen name="search" component={SearchStack} options={{ tabBarLabel: 'Search' }} />
       <Tab.Screen name="watchlist" component={WatchlistStack} options={{ tabBarLabel: 'Track' }} />
       <Tab.Screen name="notifications" component={NotificationsStack} options={{ tabBarLabel: 'Alerts' }} />

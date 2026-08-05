@@ -22,17 +22,6 @@ export function DetailSkeleton() {
   );
 }
 
-export function PredictionSkeleton() {
-  return (
-    <View style={s.card}>
-      <View style={[s.lineWide, SS]} />
-      <View style={[s.line, SS]} />
-      <View style={[s.line, SS]} />
-      <View style={[s.lineSmall, SS]} />
-    </View>
-  );
-}
-
 export function ResultsSkeleton() {
   return <View style={s.detailWrap}>{[1,2,3,4,5].map((i) => <View key={i} style={[s.block, SS]} />)}</View>;
 }

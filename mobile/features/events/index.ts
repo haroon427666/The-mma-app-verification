@@ -3,15 +3,13 @@
 // ── API ──
 export { eventsApi } from './api/events.api';
 export { fightsApi } from './api/fights.api';
-export { predictionsApi } from './api/predictions.api';
 export { watchlistApi } from './api/watchlist.api';
-export { remindersApi } from './api/reminders.api';
 
 // ── Repository ──
-export { eventsRepo, fightsRepo, predictionsRepo, watchlistRepo, remindersRepo } from './repository';
+export { eventsRepo, fightsRepo, watchlistRepo } from './repository';
 
 // ── Services ──
-export { eventKeys, fightKeys, predictionKeys, watchlistKeys, reminderKeys } from './services/queryKeys';
+export { eventKeys, fightKeys, watchlistKeys } from './services/queryKeys';
 
 // ── Socket ──
 export { liveFightSocket } from './socket/LiveFightSocket';
@@ -26,18 +24,15 @@ export { eventsAnalytics } from './analytics/track';
 export { useEventsStore, eventsActions } from './store/events.store';
 export { useFiltersStore, filtersActions } from './store/filters.store';
 export { useWatchlistStore, watchlistActions } from './store/watchlist.store';
-export { useReminderStore, reminderActions } from './store/reminder.store';
 
 // ── Hooks ──
 export {
   useEvents, useEvent, useUpcomingEvents, usePastEvents,
   useLiveEvents, useFightCard, useCountdown, useWatchlist,
-  useReminder, usePredictions,
 } from './hooks';
 
 // ── Mutations ──
 export { useWatchEvent, useUnwatchEvent } from './mutations/useWatchEvent';
-export { useAddReminder, useRemoveReminder } from './mutations/useReminders';
 
 // ── Navigation ──
 export { EventsStack } from './navigation/EventsStack';
@@ -57,9 +52,6 @@ export { Countdown } from './components/Countdown';
 export { FightRow } from './components/FightRow';
 export { FightCard } from './components/FightCard';
 export { WatchlistButton } from './components/WatchlistButton';
-export { ReminderButton } from './components/ReminderButton';
-export { FightPredictionCard } from './components/FightPredictionCard';
-export { OddsCard } from './components/OddsCard';
 export {
   VenueCard, BroadcastCard, PromotionBadge, FightResult,
   FightStatus, SectionHeader, LoadingCard, ErrorCard, EmptyState,
@@ -68,7 +60,7 @@ export {
 // ── Detail Sections ──
 export {
   EventHero, EventInformation, FightCardSection,
-  PredictionSection, BroadcastSection, VenueSection,
+  BroadcastSection, VenueSection,
 } from './detail';
 
 // ── Images ──
@@ -77,14 +69,14 @@ export { CachedImage, FighterAvatar, CountryFlag, Poster, PromotionLogo } from '
 // ── Skeletons ──
 export {
   EventCardSkeleton, FightCardSkeleton, DetailSkeleton,
-  PredictionSkeleton, ResultsSkeleton,
+  ResultsSkeleton,
 } from './skeletons';
 
 // ── Animations ──
 export { CountdownFlip, FightCardExpand, LivePulse } from './animations';
 
 // ── Errors ──
-export { EventNotFound, NetworkError, PredictionUnavailable } from './errors';
+export { EventNotFound, NetworkError } from './errors';
 
 // ── Theme ──
 export { eventColors } from './theme/eventColors';

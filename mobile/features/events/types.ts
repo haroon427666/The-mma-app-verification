@@ -20,9 +20,7 @@ export interface ExtendedEvent extends BaseEvent {
   endTime: string | null;
   fights: FightCardEntry[];
   results?: FightResult[];
-  predictions?: Record<string, FightPrediction>;
   statistics?: EventStatistics;
-  bonuses?: EventBonuses;
 }
 
 export interface FightCardEntry extends Omit<BaseFight, 'result' | 'status' | 'cardSegment'> {
@@ -35,8 +33,6 @@ export interface FightCardEntry extends Omit<BaseFight, 'result' | 'status' | 'c
   fighterA: FighterDetail;
   fighterB: FighterDetail;
   result: FightResult | null;
-  prediction: FightPrediction | null;
-  odds: FightOdds | null;
   rounds: number;
   status: FightStatus;
 }
@@ -65,22 +61,6 @@ export interface FightResult {
   time: string;
 }
 
-export interface FightPrediction {
-  probA: number;
-  probB: number;
-  confidence: { score: number; level: string };
-  finish: { koTko: number; submission: number; decision: number };
-  mostLikelyRound: number;
-  keyFactors: Array<{ factor: string; impact: number; favors: string }>;
-}
-
-export interface FightOdds {
-  fighterA: string;
-  fighterB: string;
-  source: string;
-  updatedAt: string;
-}
-
 export type CardSegment = 'main' | 'co-main' | 'mainCard' | 'prelims' | 'earlyPrelims';
 export type FightStatus = 'SCHEDULED' | 'WALKOUT' | 'IN_PROGRESS' | 'FINISHED' | 'CANCELLED';
 export type EventFilter = 'live' | 'upcoming' | 'past' | 'thisWeek' | 'thisMonth' | 'calendar';
@@ -99,11 +79,6 @@ export interface EventStatistics {
   rankedFighters: number;
 }
 
-export interface EventBonuses {
-  fightOfTheNight: string | null;
-  performanceBonuses: string[];
-}
-
 export interface CountdownState {
   days: number;
   hours: number;
@@ -112,12 +87,4 @@ export interface CountdownState {
   isPast: boolean;
   isLive: boolean;
   isStartingSoon: boolean;
-}
-
-export interface Reminder {
-  id: string;
-  eventId: string;
-  remindAt: string;
-  type: 'day_before' | 'six_hours' | 'one_hour' | 'fifteen_min';
-  active: boolean;
 }

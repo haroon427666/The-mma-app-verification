@@ -1,6 +1,6 @@
 # PROJECT_STATUS.md
 
-**Last updated:** 2026-08-05 (AI-module restoration complete + validated; mobile bootability tsc 0; `platform/` → `data_platform/` rename — see `SESSION_STATE.md`)
+**Last updated:** 2026-08-05 (Phase 7 item 5 contract audit complete — 100 routes, 0 phantom mobile paths; 3 new event sub-routes; see `SESSION_STATE.md`)
 **Repository:** MMA Backend — `backend/`
 **Stack:** Python 3.12 · FastAPI · SQLAlchemy 2 (async) · SQLite (dev) / PostgreSQL (prod) · Alembic · Pydantic v2 · pytest · ruff · mypy
 
@@ -10,10 +10,11 @@
 
 | Gate | Command (from `backend/`) | Result |
 |---|---|---|
-| Tests | `python -m pytest -q` | ✅ **319 passed** (294 prior + 10 champions + 9 migration-coverage + 6 etag/auth) |
-| Lint | `python -m ruff check src tests sync.py` | ✅ 0 errors |
-| Types | `python -m mypy src --strict` | ⚠️ not re-run this session; prior gate 0 errors (179 source files) |
+| Tests | `python -m pytest -q` | ✅ **339 passed** (319 baseline + 10 champions + 9 migration-coverage + 6 etag/auth + 13 rankings-extras + 7 event-extras) |
+| Lint | `python -m ruff check src tests` | ✅ 0 errors |
+| Types | `python -m mypy src` | ✅ no issues in 184 source files |
 | Migrations | `python -m alembic upgrade head --sql` | ✅ renders clean — 7 `ADD COLUMN synced_at` (rankings excluded), 8 auth tables, 005 type fixes, `duration_ms FLOAT` |
+| Contract audit | `api_audit.py` (route vs mobile literal cross-ref) | ✅ **100 endpoints, PHANTOM_COUNT 0** (was 39) |
 
 > Live Postgres `alembic upgrade head` NOT executed in this environment (no Docker/Postgres).
 > Verified offline via `--sql` render + SQLite `create_all` coverage tests (`tests/integration/test_migration_coverage.py`).
@@ -30,6 +31,30 @@ This file governs `backend/` only; the sibling AI packages and mobile were also 
   §Delete table, migration-plan Phase 5) are **superseded** by user directive.
 - **Mobile bootability**: `mobile/` `tsc --noEmit` = **0 errors** (was 67); 3 npm deps added.
 - Backend gates above (319 passed, ruff clean) re-verified after the rename; zero `platform` refs remain.
+
+---
+
+## Phase 7 item 5 — Contract Audit (2026-08-05)
+
+Scripted cross-reference of every backend route vs mobile literal URLs found **39 phantom mobile
+paths**; all resolved (details in `SESSION_STATE.md` §7b):
+
+- **Implemented** (real data, tested): `GET /v1/events/{event_id}/fights` (fight card),
+  `/v1/events/{event_id}/results` (completed fights, `result_method` present),
+  `/v1/events/{event_id}/statistics` (aggregates + `EventStatisticsResponse` schema);
+  `_build_fight_items()` helper refactored out of `_event_to_detail`. Tests:
+  `tests/api/test_event_extras.py` (7 tests, `asyncio.run` direct-call style).
+- **Removed from mobile** (no backend / dead / unreachable): `features/predictions/` (no backend
+  predictions router exists), `features/recommendations/` module (backend feed API is real and kept;
+  the mobile module was imported but never rendered), events reminders + predictions
+  api/hooks/store/components, profile `/v1/me/stats` + `/v1/me/export` calls,
+  `/v1/me/devices` register/unregister, dead query files (`watchlist/api/queries.ts`,
+  `search/types-and-api.ts`, `events/api/queries.ts`), parallel profile layer.
+- **Paths fixed** to real routes: `/v1/fighters/{id}/history`, `/v1/watchlist/events`,
+  `/v1/me/favorites`, `/v1/notifications/push-token`.
+
+Re-audit confirms **PHANTOM_COUNT 0**. Full gates re-run green: 339 tests, ruff clean,
+mypy clean, mobile tsc 0, expo export bundles web/android/iOS.
 
 ---
 

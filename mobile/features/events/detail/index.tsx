@@ -5,7 +5,6 @@ import { View, Text, StyleSheet } from 'react-native';
 import { typography, spacing, radius } from '@/theme';
 import { Countdown } from '../components/Countdown';
 import { FightCard } from '../components/FightCard';
-import { FightPredictionCard } from '../components/FightPredictionCard';
 import { VenueCard, BroadcastCard, SectionHeader } from '../components/SupportComponents';
 import { Poster, PromotionLogo } from '../images';
 import { LivePulse } from '../animations';
@@ -38,7 +37,7 @@ export function EventInformation({ event, palette }: any) {
   );
 }
 
-export function FightCardSection({ event, predictions, palette, onFightPress }: any) {
+export function FightCardSection({ event, palette, onFightPress }: any) {
   const grouped = groupBySegment(event.fights ?? []);
   const order = ['main', 'co-main', 'mainCard', 'prelims', 'earlyPrelims'];
   return (
@@ -46,17 +45,11 @@ export function FightCardSection({ event, predictions, palette, onFightPress }: 
       <SectionHeader title="Fight Card" count={event.fights?.length} palette={palette} />
       {order.map((seg) =>
         grouped[seg] ? (
-          <FightCard key={seg} segment={seg} fights={grouped[seg]} predictions={predictions} palette={palette} onFightPress={onFightPress} />
+          <FightCard key={seg} segment={seg} fights={grouped[seg]} palette={palette} onFightPress={onFightPress} />
         ) : null,
       )}
     </View>
   );
-}
-
-export function PredictionSection({ predictions, palette }: any) {
-  if (!predictions || Object.keys(predictions).length === 0) return null;
-  const first = Object.values(predictions)[0] as any;
-  return <FightPredictionCard prediction={first} palette={palette} />;
 }
 
 export function BroadcastSection({ event, palette }: any) {

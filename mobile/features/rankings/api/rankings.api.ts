@@ -1,4 +1,4 @@
-/** Rankings API — 13 endpoints */
+/** Rankings API — real endpoints only */
 
 import api from '@/services/api';
 
@@ -12,29 +12,15 @@ export const rankingsApi = {
     if (params?.limit) q.set('limit', String(params.limit));
     return api.get(`/v1/rankings?${q.toString()}`);
   },
-  history: (fighterId: string) => api.get(`/v1/rankings/history/${fighterId}`),
   goat: () => api.get('/v1/rankings/goat'),
   prospects: (division?: string) => api.get(`/v1/rankings/prospects${division ? `?division=${encodeURIComponent(division)}` : ''}`),
-  movement: (params?: { direction?: string; limit?: number }) => {
+  movement: (params?: { division?: string; limit?: number }) => {
     const q = new URLSearchParams();
-    if (params?.direction) q.set('direction', params.direction);
-    if (params?.limit) q.set('limit', String(params.limit ?? 20));
+    if (params?.division) q.set('division', params.division);
+    if (params?.limit) q.set('limit', String(params.limit ?? 10));
     return api.get(`/v1/rankings/movement?${q.toString()}`);
   },
   streaks: () => api.get('/v1/rankings/streaks'),
   champions: () => api.get('/v1/champions'),
-  championsHistory: (weightClass?: string) => api.get(`/v1/champions/history${weightClass ? `?weight_class=${encodeURIComponent(weightClass)}` : ''}`),
   titleDefenses: () => api.get('/v1/title-defenses'),
-  elo: (params?: { weightClass?: string; limit?: number }) => {
-    const q = new URLSearchParams();
-    if (params?.weightClass) q.set('weight_class', params.weightClass);
-    if (params?.limit) q.set('limit', String(params.limit ?? 50));
-    return api.get(`/v1/elo?${q.toString()}`);
-  },
-  composite: (params?: { weightClass?: string; limit?: number }) => {
-    const q = new URLSearchParams();
-    if (params?.weightClass) q.set('weight_class', params.weightClass);
-    if (params?.limit) q.set('limit', String(params.limit ?? 50));
-    return api.get(`/v1/composite?${q.toString()}`);
-  },
 };

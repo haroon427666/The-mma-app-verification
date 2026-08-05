@@ -57,6 +57,63 @@ class ChampionEntry(BaseModel):
     model_config = {"extra": "forbid"}
 
 
+# ── Ranking extras ────────────────────────────────────────────────────────────
+
+class FighterBrief(BaseModel):
+    id: str
+    full_name: str | None = None
+    nickname: str | None = None
+    record: str | None = None
+    headshot_url: str | None = None
+    wins: int = 0
+    losses: int = 0
+    draws: int = 0
+
+
+class RankingMovementEntry(BaseModel):
+    fighter: FighterBrief
+    division: str
+    from_rank: int | None = None
+    to_rank: int
+    change: int | None = None
+    reason: str | None = None
+
+
+class GOATEntry(BaseModel):
+    rank: int
+    fighter: FighterBrief
+    composite_score: float
+    title_defenses: int | None = None
+    title_wins: int | None = None
+    finish_rate: float | None = None
+    divisions: list[str] = []
+    era: str | None = None
+
+
+class ProspectEntry(BaseModel):
+    fighter: FighterBrief
+    age: int | None = None
+    finish_rate: float | None = None
+    trajectory: str = "unknown"
+    potential: float | None = None
+    division: str
+    comparable: str | None = None
+
+
+class StreakEntry(BaseModel):
+    fighter: FighterBrief
+    streak: int
+    type: str
+    best_rank: int | None = None
+    last_fight: str | None = None
+
+
+class TitleDefenseEntry(BaseModel):
+    fighter: FighterBrief
+    defenses: int
+    division: str
+
+
 # ── Promotion ──────────────────────────────────────────────────────────────
 
 class PromotionListItem(BaseModel):

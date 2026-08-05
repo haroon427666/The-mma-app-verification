@@ -98,6 +98,19 @@ class EventDetailResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ── Event Statistics ───────────────────────────────────────────────────────
+
+class EventStatisticsResponse(BaseModel):
+    total_fights: int = 0
+    title_fights: int = 0
+    decisions: int = 0
+    finishes: int = 0
+    ko_tko: int = 0
+    submissions: int = 0
+    countries_represented: int = 0
+    weight_classes: list[str] = []
+
+
 # ── Fight Detail ──────────────────────────────────────────────────────────
 
 class FighterCornerResponse(BaseModel):

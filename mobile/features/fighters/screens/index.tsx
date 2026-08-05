@@ -5,11 +5,11 @@ import { View, Text, FlatList, TouchableOpacity, ScrollView, StyleSheet, Refresh
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { typography, spacing, radius } from '@/theme';
 import { useTheme } from '@/hooks/useTheme';
-import { useFighter, useStats, useHistory, useSimilarFighters, useStyleAnalysis, useRankHistory, useFighters, fightersActions } from '../hooks';
+import { useFighter, useStats, useHistory, useSimilarFighters, useFighters, fightersActions } from '../hooks';
 import { useFavoriteFighter, useUnfavoriteFighter } from '../mutations';
 import { useIsFavorite } from '../hooks';
 import { useFightersStore } from '../store';
-import { FighterHeader, FighterRecord, FighterStats as FighterStatsComp, FightHistoryRow, SimilarityCard, FighterStyleBadge, RankMovement, FavoriteButton } from '../components';
+import { FighterHeader, FighterRecord, FighterStats as FighterStatsComp, FightHistoryRow, SimilarityCard, FavoriteButton } from '../components';
 import { FighterCardSkeleton, ProfileSkeleton, EmptyState, ErrorState } from '../components';
 import { RadarChart, LineChart } from '../charts';
 import { WEIGHT_CLASSES } from '../constants';
@@ -70,7 +70,6 @@ export function FighterProfileScreen({ route, navigation }: any) {
   const { palette } = useTheme();
   const { data: fighter, isLoading } = useFighter(fighterId);
   const { data: stats } = useStats(fighterId);
-  const { data: style } = useStyleAnalysis(fighterId);
   const { data: similar } = useSimilarFighters(fighterId);
   const { data: isFav } = useIsFavorite(fighterId);
   const fav = useFavoriteFighter();
@@ -96,7 +95,7 @@ export function FighterProfileScreen({ route, navigation }: any) {
 
         {/* Tabs */}
         <View style={st.tabs}>
-          {(['overview', 'stats', 'history', 'similar', 'predictions'] as const).map((t) => (
+          {(['overview', 'stats', 'history', 'similar'] as const).map((t) => (
             <TouchableOpacity key={t} onPress={() => fightersActions.setTab(t as any)} style={[st.tab, tab === t && { borderBottomColor: palette.primary[400], borderBottomWidth: 2 }]}>
               <Text style={[typography.bodySmall, { color: tab === t ? palette.primary[400] : palette.text.tertiary, fontWeight: '600', textTransform: 'capitalize' }]}>{t}</Text>
             </TouchableOpacity>
@@ -105,7 +104,6 @@ export function FighterProfileScreen({ route, navigation }: any) {
 
         {tab === 'overview' && (
           <View style={st.section}>
-            {style && <FighterStyleBadge style={style} palette={palette} />}
             {stats && <RadarChart stats={stats} palette={palette} />}
             {similar && similar.length > 0 && (
               <View>

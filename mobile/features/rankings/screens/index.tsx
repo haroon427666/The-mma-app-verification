@@ -5,11 +5,11 @@ import { View, Text, FlatList, TouchableOpacity, ScrollView, StyleSheet, Refresh
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { typography, spacing, radius } from '@/theme';
-import { useP4P, useDivisionRankings, useGOAT, useProspects, useRankingMovement, useChampions, useStreaks, useRankingHistory, useTitleDefenses } from '../hooks';
+import { useP4P, useDivisionRankings, useGOAT, useProspects, useRankingMovement, useTitleDefenses } from '../hooks';
 import { useRankingsStore, rankingsActions } from '../stores';
 import { rankingAnalytics } from '../services';
 import { WEIGHT_CLASSES, rankingColors } from '../theme';
-import type { P4PRanking, GOATEntry, ProspectEntry, RankingFighter, RankingHistoryPoint } from '../types';
+import type { P4PRanking, GOATEntry, ProspectEntry, RankingFighter } from '../types';
 import { RankingCard } from '../components';
 
 // ── RankingsScreen (Main landing) ──
@@ -120,7 +120,7 @@ function GOATView({ palette }: any) {
         <RankingCard
           rank={item.rank} movement="steady"
           fighter={item.fighter}
-          subtitle={`Peak Elo: ${Math.round(item.eloPeak)} • ${item.titleDefenses} defenses • ${item.era}`}
+          subtitle={`${item.titleDefenses ?? 0} defenses • ${Math.round((item.finishRate ?? 0) * 100)}% finish${item.era ? ` • ${item.era}` : ''}`}
           extra={<View style={[s.compositeBadge, { backgroundColor: palette.primary[500] }]}><Text style={[styles.mono, { color: '#FFF', fontWeight: '700' }]}>{item.compositeScore?.toFixed(1)}</Text></View>}
           palette={palette}
         />
@@ -142,7 +142,7 @@ function ProspectsView({ palette }: any) {
         <RankingCard
           rank={null} movement="new"
           fighter={item.fighter}
-          subtitle={`${item.record} • ${Math.round(item.finishRate * 100)}% finish • Age ${item.age}`}
+          subtitle={`${item.fighter?.record ?? 'NR'} • ${Math.round((item.finishRate ?? 0) * 100)}% finish • Age ${item.age ?? '?'}`}
           extra={
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <View style={[s.prospectBadge, { backgroundColor: item.trajectory === 'rising' ? '#10B981' : '#F59E0B' }]}>
@@ -176,53 +176,6 @@ function MovementView({ palette }: any) {
         />
       )}
     />
-  );
-}
-
-// ── Ranking History Screen ──
-export function RankingHistoryScreen({ route }: any) {
-  const { fighterId, fighterName } = route.params;
-  const { palette } = useTheme();
-  const { data: history } = useRankingHistory(fighterId);
-  return (
-    <SafeAreaView style={[s.root, { backgroundColor: palette.surface.bg }]}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={[typography.headline, { color: palette.text.primary }]}>{fighterName}</Text>
-        <Text style={[typography.body, { color: palette.text.secondary, marginBottom: spacing.xl }]}>Rank History</Text>
-        <View style={[s.chartPlaceholder, { backgroundColor: '#1A1A2E', height: 200, borderRadius: radius.lg, marginBottom: spacing.xl }]}>
-          <Text style={{ color: '#6B7280' }}>Rank Chart</Text>
-        </View>
-        {(history ?? []).map((point: RankingHistoryPoint, i: number) => (
-          <View key={i} style={[s.historyRow, { backgroundColor: palette.surface.card, borderColor: palette.surface.border }]}>
-            <Text style={[typography.bodySmall, { color: palette.text.primary, fontWeight: '600' }]}>{point.date?.slice(0, 10)}</Text>
-            <Text style={[styles.mono, { color: palette.primary[400] }]}>{point.rank ? `#${point.rank}` : point.isChampion ? '👑' : 'NR'}</Text>
-            {point.event && <Text style={[typography.caption, { color: palette.text.tertiary }]}>{point.event}</Text>}
-            {point.result && <Text style={[typography.caption, { color: point.result === 'W' ? '#10B981' : '#EF4444' }]}>{point.result}</Text>}
-          </View>
-        ))}
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-// ── Champion History Screen ──
-export function ChampionHistoryScreen({ route }: any) {
-  const { palette } = useTheme();
-  const { data: champions } = useChampions();
-  return (
-    <SafeAreaView style={[s.root, { backgroundColor: palette.surface.bg }]}>
-      <FlatList
-        data={champions as any[] ?? []}
-        keyExtractor={(c: any) => c.fighter?.id || Math.random().toString()}
-        ListHeaderComponent={<Text style={[typography.headline, { color: palette.text.primary, padding: spacing.lg }]}>Champion History</Text>}
-        renderItem={({ item }) => (
-          <View style={[s.champRow, { backgroundColor: palette.surface.card, borderColor: palette.surface.border }]}>
-            <Text style={[typography.body, { color: palette.text.primary, fontWeight: '600' }]}>{item.fighter?.fullName || item.fighter?.lastName}</Text>
-            <Text style={[typography.caption, { color: palette.text.secondary }]}>{item.weightClass} • {item.defenses} defenses • {item.reign} days</Text>
-          </View>
-        )}
-      />
-    </SafeAreaView>
   );
 }
 
@@ -262,9 +215,6 @@ const s = StyleSheet.create({
   chipRow: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: 8 },
   chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1 },
   championBanner: { margin: spacing.lg, padding: spacing.lg, borderRadius: radius.lg, borderWidth: 1, alignItems: 'center' },
-  chartPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  historyRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, borderRadius: radius.sm, borderWidth: 0.5, marginBottom: 4 },
-  champRow: { padding: spacing.md, marginHorizontal: spacing.lg, borderRadius: radius.md, borderWidth: 0.5, marginBottom: 6 },
   defenseRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, marginHorizontal: spacing.lg, borderRadius: radius.md, borderWidth: 0.5, marginBottom: 6 },
   compositeBadge: { width: 52, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   prospectBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },

@@ -178,3 +178,15 @@ class FighterProfileResponse(BaseModel):
     synced_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+# ── Similar fighters (style-comparison) ─────────────────────────────────────
+
+class SimilarFighter(BaseModel):
+    fighter: FighterListItem
+    similarity_score: float  # 0.0–1.0
+
+
+class SimilarFightersResponse(BaseModel):
+    fighter: FighterListItem
+    similar: list[SimilarFighter]

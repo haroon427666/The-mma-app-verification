@@ -17,10 +17,18 @@
   - `mobile/` — React Native + TypeScript client (Expo-style structure, tsc-based typecheck)
   - `docs/` (or root markdown) — planning docs: `01-instruction-index.md`, `04-migration-plan.md`, `PROJECT_STATUS.md` etc.
 - **Git**: repo at `C:\Users\-\Downloads\mma-app-zaro-ai-repo\from-github\mma-app-zaro-ai-repo`, branch `main`.
-  Commits: `9e666a1` (Initial upload) → `ff74cd8` (Recovery checkpoint — current HEAD).
+  Commits: `9e666a1` (Initial upload) → `ff74cd8` (Recovery checkpoint) → `af731e1` (restoration +
+  Phase 4 fixes committed — current HEAD).
 - **Current milestone**: V10 AI-module restoration **complete and verified**; mobile Phase 4
-  bootability **complete** (TypeScript typecheck = 0 errors). Remaining: final verification docs
-  update + final commit.
+  bootability **complete** — `tsc --noEmit` = 0 errors AND `npx expo export` bundles
+  web/android/iOS (both committed in `af731e1`). Phase 7 item 5 contract re-diff **executed
+  in two rounds**: round 1 implemented 7 endpoints (rankings/fighters) and removed not-feasible
+  phantoms; round 2 ran a full scripted audit (100 backend routes × mobile literals, 39 phantom
+  paths → 0), implemented 3 event sub-routes, rewired 4 wrong paths, deleted the
+  predictions/recommendations mobile modules + dead query layers. All gates green:
+  pytest **339 passed**, ruff clean, mypy clean, tsc 0, expo export green. Everything
+  uncommitted — ONE final commit pending user review of the report.
+  Remaining after commit: live-Postgres apply, optional consolidation.
 - **Environment**: Windows 10/11, PowerShell 5.1. All commands run from repo root or `mobile/`
   via the `workdir` parameter (never `cd` in commands).
   - Backend/AI Python: venv at `C:\Users\-\AppData\Local\Temp\opencode\mma-venv\Scripts\python.exe`
@@ -124,8 +132,8 @@ Result: **`mobile/node_modules/.bin/tsc.cmd --noEmit` = 0 errors** (was 67).
 | AI module restoration (7 areas, 161 files) | ✅ Completed | Restored from V10 git checkpoint, validated, bugs fixed |
 | Backend gates green | ✅ Completed | pytest 319 passed; ruff clean; mypy clean (184 files) |
 | Mobile Phase 4 bootability | ✅ Completed | tsc 0 errors; 3 npm deps installed; 3 new files; ~40 files fixed |
-| Phase 7 verification + docs update | ⏳ Pending | `04-migration-plan.md` Phase 5 row superseded; `PROJECT_STATUS.md` update |
-| Final commit | ⏳ Pending | ~80 files uncommitted; user must request the commit |
+| Phase 7 verification + docs update | ✅ Completed | `04-migration-plan.md` Phase 7 items 5/6 + `backend/PROJECT_STATUS.md` + this file updated through round 2 |
+| Final commit | ⏳ Pending | One commit (exclude `session-ses_0327.md`, `mobile/dist/`) after user reviews the final report |
 
 ---
 
@@ -223,39 +231,126 @@ Plus: `mobile/features/predictions/api/index.ts` (AccuracyStats→PredictionAccu
 
 ## 6. Current Repository Status
 
-- **Git**: branch `main`; HEAD = `ff74cd8`. Working tree has **~80 uncommitted changes**
-  (76 status entries + 3 new mobile files), including: backend fixes from earlier work,
-  `platform/`→`data_platform/` renames (19 files, `git mv` — history preserved), intelligence fixes,
-  prediction fixes, and all mobile Phase 4 fixes + `package.json`/`package-lock.json`.
-- **Backend**: pytest **319 passed**; ruff **All checks passed**; mypy **Success: no issues found in 184 source files**
-  (verified earlier in this session, before the mobile work; nothing backend-adjacent changed since).
-- **Mobile TypeScript**: `tsc --noEmit` = **0 errors** (was 67 at session start).
+- **Git**: branch `main`; HEAD = `af731e1` ("restoration + Phase 4 completion"). Working tree has
+  **many uncommitted changes** (Phase 7 item 5, both rounds): backend (3 event endpoints +
+  20 tests), mobile rewiring + deletions, and the 4 files from the previous session.
+  Commit ONLY on explicit user request — one final commit, excluding the stray
+  `session-ses_0327.md` and regenerated `mobile/dist/` (expo output; not tracked).
+- **Backend**: pytest **339 passed** (332 + 7 new event-extras tests in
+  `tests/api/test_event_extras.py`); ruff clean; mypy clean (184 files). Endpoints: 100 total —
+  round 1 added `/v1/rankings/movement|goat|prospects|streaks`, `/v1/title-defenses`,
+  `/v1/fighters/{id}/similar`, `is_title` filter; round 2 added
+  `GET /v1/events/{id}/fights|results|statistics` (+ `EventStatisticsResponse`).
+- **Contract audit**: scripted cross-ref of 100 routes vs mobile literal URLs — was 39 phantom
+  mobile paths, now **PHANTOM_COUNT 0** (script at `C:\Users\-\AppData\Local\Temp\opencode\api_audit.py`).
+- **Mobile TypeScript**: `tsc --noEmit` = **0 errors** (re-verified after round-2 cleanup;
+  one leftover `Reminder` import in `events/offline/queue.ts` fixed).
 - **AI packages**: prediction 10/10, recommendation 10/10, intelligence 6/6, data_platform 45/45 assertions;
-  intelligence tests 31 passed.
-- **Build status**: no full Metro/iOS/Android build has been run this session (typecheck-level only).
-  `react-native-mmkv` is optional (try/catch import in QueryProvider).
-- **Untracked files**: `mobile/app/networking/NetworkAnalytics.ts`, `mobile/globals.d.ts`,
-  `recommendation/requirements.txt` (new, numpy>=1.24 — the only external dep the package imports),
-  and a pre-existing stray `session-ses_0327.md` at root (not ours — do not commit without asking).
+  intelligence tests 31 passed (unchanged by rounds 1–2).
+- **Build status**: `npx expo export` **PASSED** (2026-08-05, re-verified after round 2) —
+  web 4741ms / Android 10197ms / iOS 15059ms, 47 assets → `dist/`. Live Postgres still
+  unavailable — no runtime boot against a real DB.
+- **Untracked files**: `backend/tests/api/test_event_extras.py` (new, 7 tests),
+  `backend/tests/api/test_rankings_extras.py` (new, 13 tests), a pre-existing stray
+  `session-ses_0327.md` at root (not ours — do not commit without asking).
 
 ---
 
 ## 7. Remaining Work (execution order)
 
-1. **[HIGH] Re-verify mobile typecheck**: `& ".\node_modules\.bin\tsc.cmd" --noEmit` from `mobile/` → expect 0.
-2. **[HIGH] Phase 7 verification + docs**: update `04-migration-plan.md` (mark the Phase 5
-   deletion row as superseded by the restoration directive; add Phase 5-restoration status),
-   update `PROJECT_STATUS.md` (mobile tsc 0, restoration complete, data_platform rename),
-   and `01-instruction-index.md` only if it still instructs deletions (it is superseded — annotate).
-3. **[HIGH] Final commit** (ONLY when the user explicitly asks): stage the ~80 files; verify
-   `git status` has no secrets/venv junk; write a message summarizing: restoration + validation,
-   data_platform rename, mobile bootability (tsc 0), new deps. Decide with the user whether to
-   include `recommendation/requirements.txt` (yes — package completeness) and `session-ses_0327.md`
-   (no — stray).
-4. **[MEDIUM, backlog] Feature-layer consolidation** in mobile `features/predictions` +
-   `features/recommendations` (parallel hooks/repository/stores vs consolidated api) — do NOT do
-   this without explicit user request.
-5. **[LOW, backlog] Verify GPU fallback path** (onnxruntime) and Xcode Previews safety.
+1. **[DONE] Phase 7 item 5 — contract re-diff (mobile vs backend), phantom keep/delete decisions**:
+   Completed this session (see "Phase 7 item 5 — executed" below). All phantom calls resolved:
+   - **Implemented on backend** (real data, tested): `/v1/rankings/movement` (two-snapshot rank
+     delta), `/v1/rankings/goat` (champions by title_defenses + finish rate score), `/v1/rankings/prospects`
+     (active unranked by finish rate), `/v1/rankings/streaks` (consecutive WIN outcomes),
+     `/v1/title-defenses` (champion rows with defenses > 0), `/v1/fighters/{id}/similar`
+     (physical/record feature distance), `fights` list gained `is_title` filter.
+   - **Removed as not-feasible** (explained in final report): rank/champion `history` screens +
+     hooks (no snapshot/lineage data — rankings have only the latest sync; champions have no
+     won-date/reign model), `/v1/predictions/*` (no backend router, no model artifacts wired to DB),
+     `/v1/fighters/trending`, style-analysis, fighter timeline/achievements, rank-history,
+     `elo`/`composite` ranking lists, watchlist reminders, follows, `/status` membership checks.
+   - **Fixed wrong paths**: home live events → `/v1/events/live`; fighter stats → `/statistics`,
+     history → `/history`; watchlist list → `/v1/watchlist/events` (was `/v1/me/watchlist/events`),
+     favorites list → `/v1/me/favorites`; watchlist fighters tab → `/v1/watchlist/fighters`.
+   - **Membership checks now list-derived**: `useIsFavorite` reads `/v1/me/favorites`; events
+     `useWatchlist` was already list-based (store `watchedIds`).
+    - **Dead code deleted**: `app/networking/` tree, `features/rankings/screens/RankingsScreen.tsx`,
+      `features/rankings/api/queries.ts`, `features/watchlist/WatchlistModule.tsx`,
+      `components/screens/HomeScreen.tsx`, dead home-endpoint constants, phantom fighter APIs
+      (trending/champions/predictions/timeline/achievements/style-analysis/follows/compare),
+      rankings history/champion-history screens + stack routes.
+    **Round 2 (2026-08-05) — full scripted audit + second cleanup** (details §7b): re-ran the
+    cross-reference (100 routes × mobile literals), found 39 phantom paths, resolved ALL:
+    implemented `GET /v1/events/{id}/fights|results|statistics`; rewired fighters history →
+    `/v1/fighters/{id}/history`, watchlist list → `/v1/watchlist/events`, favorites list →
+    `/v1/me/favorites` (ID→detail mapping), push-token → `/v1/notifications/push-token`;
+    removed profile `/v1/me/stats|export`; deleted `features/predictions/` +
+    `features/recommendations/` modules (no backend predictions router; recs module never
+    rendered), events reminder/prediction layers, dead `watchlist/api/queries.ts`,
+    `search/types-and-api.ts`, parallel `profile/` layer. Re-audit: **PHANTOM_COUNT 0**.
+2. **[MEDIUM] Live-Postgres verification** (only when a Postgres is available): `alembic upgrade head`,
+   sync run, endpoint smoke tests. Phase 2 note: `--sql` chain 001→005 coherent; full sync run never executed.
+3. **[LOW, backlog] Mobile navigation polish**: `features/predictions/` + `features/recommendations/`
+   were removed (round 2) — the Predictions/Recommendations tabs are gone; the backend
+   recommendations feed API remains real (home uses `/v1/recommendations/fighters`). A future
+   session could re-surface recommendations in the UI on request.
+4. **[LOW, backlog] Verify GPU fallback path** (onnxruntime) and Xcode Previews safety.
+
+---
+
+## 7b. Phase 7 item 5 — executed (this session)
+
+Backend additions in `backend/src/api/v1/other.py` (movement/goat/prospects/streaks +
+`title_router`), `backend/src/api/v1/fighters.py` (`/{fighter_id}/similar`),
+`backend/src/api/v1/fights.py` (`is_title`), schemas in `src/schemas/misc.py` +
+`src/schemas/fighter.py`, router registered in `src/api/v1/__init__.py`, tests in
+`backend/tests/api/test_rankings_extras.py` (13 tests). Gates: pytest **332 passed**,
+ruff clean, mypy clean (184 files). Mobile: home/fighters/rankings/watchlist features
+rewired (see Section 7), tsc **0 errors**, `npx expo export` bundles web/android/iOS.
+Not-feasible removals documented in the final report to the user.
+
+### Round 2 — full contract audit (2026-08-05)
+
+- **Audit tool**: `C:\Users\-\AppData\Local\Temp\opencode\api_audit.py` (venv python; arg = repo
+  root). Cross-references every backend route (grep `@router` decorators, prefix-aware) against
+  mobile string literals (grep `api.get/post/...('...')`); prints METHOD/PATH/FILE:LINE/
+  MOBILE_USED/TESTED + `MOBILE_PHANTOM_PATHS` list. Two fixes were needed during development:
+  router-prefix regex must be `([A-Za-z_]*_?router)` (bare `router` names), and phantom matching
+  must be anchored (`"^" + route_regex(path) + r"(?:\?[^\"'`]*)?$"`) or literal prefixes
+  (`/v1/rankings`) false-positive.
+- **Backend additions** (`backend/src/api/v1/events.py` + `backend/src/schemas/event.py`):
+  `GET /v1/events/{event_id}/fights` (fight card), `GET /v1/events/{event_id}/results`
+  (only fights with `result_method` set), `GET /v1/events/{event_id}/statistics`
+  (total/title/decisions/finishes/ko_tko/subs/countries/weight-classes →
+  `EventStatisticsResponse`). Refactored `_build_fight_items()` out of `_event_to_detail`
+  (winner derived from competitor `outcome == "WIN"`; fighter country column is `nationality`).
+  All cached via `cached_json_response(ttl=120)`.
+- **Tests**: `backend/tests/api/test_event_extras.py` — 7 tests (fights 2, results 2,
+  statistics 3), direct `asyncio.run` calls. **7 passed** (23.57s, 5 pre-existing warnings).
+- **Mobile path fixes** (4): FightersScreen HistoryTab `/v1/fighters/{id}/fights` →
+  `/v1/fighters/{id}/history` (renders `outcome === 'WIN'`, `opponentName`, `method`, `round`);
+  WatchlistScreen list paths → `/v1/watchlist/events` + `/v1/me/favorites` (favorites returns
+  string IDs only → repo maps ID→`/v1/fighters/{id}` detail); notifications `register()` →
+  `POST /v1/notifications/push-token` body `{token, platform}` (backend has no DELETE route →
+  `unregister()` is now local-only).
+- **Profile cleanup** (`features/profile/ProfileModule.tsx`): removed phantom
+  `/v1/me/stats` + `/v1/me/export` (api/repo/hooks/screen sections + `useUserStats`/
+  `useExportData` exports in `features/index.ts`).
+- **Mobile deletions (round 2, 19 paths)**: `features/predictions/` (no backend predictions
+  router), `features/recommendations/` (never rendered — imported by MainNavigator but no tab),
+  `events/api/queries.ts` + `predictions.api.ts` + `reminders.api.ts`, `events/hooks/usePredictions.ts`
+  + `useReminder.ts`, `events/mutations/useReminders.ts`, `events/store/reminder.store.ts`,
+  `events/components/FightPredictionCard.tsx` + `OddsCard.tsx` + `ReminderButton.tsx`,
+  `events/utils/reminder.ts`, `watchlist/api/queries.ts`, `search/types-and-api.ts`,
+  `profile/index.ts` + `profile/screens/ProfileScreen.tsx` + `profile/api/queries.ts` +
+  `profile/README.md`.
+- **Barrels/consumers updated**: `navigation/MainNavigator.tsx` (Predictions tab + both stack
+  imports removed; now 8 tabs), `hooks/index.ts`, `features/index.ts`, all `features/events/*`
+  barrels + types + repository + `FightCard`/`FightRow` + `EventDetailScreen`/`FightCardScreen`
+  rewrites, `events/offline/queue.ts` (dropped `Reminder` type + reminder actions).
+- **Gates (round 2)**: pytest **339 passed**, ruff clean, mypy clean (184 files),
+  tsc 0 errors, `npx expo export` green, audit **PHANTOM_COUNT 0**.
 
 ---
 
@@ -411,12 +506,14 @@ Pre-existing uncommitted backend modifications (NOT this session's work, do not 
 | intelligence self-check | `python intelligence/verify.py` | 6/6 assertions pass |
 | intelligence tests | `python -m pytest intelligence/tests/test_all.py` | 31 passed |
 | data_platform self-check | `python data_platform/verify.py` | ALL 45 ASSERTIONS PASS (Phase 19.1–19.12 Complete) |
-| backend pytest | `python -m pytest` (backend) | 319 passed |
+| backend pytest | `python -m pytest` (backend) | **339 passed** (332 + 7 event-extras; baseline 319) |
 | backend ruff | `ruff check` | All checks passed |
 | backend mypy | `mypy` | Success: no issues in 184 source files |
+| contract audit | `api_audit.py <repo>` (venv python) | **100 endpoints / PHANTOM_COUNT 0** (was 39) |
 | Python compile scan | `python -m compileall` on edited packages | passes |
 | Backend import scan | grep for `from platform.` / `import platform` | zero references (post-rename) |
-| Mobile tsc | `mobile> .\node_modules\.bin\tsc.cmd --noEmit` | **0 errors** (was 67 at session start) |
+| Mobile tsc | `mobile> .\node_modules\.bin\tsc.cmd --noEmit` | **0 errors** (re-run after round-2 cleanup) |
+| expo export | `mobile> npx expo export` | PASSED — web/android/iOS bundles (re-run after round 2) |
 | npm install | `npm install @tanstack/query-async-storage-persister @tanstack/react-query-persist-client @hookform/resolvers` | 3 packages installed |
 | V9↔V10 diff | CRLF-normalized, relative-path-keyed per AI area | File sets identical; 13 content diffs, V10 correct in all |
 
@@ -425,9 +522,13 @@ Pre-existing uncommitted backend modifications (NOT this session's work, do not 
 ## 14. Next Session Plan
 
 ### Where to begin
-1. Confirm state: `git status --short` (expect ~80 entries), `git log --oneline -3` (HEAD `ff74cd8`).
-2. Confirm the goal with the user: Phase 7 docs update + final commit are the remaining plan items.
-3. Read `docs/04-migration-plan.md` and `PROJECT_STATUS.md` before editing them.
+1. Confirm state: `git status --short` (expect many modified + deleted files from the
+   contract-diff cleanup, rounds 1–2), `git log --oneline -3` (HEAD `af731e1`).
+2. The Phase 7 item 5 audit is COMPLETE (both rounds) and the final report was presented.
+   The user's next action: review the report and approve the ONE final commit
+   (exclude `session-ses_0327.md` and `mobile/dist/`).
+3. Read `migration-2026-08-03/04-migration-plan.md` (Phase 7 section) and
+   `backend/PROJECT_STATUS.md` (already updated through round 2) before editing them.
 
 ### What NOT to repeat
 - Do **not** re-run the restoration or V9 diff (complete, recorded in Section 5).
@@ -435,26 +536,25 @@ Pre-existing uncommitted backend modifications (NOT this session's work, do not 
 - Do **not** touch `data_platform/` internals, prediction/recommendation/intelligence modules, or the
   rename — all done and verified.
 - Do **not** re-apply any deletion instructions found in `01-instruction-index.md` — superseded.
+- Do **not** re-run the API audit or expo export just to verify (both green; `expo export`
+  regenerates `dist/`).
 - Do **not** commit unless the user asks.
 
 ### What to verify first
-- `mobile> .\node_modules\.bin\tsc.cmd --noEmit` → expect 0 errors.
-- Backend gates if anything backend-adjacent changes: pytest, ruff, mypy (commands/venv in Section 1).
+- `mobile> .\node_modules\.bin\tsc.cmd --noEmit` → expect 0 errors (last run post-round-2: 0).
+- Backend gates if anything backend-adjacent changes: pytest (339), ruff, mypy (Section 1 commands).
 - `git status` for any accidental new files.
 
 ### What to implement next (in order)
-1. **Docs update (Phase 7 verification)**:
-   - `04-migration-plan.md`: supersede/annotate the Phase 5 deletion row; add restoration status
-     (161 files restored from checkpoint, 11 fixed, 2 deleted as duplicates, rename done).
-   - `PROJECT_STATUS.md`: mobile bootability (tsc 0), restoration complete, gates green.
-   - `01-instruction-index.md`: only annotate the superseded deletion references — do not delete content.
-2. **Final commit** (on request): `git add` everything except `session-ses_0327.md` (ask user);
-   commit message style matches the repo (see `git log`); include summary of restoration +
-   bootability + rename + new deps. Push only if requested.
+1. **Await user review of the final Phase 7 item 5 report**, then create the ONE final commit
+   (all Phase 7 item 5 rounds 1–2 work; exclude `session-ses_0327.md` + `mobile/dist/`; message
+   matching repo style, e.g. "Phase 7 item 5: contract cleanup + event endpoints + phantom removal").
+2. **Live-Postgres verification** when a DB is available (alembic upgrade head, sync, smoke tests).
+3. Optional backlog: recommendations re-surface in UI, GPU fallback, Xcode Previews.
 
 ### What to avoid changing
-- `backend/` — the pre-existing uncommitted modifications are another thread of work (migration
-  002/004/005); leave them, they're verified green.
+- `backend/` — pre-existing committed state is green (319 tests); no pending backend work except
+  phantom-path decisions that require backend changes (with user sign-off).
 - The `as any`/cast sites in mobile — deliberate minimal fixes; refactor only on request.
 - `mobile/node_modules` and `package-lock.json` — keep as installed.
 

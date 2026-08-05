@@ -6,4 +6,3 @@ export { Countdown } from './Countdown';
 export { FightRow } from './FightRow';
 export { FightCard } from './FightCard';
 export { WatchlistButton } from './WatchlistButton';
-export { ReminderButton } from './ReminderButton';

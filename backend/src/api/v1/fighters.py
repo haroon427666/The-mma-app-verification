@@ -1,10 +1,14 @@
 """Fighters API — v1. Real implementation connected to FighterService → FighterRepository → PostgreSQL."""
 
-from typing import Any
+import math
+from typing import Any, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from sqlalchemy import select as sa_select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.cache import cache_key, cached_json_response
+from src.db.models.fighter import Fighter
 from src.db.unit_of_work import UnitOfWork
 from src.dependencies import (
     Pagination as PaginationDep,
@@ -24,6 +28,7 @@ from src.schemas.fighter import (
     FighterRankingEntry,
     FighterRecordResponse,
     FighterStatsResponse,
+    SimilarFightersResponse,
     StatValue,
 )
 from src.services.fighter_service import FighterService
@@ -211,6 +216,88 @@ async def get_fighter(request: Request, fighter_id: str, uow: UnitOfWork = Depen
     return await cached_json_response(
         request,
         cache_key=cache_key("fighters:detail", fighter_id),
+        ttl=3600,
+        loader=loader,
+    )
+
+
+@router.get(
+    "/{fighter_id}/similar",
+    response_model=SimilarFightersResponse,
+    responses={404: {"model": ErrorResponse}},
+)
+async def get_similar_fighters(
+    request: Request, fighter_id: str, uow: UnitOfWork = Depends(get_uow)
+) -> Response:
+    """Style-similar fighters — same weight class, ranked by a physical/record feature distance."""
+    session = cast(AsyncSession, uow._session)
+
+    async def loader() -> dict:
+        target = (
+            await session.execute(sa_select(Fighter).where(Fighter.id == fighter_id))
+        ).scalar_one_or_none()
+        if target is None:
+            raise HTTPException(404, detail=ErrorResponse.not_found("fighter", fighter_id).error)
+
+        stmt = sa_select(Fighter).where(
+            Fighter.id != fighter_id,
+            Fighter.is_active.is_(True),
+            Fighter.weight_class_name == target.weight_class_name,
+        )
+        result = await session.execute(stmt)
+        candidates = list(result.scalars().all())
+        if not candidates:
+            return {
+                "fighter": _fighter_to_list_item(target).model_dump(mode="json"),
+                "similar": [],
+            }
+
+        def features(f: Any) -> list[float]:
+            stance = {"orthodox": 0.0, "southpaw": 1.0, "switch": 0.5}.get(f.stance or "", 0.25)
+            total = max(1, (f.record_wins or 0) + (f.record_losses or 0) + (f.record_draws or 0))
+            values = [
+                f.height_cm,
+                f.reach_cm,
+                f.weight_kg,
+                stance,
+                (f.record_wins or 0) / total,
+            ]
+            if any(v is None for v in values):
+                return []
+            return [v for v in values if v is not None]
+
+        tvec = features(target)
+        pairs = [(f, features(f)) for f in candidates if features(f)]
+        if not tvec or not pairs:
+            return {
+                "fighter": _fighter_to_list_item(target).model_dump(mode="json"),
+                "similar": [],
+            }
+
+        scored = [
+            (
+                f,
+                1.0 / (1.0 + math.sqrt(sum((a - b) ** 2 for a, b in zip(tvec, vec))) / len(tvec)),
+            )
+            for f, vec in pairs
+        ]
+        scored.sort(key=lambda s: s[1], reverse=True)
+        top = scored[:5]
+
+        return {
+            "fighter": _fighter_to_list_item(target).model_dump(mode="json"),
+            "similar": [
+                {
+                    "fighter": _fighter_to_list_item(f).model_dump(mode="json"),
+                    "similarity_score": round(score, 4),
+                }
+                for f, score in top
+            ],
+        }
+
+    return await cached_json_response(
+        request,
+        cache_key=cache_key("fighters:similar", fighter_id),
         ttl=3600,
         loader=loader,
     )

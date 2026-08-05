@@ -11,23 +11,18 @@ import { useTheme } from '@/hooks/useTheme';
 import { typography, spacing, radius } from '@/theme';
 
 // ── Types ──
-export type WTab = 'events' | 'fighters' | 'fights' | 'promotions';
+export type WTab = 'events' | 'fighters';
 export interface WatchItem { id: string; title: string; subtitle: string | null; date: string | null; imageUrl: string | null; }
-export interface WatchReminder { id: string; targetId: string; type: WTab; remindAt: string; active: boolean; }
 
 // ── API ──
 const watchPath = (type: WTab) =>
-  type === 'events' ? '/v1/me/watchlist/events'
-  : type === 'fighters' ? '/v1/me/favorites/fighters'
-  : `/v1/watchlist/${type}`; // phantom tab (fights/promotions) — no backend route, reported in contract diff
+  type === 'events' ? '/v1/watchlist/events'
+  : '/v1/watchlist/fighters';
 
 export const watchApi = {
   list: (type: WTab) => api.get(watchPath(type)),
   add: (type: WTab, id: string) => api.post(`${watchPath(type)}/${id}`),
   remove: (type: WTab, id: string) => api.delete(`${watchPath(type)}/${id}`),
-  reminders: () => api.get('/v1/watchlist/reminders'),
-  createReminder: (targetId: string, type: WTab, remindAt: string) => api.post('/v1/watchlist/reminders', { target_id: targetId, type, remind_at: remindAt }),
-  cancelReminder: (id: string) => api.delete(`/v1/watchlist/reminders/${id}`),
 };
 
 // ── Repository ──
@@ -35,24 +30,19 @@ export const watchRepo = {
   list: async (type: WTab) => { const { data } = await watchApi.list(type); return (data?.data ?? data) as WatchItem[]; },
   add: async (type: WTab, id: string) => { await watchApi.add(type, id); },
   remove: async (type: WTab, id: string) => { await watchApi.remove(type, id); },
-  reminders: async () => { const { data } = await watchApi.reminders(); return (data?.data ?? data) as WatchReminder[]; },
-  createReminder: async (targetId: string, type: WTab, remindAt: string) => { const { data } = await watchApi.createReminder(targetId, type, remindAt); return data as WatchReminder; },
-  cancelReminder: async (id: string) => { await watchApi.cancelReminder(id); },
 };
 
 // ── Services ──
-export const watchKeys = { all: ['watchlist'] as const, list: (t: WTab) => [...watchKeys.all, 'list', t] as const, reminders: () => [...watchKeys.all, 'reminders'] as const };
-export const watchCache = { stale: 5 * 60_000, reminderStale: 60_000 };
+export const watchKeys = { all: ['watchlist'] as const, list: (t: WTab) => [...watchKeys.all, 'list', t] as const };
+export const watchCache = { stale: 5 * 60_000 };
 
 // ── Store ──
 export const useWatchStore = create<{ tab: WTab }>(() => ({ tab: 'events' }));
 
 // ── Hooks ──
 export function useWatchlist(tab: WTab) { return useQuery<WatchItem[]>({ queryKey: watchKeys.list(tab), queryFn: () => watchRepo.list(tab), staleTime: watchCache.stale }); }
-export function useWatchReminders() { return useQuery<WatchReminder[]>({ queryKey: watchKeys.reminders(), queryFn: watchRepo.reminders, staleTime: watchCache.reminderStale }); }
 export function useAddToWatchlist() { const qc = useQueryClient(); return useMutation({ mutationFn: ({ type, id }: { type: WTab; id: string }) => watchRepo.add(type, id), onSettled: () => qc.invalidateQueries({ queryKey: watchKeys.all }) }); }
 export function useRemoveFromWatchlist() { const qc = useQueryClient(); return useMutation({ mutationFn: ({ type, id }: { type: WTab; id: string }) => watchRepo.remove(type, id), onMutate: async ({ type, id }) => { await qc.cancelQueries({ queryKey: watchKeys.list(type) }); const prev = qc.getQueryData<WatchItem[]>(watchKeys.list(type)); qc.setQueryData<WatchItem[]>(watchKeys.list(type), (old) => old?.filter((i) => i.id !== id)); return { prev, type }; }, onError: (_err, _vars, ctx) => { if (ctx) qc.setQueryData(watchKeys.list(ctx.type), ctx.prev); }, onSettled: () => qc.invalidateQueries({ queryKey: watchKeys.all }) }); }
-export function useCreateReminder() { const qc = useQueryClient(); return useMutation({ mutationFn: ({ targetId, type, remindAt }: { targetId: string; type: WTab; remindAt: string }) => watchRepo.createReminder(targetId, type, remindAt), onSettled: () => qc.invalidateQueries({ queryKey: watchKeys.reminders() }) }); }
 
 // ── Navigation ──
 const WStack = createNativeStackNavigator();
@@ -63,7 +53,6 @@ export function WatchScreen() {
   const { palette } = useTheme();
   const { tab } = useWatchStore();
   const { data: items, isLoading, refetch } = useWatchlist(tab);
-  const { data: reminders } = useWatchReminders();
   const removeMut = useRemoveFromWatchlist();
   const tabs: WTab[] = ['events', 'fighters'];
 
@@ -76,11 +65,6 @@ export function WatchScreen() {
           </TouchableOpacity>
         ))}
       </View>
-      {reminders && reminders.length > 0 && (
-        <View style={[ws.reminderBar, { backgroundColor: '#F59E0B20', borderColor: '#F59E0B30' }]}>
-          <Text style={[typography.caption, { color: '#F59E0B' }]}>🔔 {reminders.length} reminder{reminders.length > 1 ? 's' : ''} active</Text>
-        </View>
-      )}
       <FlatList data={items ?? []} keyExtractor={(i) => i.id} refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} />}
         renderItem={({ item }) => (
           <View style={[ws.card, { backgroundColor: palette.surface.card, borderColor: palette.surface.border }]}>

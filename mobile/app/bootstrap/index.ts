@@ -19,6 +19,3 @@ export { BOOTSTRAP_CONSTANTS } from './BootstrapConstants';
 export { bootstrapErrors } from './BootstrapErrors';
 export type { StartupStage, BootstrapState, BootstrapConfig, StartupTask, BootstrapEvent, BootstrapMetrics } from './BootstrapTypes';
 export { BootstrapError } from './BootstrapTypes';
-
-// Documentation
-export { default as BootstrapDocs } from './README.md';

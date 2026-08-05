@@ -17,19 +17,8 @@ export const fightKeys = {
   detail: (fightId: string) => ['fights', 'detail', fightId] as const,
 };
 
-export const predictionKeys = {
-  all: ['predictions'] as const,
-  event: (eventId: string) => [...predictionKeys.all, 'event', eventId] as const,
-  fight: (fightId: string) => [...predictionKeys.all, 'fight', fightId] as const,
-};
-
 export const watchlistKeys = {
   all: ['watchlist'] as const,
   events: () => [...watchlistKeys.all, 'events'] as const,
   event: (eventId: string) => [...watchlistKeys.events(), eventId] as const,
-};
-
-export const reminderKeys = {
-  all: ['reminders'] as const,
-  list: () => [...reminderKeys.all, 'list'] as const,
 };

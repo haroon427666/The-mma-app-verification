@@ -5,17 +5,14 @@ import { ScrollView, RefreshControl, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { spacing } from '@/theme';
-import { useEvent, useCountdown, useWatchlist, useReminder } from '../hooks';
+import { useEvent, useCountdown, useWatchlist } from '../hooks';
 import { useWatchEvent, useUnwatchEvent } from '../mutations/useWatchEvent';
-import { useAddReminder, useRemoveReminder } from '../mutations/useReminders';
-import { usePredictions } from '../hooks/usePredictions';
 import {
   EventHero, EventInformation, FightCardSection,
   BroadcastSection, VenueSection,
 } from '../detail';
 import { Countdown } from '../components/Countdown';
 import { WatchlistButton } from '../components/WatchlistButton';
-import { ReminderButton } from '../components/ReminderButton';
 import { DetailSkeleton } from '../skeletons';
 import { NetworkError, EventNotFound } from '../errors';
 import { isLive, isCompleted } from '../utils/eventStatus';
@@ -29,9 +26,6 @@ export function EventDetailScreen({ route, navigation }: any) {
   const { isWatched } = useWatchlist(eventId);
   const watchEvent = useWatchEvent();
   const unwatchEvent = useUnwatchEvent();
-  const addReminder = useAddReminder(eventId, event?.startTime ?? null);
-  const { existing: reminder } = useReminder(eventId, event?.startTime ?? null);
-  const { data: predictions } = usePredictions(eventId);
 
   React.useEffect(() => {
     if (event) eventsAnalytics.eventOpened(eventId, event.name);
@@ -53,7 +47,7 @@ export function EventDetailScreen({ route, navigation }: any) {
         {!live && !done && !countdown.isPast && <Countdown state={countdown} palette={palette} />}
 
         <FightCardSection
-          event={event} predictions={predictions} palette={palette}
+          event={event} palette={palette}
           onFightPress={(fightId: string) => {
             eventsAnalytics.fightClicked(fightId, event.fights?.[0]?.fighterA?.fullName ?? '', event.fights?.[0]?.fighterB?.fullName ?? '');
             navigation.navigate('FightCard', { eventId, fightId });
@@ -75,12 +69,6 @@ export function EventDetailScreen({ route, navigation }: any) {
       {!done && (
         <View style={[s.actions, { backgroundColor: palette.surface.card, borderTopColor: palette.surface.border }]}>
           <WatchlistButton isWatched={isWatched} onToggle={() => isWatched ? unwatchEvent.mutate(eventId) : watchEvent.mutate(eventId)} palette={palette} />
-          <ReminderButton
-            hasReminder={!!reminder}
-            onCreate={() => addReminder.mutate({ type: 'one_hour', hoursBefore: 1 })}
-            onCancel={() => reminder && useRemoveReminder(eventId)}
-            palette={palette}
-          />
         </View>
       )}
     </SafeAreaView>

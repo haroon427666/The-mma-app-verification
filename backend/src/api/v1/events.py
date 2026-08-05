@@ -22,6 +22,7 @@ from src.schemas.event import (
     BroadcastResponse,
     EventDetailResponse,
     EventListItem,
+    EventStatisticsResponse,
     FightListItem,
 )
 from src.services.fighter_service import EventService
@@ -47,12 +48,8 @@ def _event_to_list_item(event: Event) -> EventListItem:
     )
 
 
-def _event_to_detail(
-    event: Event,
-    fights_data: list[dict[str, Any]] | None = None,
-    broadcasts: list[Broadcast] | None = None,
-) -> EventDetailResponse:
-    """Map ORM Event + relations → EventDetailResponse."""
+def _build_fight_items(fights_data: list[dict[str, Any]] | None) -> list[FightListItem]:
+    """Map competition+competitor rows → FightListItem list."""
     fight_items = []
     if fights_data:
         for fd in fights_data:
@@ -65,6 +62,10 @@ def _event_to_detail(
                     ftr_a = c
                 elif c.corner == "BLUE":
                     ftr_b = c
+            winner_id = None
+            for c in competitors:
+                if c.outcome == "WIN":
+                    winner_id = c.fighter_id
             fight_items.append(FightListItem(
                 id=comp.id,
                 order=comp.order_num or 0,
@@ -79,11 +80,21 @@ def _event_to_detail(
                 fighter_b_name=f"Fighter {ftr_b.fighter_id[:8]}" if ftr_b else None,
                 fighter_b_id=ftr_b.fighter_id if ftr_b else None,
                 fighter_b_record=None,
-                winner=comp.result_method,
+                winner=winner_id or comp.result_method,
                 method=comp.result_method,
                 round=comp.result_round,
                 time=comp.result_time,
             ))
+    return fight_items
+
+
+def _event_to_detail(
+    event: Event,
+    fights_data: list[dict[str, Any]] | None = None,
+    broadcasts: list[Broadcast] | None = None,
+) -> EventDetailResponse:
+    """Map ORM Event + relations → EventDetailResponse."""
+    fight_items = _build_fight_items(fights_data)
 
     broadcast_items = [
         BroadcastResponse(
@@ -115,7 +126,7 @@ def _event_to_detail(
         thumbnail_url=None,
         square_url=None,
         description=None,
-        fights=fight_items,
+        fight_items=fight_items,
         broadcasts=broadcast_items,
         spectators=None,
     )
@@ -218,6 +229,147 @@ async def past_events(
         page=pagination.page,
         limit=pagination.limit,
         pages=(total + pagination.limit - 1) // pagination.limit if total > 0 else 0,
+    )
+
+
+@router.get("/{event_id}/fights", response_model=list[FightListItem],
+            responses={404: {"model": ErrorResponse}})
+async def get_event_fights(request: Request, event_id: str, uow: UnitOfWork = Depends(get_uow)) -> Response:
+    """Fight card for an event — competitions + competitors with results."""
+    from sqlalchemy import select as sa_select
+
+    from src.db.models.event import Competition, Competitor
+
+    async def loader() -> list[dict]:
+        event = await uow.events.get_by_id(event_id)
+        if event is None:
+            raise HTTPException(404, detail=ErrorResponse.not_found("event", event_id).error)
+        result = await uow.session.execute(
+            sa_select(Competition).where(Competition.event_id == event_id).order_by(Competition.order_num)
+        )
+        competitions = list(result.scalars().all())
+        competitors_by_comp: dict[str, list[Competitor]] = {}
+        if competitions:
+            comp_ids = [comp.id for comp in competitions]
+            comp_result = await uow.session.execute(
+                sa_select(Competitor).where(Competitor.competition_id.in_(comp_ids))
+            )
+            for comp in comp_result.scalars().all():
+                competitors_by_comp.setdefault(comp.competition_id, []).append(comp)
+        fights_data = [
+            {"competition": comp, "competitors": competitors_by_comp.get(comp.id, [])}
+            for comp in competitions
+        ]
+        return [item.model_dump(mode="json") for item in _build_fight_items(fights_data)]
+
+    return await cached_json_response(
+        request,
+        cache_key=cache_key("events:fights", event_id),
+        ttl=120,
+        loader=loader,
+    )
+
+
+@router.get("/{event_id}/results", response_model=list[FightListItem],
+            responses={404: {"model": ErrorResponse}})
+async def get_event_results(request: Request, event_id: str, uow: UnitOfWork = Depends(get_uow)) -> Response:
+    """Completed fights for an event — only fights with a recorded result."""
+    from sqlalchemy import select as sa_select
+
+    from src.db.models.event import Competition, Competitor
+
+    async def loader() -> list[dict]:
+        event = await uow.events.get_by_id(event_id)
+        if event is None:
+            raise HTTPException(404, detail=ErrorResponse.not_found("event", event_id).error)
+        result = await uow.session.execute(
+            sa_select(Competition).where(
+                Competition.event_id == event_id,
+                Competition.result_method.isnot(None),
+            ).order_by(Competition.order_num)
+        )
+        competitions = list(result.scalars().all())
+        competitors_by_comp: dict[str, list[Competitor]] = {}
+        if competitions:
+            comp_ids = [comp.id for comp in competitions]
+            comp_result = await uow.session.execute(
+                sa_select(Competitor).where(Competitor.competition_id.in_(comp_ids))
+            )
+            for comp in comp_result.scalars().all():
+                competitors_by_comp.setdefault(comp.competition_id, []).append(comp)
+        fights_data = [
+            {"competition": comp, "competitors": competitors_by_comp.get(comp.id, [])}
+            for comp in competitions
+        ]
+        return [item.model_dump(mode="json") for item in _build_fight_items(fights_data)]
+
+    return await cached_json_response(
+        request,
+        cache_key=cache_key("events:results", event_id),
+        ttl=120,
+        loader=loader,
+    )
+
+
+@router.get("/{event_id}/statistics", response_model=EventStatisticsResponse,
+            responses={404: {"model": ErrorResponse}})
+async def get_event_statistics(request: Request, event_id: str, uow: UnitOfWork = Depends(get_uow)) -> Response:
+    """Aggregated statistics for an event — computed from the fight card."""
+    from sqlalchemy import select as sa_select
+
+    from src.db.models.event import Competition, Competitor
+    from src.db.models.fighter import Fighter
+
+    async def loader() -> dict:
+        event = await uow.events.get_by_id(event_id)
+        if event is None:
+            raise HTTPException(404, detail=ErrorResponse.not_found("event", event_id).error)
+        result = await uow.session.execute(
+            sa_select(Competition).where(Competition.event_id == event_id)
+        )
+        competitions = list(result.scalars().all())
+
+        fighters_by_id: dict[str, Fighter] = {}
+        if competitions:
+            comp_ids = [comp.id for comp in competitions]
+            comp_result = await uow.session.execute(
+                sa_select(Competitor).where(Competitor.competition_id.in_(comp_ids))
+            )
+            competitor_rows = list(comp_result.scalars().all())
+            fighter_ids = {c.fighter_id for c in competitor_rows if c.fighter_id}
+            if fighter_ids:
+                f_result = await uow.session.execute(
+                    sa_select(Fighter).where(Fighter.id.in_(fighter_ids))
+                )
+                for f in f_result.scalars().all():
+                    fighters_by_id[f.id] = f
+
+        methods = [c.result_method for c in competitions if c.result_method]
+        total_fights = len(competitions)
+        title_fights = sum(1 for c in competitions if c.is_title_fight)
+        decisions = methods.count("Decision")
+        submissions = methods.count("Submission")
+        ko_tko = sum(1 for m in methods if m in ("KO", "TKO"))
+        finishes = max(total_fights - decisions, 0)
+        countries = {f.nationality for f in fighters_by_id.values() if f.nationality}
+        weight_classes = sorted({c.weight_class_name for c in competitions if c.weight_class_name})
+
+        return EventStatisticsResponse(
+            total_fights=total_fights,
+            title_fights=title_fights,
+            decisions=decisions,
+            finishes=finishes,
+            ko_tko=ko_tko,
+            submissions=submissions,
+            countries_represented=len(countries),
+            weight_classes=weight_classes,
+        ).model_dump(mode="json")
+
+    return await cached_json_response(
+        request,
+        cache_key=cache_key("events:statistics", event_id),
+        ttl=120,
+        loader=loader,
     )
 
 
