@@ -23,14 +23,14 @@ export function useWatchlist(eventId?: string) {
       else await watchlistApi.add(id);
       return { id, wasWatched: isW };
     },
-    onMutate: async ({ id }: { id: string }) => {
+    onMutate: async (id: string) => {
       await qc.cancelQueries({ queryKey: ['watchlist'] });
       const isW = watchedIds.has(id);
       if (isW) watchlistActions.removeOptimistic(id);
       else watchlistActions.addOptimistic(id);
       return { isW };
     },
-    onError: (_err, { id }, ctx) => {
+    onError: (_err, id, ctx) => {
       if (ctx?.isW) watchlistActions.addOptimistic(id);
       else watchlistActions.removeOptimistic(id);
     },

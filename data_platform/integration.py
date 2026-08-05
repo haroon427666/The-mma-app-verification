@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-platform/integration.py — End-to-End Production Data Flow
+platform/docs — End-to-End Production Data Flow
 
 Proves the complete pipeline:
   1. Connector.fetch()    → Raw ESPN/TSDB/Octagon data
@@ -12,9 +12,9 @@ Proves the complete pipeline:
   7. Database Repository  → Persist to PostgreSQL
 
 Usage:
-    python platform/integration.py --full       # Full sync all sources
-    python platform/integration.py --source espn --entity fighter
-    python platform/integration.py --dry-run    # Show what would be synced
+    python data_platform/integration.py --full       # Full sync all sources
+    python data_platform/integration.py --source espn --entity fighter
+    python data_platform/integration.py --dry-run    # Show what would be synced
 """
 
 import argparse
@@ -43,15 +43,15 @@ async def run_pipeline(
 
     Returns metrics dict with timing and record counts.
     """
-    from platform.connectors.registry import ConnectorConfigLoader, ConnectorRegistry, ConnectorManager
-    from platform.connectors.real import ESPNConnector, TheSportsDBConnector, OctagonConnector
-    from platform.normalization.mappers import create_mapper_registry
-    from platform.normalization import NormalizationEngine
-    from platform.validation import create_standard_rules, ValidationEngine
-    from platform.quality import QualityEngine
-    from platform.identity import IdentityGraph, SimilarityEngine
-    from platform.resolution import ResolutionEngine
-    from platform.lineage import LineageTracker
+    from data_platform.connectors.registry import ConnectorConfigLoader, ConnectorRegistry, ConnectorManager
+    from data_platform.connectors.real import ESPNConnector, TheSportsDBConnector, OctagonConnector
+    from data_platform.normalization.mappers import create_mapper_registry
+    from data_platform.normalization import NormalizationEngine
+    from data_platform.validation import create_standard_rules, ValidationEngine
+    from data_platform.quality import QualityEngine
+    from data_platform.identity import IdentityGraph, SimilarityEngine
+    from data_platform.resolution import ResolutionEngine
+    from data_platform.lineage import LineageTracker
 
     metrics = {"source": source, "entity": entity, "started_at": datetime.now(timezone.utc).isoformat()}
     t0 = time.monotonic()

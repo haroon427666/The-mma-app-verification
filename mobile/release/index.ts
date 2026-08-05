@@ -49,6 +49,7 @@ if (update?.mandatory) await otaManager.apply(update);
 ```
 */
 
-export { ReleaseConfig, releaseConfig, VersionManager, versionManager, BuildManager, buildManager, EnvironmentManager, envManager, FeatureFlagService, featureFlags, OTAManager, otaManager, parseSemVer, formatVersion, bumpVersion, ReleaseLogger, releaseLogger } from './ReleaseManager';
+export { releaseConfig, VersionManager, versionManager, BuildManager, buildManager, EnvironmentManager, envManager, FeatureFlagService, featureFlags, OTAManager, otaManager, parseSemVer, formatVersion, bumpVersion, ReleaseLogger, releaseLogger } from './ReleaseManager';
+export type { ReleaseConfig } from './ReleaseManager';
 export { StoreMetadataManager, storeMetadata, ReleaseNotesGenerator, releaseNotes, CrashManager, crashManager, MonitoringService, monitoring, fastlaneConfig } from './ReleaseStores';
 export type { BuildType, ReleaseChannel, DeploymentTarget, SemVer, BuildInfo, StoreListing, ReleaseNote, FeatureFlag, OTAUpdate } from './ReleaseManager';

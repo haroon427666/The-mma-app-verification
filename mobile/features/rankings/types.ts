@@ -16,6 +16,7 @@ export interface RankingEntry {
 
 export interface RankingFighter extends Pick<Fighter, 'id' | 'fullName' | 'firstName' | 'lastName' | 'nickname' | 'headshotUrl' | 'imageUrl'> {
   record: string;
+  isChampion?: boolean;
   wins: number; losses: number; draws: number;
   koWins: number; subWins: number;
   streak: number;

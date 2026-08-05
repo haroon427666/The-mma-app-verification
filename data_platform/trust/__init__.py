@@ -178,13 +178,19 @@ class TrustEngine:
         # Completeness score
         completeness_score = source.completeness_pct / 100
 
-        # Conflict rate (1.0 = no conflicts, 0.0 = always conflicts)
+        # Conflict rate (1.0 = no conflicts, 0.0 = always conflicts).
+        # No recorded conflicts = neutral evidence, not proof of perfection.
         conflict_score = (
+            0.5 if source.conflict_total == 0 else
             1.0 - (source.conflict_count / max(source.conflict_total, 1))
         )
 
-        # Latency score (1.0 = <100ms, 0.0 = >5000ms)
-        latency_score = max(0.0, 1.0 - source.latency_avg_ms / 5000)
+        # Latency score (1.0 = <100ms, 0.0 = >5000ms).
+        # No latency data recorded = neutral evidence.
+        latency_score = (
+            0.5 if source.latency_avg_ms == 0 else
+            max(0.0, 1.0 - source.latency_avg_ms / 5000)
+        )
 
         # Weighted sum
         trust = (

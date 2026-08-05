@@ -5,7 +5,7 @@ import { View, Text, FlatList, TouchableOpacity, ScrollView, StyleSheet, Refresh
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { typography, spacing, radius } from '@/theme';
-import { useP4P, useDivisionRankings, useGOAT, useProspects, useRankingMovement, useChampions, useStreaks, useRankingHistory } from '../hooks';
+import { useP4P, useDivisionRankings, useGOAT, useProspects, useRankingMovement, useChampions, useStreaks, useRankingHistory, useTitleDefenses } from '../hooks';
 import { useRankingsStore, rankingsActions } from '../stores';
 import { rankingAnalytics } from '../services';
 import { WEIGHT_CLASSES, rankingColors } from '../theme';

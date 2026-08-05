@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import type { StorageType, StorageEntry, CacheStats } from './StorageTypes';
 import { storageLogger } from './StorageConfig';
+export { storageLogger } from './StorageConfig';
 
 class StorageStore {
   private store = new Map<string, StorageEntry>();

@@ -10,7 +10,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from fastapi import Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import Response
 
 from src.api.etag import conditional_json_response
 from src.middleware.cache import default_cache
@@ -25,7 +25,7 @@ async def cached_json_response(
     cache_key: str,
     ttl: int,
     loader: Callable[[], Awaitable[Any]],
-) -> JSONResponse:
+) -> Response:
     """Return ``loader()`` result, cached under ``cache_key`` for ``ttl`` seconds.
 
     Cache misses populate the backend; hits bypass the DB. Either way the

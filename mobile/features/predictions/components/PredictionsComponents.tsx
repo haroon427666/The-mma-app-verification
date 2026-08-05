@@ -3,7 +3,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { typography, spacing, radius, shadows } from '@/theme';
-import type { FightPrediction, ConfidenceBadgeProps, PredictionAccuracyStats, MonteCarloResult, PredictionOdds, PredictionFactor, FinishProbability } from '../types';
+import type { FightPrediction, PredictionAccuracyStats, MonteCarloResult, PredictionOdds, PredictionFactor, FinishProbability } from '../types';
 
 // ── WinProbabilityCard ──
 export function WinProbabilityCard({ prediction, palette, onDetailPress }: { prediction: FightPrediction; palette: any; onDetailPress?: () => void }) {

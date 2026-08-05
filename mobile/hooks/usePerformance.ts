@@ -11,6 +11,7 @@
   6. Navigation transitions MUST use native driver
 */
 
+import * as React from 'react';
 import { useCallback, useMemo, useRef } from 'react';
 import type { ReactElement } from 'react';
 

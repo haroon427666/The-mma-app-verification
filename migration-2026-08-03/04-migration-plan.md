@@ -17,10 +17,10 @@ test (SQLAlchemy `inspect` on SQLite against models where portable) + existing g
 | 1 — Schema resolution | ✅ Backend complete — 002 rankings/synced_at + duration_ms Float fixed; 004 auth tables; 005 schema fixes; `--sql` chain 001→005 coherent |
 | 2 — Sync write path | ✅ Backend complete — `sync.py` on real SyncEngine/SyncPlan; scheduler wiring via `SYNC_ENABLED`; Redis None-guards confirmed. Full run against live Postgres still NOT executed (no DB here) |
 | 3 — Rankings & champions | ✅ Complete — `GET /v1/champions`, `/v1/champions/{division}` return 200 (10 tests). `/v1/champions/history` is an explicit empty stub (lineage table unmodeled) |
-| 4 — Mobile bootability | ⏳ Deferred by user decision — baseline documented in `session-ses_0387.md`; no route files, 6 JSX-in-`.ts` files, missing `expo-asset`/`react-native-web`/`assets/`, `/v1/favorites` vs `/v1/me/favorites` gap |
-| 5 — Policy removals (AI/betting) | ⏳ Deferred by user decision — AI modules still present |
+| 4 — Mobile bootability | ✅ Typecheck-level complete (2026-08-05) — `tsc --noEmit` = **0 errors** (was 67). Proven at typecheck only; route files/assets/expo-asset still not added and no Metro build run. Remaining runtime gaps documented in `session-ses_0387.md` (`/v1/favorites` vs `/v1/me/favorites`, etc.) |
+| 5 — Policy removals (AI/betting) | ⛔ **SUPERSEDED (2026-08-05)** — deletion directive revoked by user; all 161 AI files restored from checkpoint `ff74cd8` + validated (see `SESSION_STATE.md` §5). Do NOT re-apply |
 | 6 — Tests & docs | ✅ Backend complete — migration-coverage (9) + champions (10) tests added; suite **319 passed**; docs updated this session |
-| 7 — Final verification | 🔄 Backend portion done this session (compileall, `--sql`, import scan, ruff clean). Live-Postgres apply + Phase 4/5 dependent checks remain when user resumes those phases |
+| 7 — Final verification | 🔄 Backend portion done (compileall, `--sql`, import scan, ruff clean); restoration verified (V9↔V10 diff + per-package self-checks + backend gates); mobile tsc re-verified 0 errors. Live-Postgres apply remains when a Postgres is available |
 
 ---
 
@@ -84,6 +84,11 @@ test (SQLAlchemy `inspect` on SQLite against models where portable) + existing g
    (subject to sandbox memory).
 
 ## Phase 5 — Policy removals (no AI / no betting) [~hours day]
+
+> ⛔ **SUPERSEDED (2026-08-05):** the user revoked the no-AI deletion directive. All seven AI
+> areas (161 files) were restored from checkpoint `ff74cd8` and validated (`SESSION_STATE.md`
+> §5). The steps below are retained for the historical record only — **do not execute them.**
+
 1. Delete `prediction/`, `recommendation/`, `intelligence/`, `platform/` top-level dirs.
 2. Delete `mobile/features/predictions/`, `mobile/features/recommendations/`, remove
    Predict/Recommend tab entries in `MainNavigator.tsx`.

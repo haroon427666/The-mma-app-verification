@@ -2,7 +2,6 @@
 
 import json
 
-import pytest
 from fastapi import Request
 
 from src.api.etag import conditional_json_response, etag_for

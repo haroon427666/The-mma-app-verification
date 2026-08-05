@@ -262,3 +262,4 @@ export function avatarSize(containerWidth: number, columns: number = 3, gap: num
 // Re-export for backward compatibility
 export { CachedImage as BlurImage };
 export const FallbackImage = CachedImage;
+export { FighterAvatar as AvatarImage, EventPoster as PosterImage };

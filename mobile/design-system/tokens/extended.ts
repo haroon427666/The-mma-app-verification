@@ -1,5 +1,5 @@
 /** Extended tokens — gradients, glass, blur, grid, brand themes */
-import { brand, neutral } from '../colors';
+import { brand, neutral } from './colors';
 
 // Glass effect presets
 export const glass = {

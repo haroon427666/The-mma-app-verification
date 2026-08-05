@@ -258,11 +258,27 @@ class SimilarityEngine:
         nick_b = b.get("nickname", "")
         scores["nickname"] = name_similarity(nick_a, nick_b) if nick_a and nick_b else 0.0
 
-        # Weighted sum
-        confidence = sum(
-            scores.get(field, 0.0) * weight
-            for field, weight in cls.FIGHTER_WEIGHTS.items()
+        # Weighted sum — normalized over fields present on both records so that
+        # missing data is not penalized as dissimilarity.
+        present = {
+            "full_name": bool(name_a.strip()) and bool(name_b.strip()),
+            "last_name": bool(last_a) and bool(last_b),
+            "birth_date": bool(a.get("birth_date")) and bool(b.get("birth_date")),
+            "nationality": bool(a.get("nationality")) and bool(b.get("nationality")),
+            "height_cm": bool(a.get("height_cm")) and bool(b.get("height_cm")),
+            "reach_cm": bool(a.get("reach_cm")) and bool(b.get("reach_cm")),
+            "weight_class": bool(a.get("weight_class")) and bool(b.get("weight_class")),
+            "nickname": bool(a.get("nickname")) and bool(b.get("nickname")),
+        }
+        used_weight = sum(
+            weight for field, weight in cls.FIGHTER_WEIGHTS.items() if present.get(field)
         )
+        confidence = (
+            sum(
+                scores.get(field, 0.0) * weight
+                for field, weight in cls.FIGHTER_WEIGHTS.items() if present.get(field)
+            ) / used_weight
+        ) if used_weight else 0.0
 
         return IdentityMatch(
             entity_a=f"{a.get('source','')}:{a.get('external_id','')}",
@@ -288,10 +304,22 @@ class SimilarityEngine:
             a["promotion"].lower() == b["promotion"].lower()
         ) else 0.0
 
-        confidence = sum(
-            scores.get(field, 0.0) * weight
-            for field, weight in cls.EVENT_WEIGHTS.items()
+        # Weighted sum — normalized over fields present on both records
+        present = {
+            "name": bool(a.get("name")) and bool(b.get("name")),
+            "date": bool(a.get("date_utc")) and bool(b.get("date_utc")),
+            "venue": bool(a.get("venue")) and bool(b.get("venue")),
+            "promotion": bool(a.get("promotion")) and bool(b.get("promotion")),
+        }
+        used_weight = sum(
+            weight for field, weight in cls.EVENT_WEIGHTS.items() if present.get(field)
         )
+        confidence = (
+            sum(
+                scores.get(field, 0.0) * weight
+                for field, weight in cls.EVENT_WEIGHTS.items() if present.get(field)
+            ) / used_weight
+        ) if used_weight else 0.0
         return IdentityMatch(
             entity_a=f"{a.get('source','')}:{a.get('external_id','')}",
             entity_b=f"{b.get('source','')}:{b.get('external_id','')}",

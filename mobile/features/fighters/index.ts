@@ -19,6 +19,7 @@ export { useFightersStore, fightersActions, useCompareStore, compareActions, use
 
 // ── Hooks ──
 export { useFighters, useFighter, useStats, useHistory, useSimilarFighters, useStyleAnalysis, usePredictions, useIsFavorite, useRankHistory } from './hooks';
+export { useFighterList, useFighterDetail } from './hooks/useFighters';
 
 // ── Navigation ──
 export { FightersStack } from './navigation/FightersStack';

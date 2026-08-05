@@ -110,6 +110,10 @@ export interface PredictionOdds {
   valueB: number | null;
 }
 
+export interface PredictionDashboard {
+  topConfidence: FightPrediction[];
+}
+
 export interface PredictionAccuracyStats {
   overall: number;
   last10: number;

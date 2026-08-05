@@ -1,7 +1,7 @@
 /** Session Devices + Persistence + Heartbeat + Analytics + Metrics */
 import { sessionLogger, sessionEvents, sessionUtils } from './SessionTypes';
 import { sessionConfig } from './SessionTypes';
-import { useSessionStore } from './SessionManager';
+import { useSessionStore, sessionManager } from './SessionManager';
 import type { DeviceInfo } from './SessionTypes';
 
 // ── Device Manager ──

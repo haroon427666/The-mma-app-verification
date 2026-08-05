@@ -9,7 +9,7 @@ const mockEvent = {
   id: '1', name: 'UFC 400: Makhachev vs Topuria', date: '2025-03-15T22:00:00Z',
   venue: 'Madison Square Garden', city: 'New York', country: 'USA',
   fightCount: 13, broadcasters: ['ESPN+ PPV'], status: 'SCHEDULED', isLive: false,
-};
+} as any;
 
 export default {
   title: 'Events/EventCard',

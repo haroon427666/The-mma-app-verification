@@ -58,8 +58,11 @@ export const searchActions = {
 export function useSearch() {
   const { query, mode } = useSearchStore();
   return useInfiniteQuery({
-    queryKey: searchKeys.results(query), queryFn: ({ pageParam }) => searchRepo.search({ q: query, mode, cursor: pageParam as string | undefined }),
-    initialPageParam: undefined, getNextPageParam: (last) => last.nextCursor, enabled: query.length >= 2, staleTime: 30_000,
+    queryKey: searchKeys.results(query),
+    queryFn: async ({ pageParam }) => searchRepo.search({ q: query, mode, cursor: pageParam as string | undefined }),
+    initialPageParam: '',
+    getNextPageParam: (last) => last.nextCursor,
+    enabled: query.length >= 2, staleTime: 30_000,
   });
 }
 export function useAutocomplete(q: string) { return useQuery({ queryKey: searchKeys.autocomplete(q), queryFn: () => searchRepo.autocomplete(q), enabled: q.length >= 2 }); }
@@ -95,7 +98,7 @@ export function SearchScreen({ navigation }: any) {
 
       {!showResults && query.length >= 2 && (autoData ?? []).length > 0 && (
         <View style={[st.dropdown, { backgroundColor: '#1A1A2E' }]}>
-          {autoData.slice(0, 6).map((s: any, i: number) => (
+          {(autoData ?? []).slice(0, 6).map((s: any, i: number) => (
             <TouchableOpacity key={i} onPress={() => { searchActions.setQuery(s); handleSearch(s); }} style={[st.sugRow, { borderColor: palette.surface.border }]}>
               <Text style={[typography.caption, { color: palette.primary[400] }]}>{typeof s === 'string' ? s : s.text}</Text>
             </TouchableOpacity>

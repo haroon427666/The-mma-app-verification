@@ -54,7 +54,7 @@ export function EventDetailScreen({ route, navigation }: any) {
 
         <FightCardSection
           event={event} predictions={predictions} palette={palette}
-          onFightPress={(fightId) => {
+          onFightPress={(fightId: string) => {
             eventsAnalytics.fightClicked(fightId, event.fights?.[0]?.fighterA?.fullName ?? '', event.fights?.[0]?.fighterB?.fullName ?? '');
             navigation.navigate('FightCard', { eventId, fightId });
           }}

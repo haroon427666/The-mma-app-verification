@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 from src.api.cache import cache_key, cached_json_response
 from src.db.unit_of_work import UnitOfWork
@@ -155,7 +155,7 @@ async def list_fighters(
     style: str | None = Query(None),
     search: str | None = Query(None),
     uow: UnitOfWork = Depends(get_uow),
-) -> PaginatedResponse[FighterListItem]:
+) -> Response:
     """List fighters with pagination, filtering, search."""
     svc = FighterService(uow)
 
@@ -193,7 +193,7 @@ async def list_fighters(
 
 @router.get("/{fighter_id}", response_model=FighterProfileResponse,
             responses={404: {"model": ErrorResponse}})
-async def get_fighter(request: Request, fighter_id: str, uow: UnitOfWork = Depends(get_uow)):
+async def get_fighter(request: Request, fighter_id: str, uow: UnitOfWork = Depends(get_uow)) -> Response:
     """Complete fighter profile — bio, record, rankings, stats, media."""
     svc = FighterService(uow)
 
@@ -217,7 +217,7 @@ async def get_fighter(request: Request, fighter_id: str, uow: UnitOfWork = Depen
 
 
 @router.get("/{fighter_id}/statistics", response_model=FighterStatsResponse)
-async def get_fighter_stats(request: Request, fighter_id: str, uow: UnitOfWork = Depends(get_uow)) -> FighterStatsResponse:
+async def get_fighter_stats(request: Request, fighter_id: str, uow: UnitOfWork = Depends(get_uow)) -> Response:
     """Fighter's career statistics — striking, grappling, general."""
     svc = FighterService(uow)
 
@@ -268,7 +268,7 @@ async def get_fighter_stats(request: Request, fighter_id: str, uow: UnitOfWork =
 
 
 @router.get("/{fighter_id}/history", response_model=list[FighterFightEntry])
-async def get_fighter_history(request: Request, fighter_id: str, limit: int = Query(20, le=50), uow: UnitOfWork = Depends(get_uow)) -> list[FighterFightEntry]:
+async def get_fighter_history(request: Request, fighter_id: str, limit: int = Query(20, le=50), uow: UnitOfWork = Depends(get_uow)) -> Response:
     """Recent fight history."""
     svc = FighterService(uow)
 

@@ -50,7 +50,7 @@ export const fastlaneConfig = {
 export class CrashManager {
   private enabled = true;
   setEnabled(v: boolean): void { this.enabled = v; }
-  recordError(error: Error, context?: string): void { if (this.enabled) releaseLogger.error(`Crash: ${error.message}`, error); }
+  recordError(error: Error, context?: string): void { if (this.enabled) releaseLogger.error(`Crash: ${error.message}`); }
   setUser(id: string, email?: string): void { /* Set user context */ }
   log(message: string): void { releaseLogger.info(`[Crash] ${message}`); }
 }

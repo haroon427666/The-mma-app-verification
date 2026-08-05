@@ -15,7 +15,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from platform.connectors import (
+from data_platform.connectors import (
     BaseConnector, ConnectorConfig, ConnectorHealth, ConnectorStatus,
     FetchResult,
 )
@@ -183,7 +183,7 @@ class ESPNConnector(BaseConnector):
 
     async def normalize(self, parsed: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Map ESPN DTO fields to canonical MMA schema."""
-        from platform.normalization import (
+        from data_platform.normalization import (
             CanonicalFighter, CanonicalEvent, CanonicalFight, lbs_to_kg, inches_to_cm,
         )
 
@@ -250,7 +250,7 @@ class ESPNConnector(BaseConnector):
 
     async def validate(self, normalized: list[dict[str, Any]]) -> tuple[list, list]:
         """Validate normalized entities — split into valid and invalid."""
-        from platform.validation import create_standard_rules, ValidationEngine
+        from data_platform.validation import create_standard_rules, ValidationEngine
 
         valid = []
         invalid = []
@@ -402,7 +402,7 @@ class OctagonConnector(BaseConnector):
         return parsed
 
     async def normalize(self, parsed: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        from platform.normalization import CanonicalFighter, inches_to_cm
+        from data_platform.normalization import CanonicalFighter, inches_to_cm
         normalized = []
         for item in parsed:
             f = CanonicalFighter(

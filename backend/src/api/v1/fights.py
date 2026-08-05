@@ -2,7 +2,7 @@
 
 from typing import cast
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func
 from sqlalchemy import select as sa_select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -141,7 +141,7 @@ async def recent_fights(limit: int = Query(50, le=100), uow: UnitOfWork = Depend
 
 @router.get("/{fight_id}", response_model=FightDetailResponse,
             responses={404: {"model": ErrorResponse}})
-async def get_fight(request: Request, fight_id: str, uow: UnitOfWork = Depends(get_uow)) -> FightDetailResponse:
+async def get_fight(request: Request, fight_id: str, uow: UnitOfWork = Depends(get_uow)) -> Response:
     """Fight detail — both competitors, result, round-by-round stats."""
     session = cast(AsyncSession, uow._session)
 

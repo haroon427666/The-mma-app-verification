@@ -1,7 +1,7 @@
 /** Animation files — shake, shimmer, hero, transition, navigation */
 
 import { Animated } from 'react-native';
-import { easings, durations } from '../../tokens';
+import { easings, durations } from '../tokens';
 
 // ── Shake ──
 export function shake(anim: Animated.Value, intensity = 10) {

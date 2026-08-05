@@ -2,7 +2,8 @@
 import { useState, useCallback } from 'react';
 import { securityManager, securityConfig, tokenSecurity, biometricSecurity, certPinning, antiTamper, privacyManager, useSecurityStore } from './SecurityManager';
 import type { SecurityLevel } from './SecurityManager';
-export { SecurityManager, securityManager, SecurityConfig, securityConfig, TokenSecurity, tokenSecurity, BiometricSecurity, biometricSecurity, CertificatePinning, certPinning, AntiTamper, antiTamper, PrivacyManager, privacyManager, SecurityLogger, securityLogger, securityUtils, useSecurityStore } from './SecurityManager';
+export { SecurityManager, securityManager, TokenSecurity, tokenSecurity, BiometricSecurity, biometricSecurity, CertificatePinning, certPinning, AntiTamper, antiTamper, PrivacyManager, privacyManager, SecurityLogger, securityLogger, securityUtils, useSecurityStore } from './SecurityManager';
+export type { SecurityConfig, SecurityLevel } from './SecurityManager';
 
 export function useSecurity() {
   const store = useSecurityStore();

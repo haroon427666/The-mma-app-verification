@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime as _dt, timezone as _tz
 from typing import Any, Optional
 
-from platform.identity import (
+from data_platform.identity import (
     SimilarityEngine, IdentityGraph, IdentityMatch,
     name_similarity, date_proximity,
 )

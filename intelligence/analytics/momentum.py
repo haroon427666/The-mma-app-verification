@@ -56,6 +56,12 @@ def trajectory_slope(
 
     recent = career_results[-window:]
     x = np.arange(window, dtype=np.float32)
-    y = np.array(recent, dtype=np.float32)
-    slope, _ = np.polyfit(x, y, 1)
+    slope, _ = np.polyfit(x, np.array(recent, dtype=np.float32), 1)
+    if abs(slope) < 1e-6 and len(career_results) > window:
+        # Flat recent window — widen to full available history to expose the trend
+        n = len(career_results)
+        slope, _ = np.polyfit(
+            np.arange(n, dtype=np.float32),
+            np.array(career_results, dtype=np.float32), 1,
+        )
     return np.clip(slope * 5, -1.0, 1.0)  # Normalize

@@ -1,36 +1,21 @@
-# Bootstrap — README + Architecture + BootstrapFlow + DependencyGraph + Testing + Migration
+# Bootstrap Platform
 
-## Bootstrap Pipeline (8 stages)
-```
-Stage 1: env       → Load environment, validate config
-Stage 2: storage    → MMKV, encrypted storage, cache
-Stage 3: theme      → Theme, localization, accessibility
-Stage 4: query      → TanStack Query, API client, network
-Stage 5: auth       → Restore session, refresh tokens
-Stage 6: notifs     → Push notifications, deep links
-Stage 7: config     → Remote config, feature flags
-Stage 8: ready      → Hide splash, navigate Home
-```
+Application startup pipeline: env → storage → theme/locale → query client → auth → notifications → remote config → ready.
 
-## Dependency Container
-```tsx
-import { container, DI_TOKENS } from '@/app/bootstrap';
-const apiClient = container.resolve(DI_TOKENS.API_CLIENT);
-```
+## Exports
 
-## Usage in App.tsx
-```tsx
-import { AppBootstrap } from '@/app/bootstrap';
-export default function App() {
-  return <AppBootstrap><MainNavigator /></AppBootstrap>;
-}
-```
+- `AppBootstrap` — root bootstrap component
+- `AppInitializer` — imperative initializer
+- `StartupPipeline` — staged startup orchestrator
+- `useBootstrapState` — Zustand bootstrap store (stage, progress, isReady, error)
+- `useBootstrap`, `useStartup`, `useStartupStatus`, `useInitialization`, `useDependencies` — hooks
+- `ProviderComposer` — nested provider composition
+- `ErrorBoundary` — top-level error capture
+- `DependencyContainer` / `container` / `DI_TOKENS` — service locator
+- `createStartupTasks` — predefined startup task list
+- `getBootstrapConfig` — runtime config accessor
+- `bootstrapLogger` / `bootstrapMetrics` / `bootstrapEvents` — observability
 
-## Testing
-```ts
-it('completes all startup stages', async () => {
-  const init = new AppInitializer();
-  await init.initialize();
-  expect(useBootstrapState.getState().isReady).toBe(true);
-});
-```
+## Stages
+
+`idle → env → storage → theme_locale → query_client → auth → notifications → remote_config → ready` (or `failed`).

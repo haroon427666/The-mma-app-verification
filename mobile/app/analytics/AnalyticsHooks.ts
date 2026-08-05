@@ -28,7 +28,7 @@ export function usePerformanceTracking() {
 
 export function useFunnel(funnelName: string) {
   const funnelRef = useRef(funnelName);
-  useEffect(() => { funnelTracker.start(funnelRef.current); return () => funnelTracker.end(funnelRef.current); }, []);
+  useEffect(() => { funnelTracker.start(funnelRef.current); return () => { funnelTracker.end(funnelRef.current); }; }, []);
   const step = useCallback((stepName: string, completed: boolean) => { funnelTracker.step(funnelRef.current, stepName, completed); }, []);
   return { step };
 }

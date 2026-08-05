@@ -109,4 +109,4 @@ def win_probability_heuristic(matchup_vec: np.ndarray) -> float:
     ], dtype=np.float32)
 
     raw = np.dot(matchup_vec, weights)
-    return 1.0 / (1.0 + np.exp(-raw * 3.0))  # Scaled sigmoid
+    return 1.0 / (1.0 + np.exp(-raw * 6.0))  # Scaled sigmoid

@@ -16,7 +16,7 @@ from prediction.probabilities import calibrate_probabilities, probability_to_odd
 from prediction.explainability.prediction_report import generate_report
 from prediction.evaluation.backtesting import run_backtest
 from prediction.serving.predictor import predict_fight, predict_card
-from prediction.training.trainer import train_models
+from prediction.training.trainer import train_fight_predictor, cross_validate
 
 __all__ = [
     "FightPredictor", "FinishPredictor", "RoundPredictor", "MethodPredictor", "ConfidenceScorer",
@@ -25,5 +25,5 @@ __all__ = [
     "generate_report",
     "run_backtest",
     "predict_fight", "predict_card",
-    "train_models",
+    "train_fight_predictor", "cross_validate",
 ]

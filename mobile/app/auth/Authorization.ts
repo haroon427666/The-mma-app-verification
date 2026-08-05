@@ -1,6 +1,7 @@
 /** Authorization — role-based access control + permission guards */
 import type { UserRole } from './AuthTypes';
 import { AUTH_CONSTANTS, authUtils, AuthorizationError } from './AuthTypes';
+import * as React from 'react';
 
 export class Authorization {
   static check(role: UserRole, required: UserRole[]): boolean { return authUtils.hasRole(role, required); }
@@ -13,7 +14,7 @@ export class Authorization {
 }
 
 export const ROLES = AUTH_CONSTANTS.ROLES;
-export const PERMISSIONS = AUTH_CONSTANTS.PERMISSIONS as Record<string, UserRole[]>;
+export const PERMISSIONS = AUTH_CONSTANTS.PERMISSIONS as unknown as Record<string, UserRole[]>;
 
 import { useAuthStore } from './AuthStore';
 export function withAuth<P>(Component: React.ComponentType<P>, requiredRoles?: UserRole[]) {
@@ -21,6 +22,6 @@ export function withAuth<P>(Component: React.ComponentType<P>, requiredRoles?: U
     const { user, status } = useAuthStore();
     if (status !== 'authenticated') return null; // Redirect to login
     if (requiredRoles && user && !Authorization.check(user.role, requiredRoles)) return null; // Redirect to unauthorized
-    return React.createElement(Component, props);
+    return React.createElement(Component as React.ComponentType<any>, props as any);
   };
 }

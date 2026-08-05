@@ -80,8 +80,8 @@ export function useSearch() {
   const { query, mode } = useSearchStore();
   return useInfiniteQuery({
     queryKey: searchKeys.results(query, mode),
-    queryFn: async ({ pageParam }) => searchRepo.search({ q: query, mode, cursor: pageParam as string }),
-    initialPageParam: undefined,
+    queryFn: async ({ pageParam }) => searchRepo.search({ q: query, mode, cursor: pageParam as string | undefined }),
+    initialPageParam: '',
     getNextPageParam: (last) => last.nextCursor,
     enabled: query.length >= 2,
     staleTime: searchCache.resultsStale,

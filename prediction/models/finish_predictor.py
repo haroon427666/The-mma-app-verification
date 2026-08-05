@@ -28,7 +28,6 @@ class FinishPredictor:
             "ko_tko": round(float(probs[0]), 4),
             "submission": round(float(probs[1]), 4),
             "decision": round(float(probs[2]), 4),
-            "most_likely": self.OUTCOMES[int(np.argmax(probs))],
         }
 
     def _heuristic_proba(self, features: np.ndarray) -> np.ndarray:

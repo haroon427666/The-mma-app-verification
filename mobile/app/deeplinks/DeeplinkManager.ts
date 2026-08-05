@@ -38,7 +38,7 @@ export class DeepLinkBuilder {
 export const linkBuilder = new DeepLinkBuilder();
 
 // ── Router ──
-class RouteRegistry {
+export class RouteRegistry {
   private routes = new Map<string, () => void>();
   register(name: string, handler: () => void): void { this.routes.set(name, handler); }
   navigate(link: DeepLink): void { const handler = this.routes.get(link.route); if (handler) { handler(); } else { throw new RouteError(link.route); } }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""platform/verify.py — comprehensive validation of all 12 sub-phases (19.1-19.12)."""
+"""data_platform/verify.py — comprehensive validation of all 12 sub-phases (19.1-19.12)."""
 import sys
 sys.path.insert(0, '.')
 import time
@@ -9,10 +9,10 @@ OK = "✅"
 
 
 def test_connector_framework():
-    from platform.connectors import (
+    from data_platform.connectors import (
         ConnectorConfig, ConnectorStatus, CircuitState, FetchResult,
     )
-    from platform.connectors.registry import ConnectorConfigLoader, ConnectorRegistry
+    from data_platform.connectors.registry import ConnectorConfigLoader, ConnectorRegistry
 
     cfg = ConnectorConfig(name="test-espn", base_url="https://api.example.com",
                           rate_limit_rps=5.0, tags={"org": "ufc"})
@@ -36,7 +36,7 @@ def test_connector_framework():
 
 
 def test_scheduler():
-    from platform.scheduler import (
+    from data_platform.scheduler import (
         JobDefinition, JobPriority, TriggerType, PriorityJobQueue, DistributedLock,
     )
     import asyncio
@@ -64,7 +64,7 @@ def test_scheduler():
 
 
 def test_scheduler_jobs():
-    from platform.scheduler_jobs import ALL_JOBS, DEPENDENCY_GRAPH
+    from data_platform.scheduler_jobs import ALL_JOBS, DEPENDENCY_GRAPH
 
     assert len(ALL_JOBS) >= 18
     print(f"{CHECK} {len(ALL_JOBS)} scheduled jobs")
@@ -92,7 +92,7 @@ def test_scheduler_jobs():
 
 
 def test_datalake():
-    from platform.datalake import RawRecord, DataLake
+    from data_platform.datalake import RawRecord, DataLake
     import tempfile
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -110,7 +110,7 @@ def test_datalake():
 
 
 def test_normalization():
-    from platform.normalization import (
+    from data_platform.normalization import (
         CanonicalFighter, CanonicalEvent, CanonicalFight,
         lbs_to_kg, inches_to_cm, SchemaValidator, NormalizationEngine,
     )
@@ -141,7 +141,7 @@ def test_normalization():
 
 
 def test_identity():
-    from platform.identity import (
+    from data_platform.identity import (
         name_similarity, date_proximity, IdentityGraph, SimilarityEngine,
     )
 
@@ -168,7 +168,7 @@ def test_identity():
 
 
 def test_resolution():
-    from platform.resolution import ResolutionEngine, AliasDatabase
+    from data_platform.resolution import ResolutionEngine, AliasDatabase
 
     aliases = AliasDatabase()
     aliases.add("The Eagle", "Khabib Nurmagomedov")
@@ -199,7 +199,7 @@ def test_resolution():
 
 
 def test_quality():
-    from platform.quality import QualityEngine
+    from data_platform.quality import QualityEngine
 
     engine = QualityEngine()
     report = engine.assess_fighter({
@@ -226,7 +226,7 @@ def test_quality():
 
 
 def test_trust():
-    from platform.trust import TrustEngine
+    from data_platform.trust import TrustEngine
 
     engine = TrustEngine()
     engine.register_source("espn", initial_trust=0.85, tier="primary")
@@ -263,7 +263,7 @@ def test_trust():
 
 
 def test_lineage():
-    from platform.lineage import LineageTracker, DiffEngine
+    from data_platform.lineage import LineageTracker, DiffEngine
 
     tracker = LineageTracker()
 
@@ -303,7 +303,7 @@ def test_lineage():
 
 
 def test_hardening():
-    from platform.hardening import (
+    from data_platform.hardening import (
         HealthChecker, HealthCheck, run_benchmark, run_all_benchmarks,
         RUNBOOKS, PRODUCTION_CHECKLIST,
     )
@@ -342,7 +342,7 @@ def test_hardening():
 
 
 def test_validation():
-    from platform.validation import create_standard_rules, ValidationEngine
+    from data_platform.validation import create_standard_rules, ValidationEngine
 
     registry = create_standard_rules()
     engine = ValidationEngine(registry)

@@ -2,7 +2,7 @@
 
 from typing import Any, cast
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func, or_
 from sqlalchemy import select as sa_select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -65,7 +65,7 @@ def _champion_entry(r: Ranking, f: Fighter) -> ChampionEntry:
 
 
 @champion_router.get("", response_model=list[ChampionEntry])
-async def list_champions(request: Request, uow: UnitOfWork = Depends(get_uow)) -> list[ChampionEntry]:
+async def list_champions(request: Request, uow: UnitOfWork = Depends(get_uow)) -> Response:
     """All current champions across every division (rankings with is_champion=true)."""
     session = cast(AsyncSession, uow._session)
 
@@ -88,7 +88,7 @@ async def list_champions(request: Request, uow: UnitOfWork = Depends(get_uow)) -
 
 
 @champion_router.get("/history", response_model=list[ChampionEntry])
-async def champion_history(request: Request, uow: UnitOfWork = Depends(get_uow)) -> list[ChampionEntry]:
+async def champion_history(request: Request, uow: UnitOfWork = Depends(get_uow)) -> Response:
     """Champion lineage history.
 
     NOTE: Champion lineage (won_date/lost_date/defenses/reign) is not yet
@@ -108,7 +108,7 @@ async def champion_history(request: Request, uow: UnitOfWork = Depends(get_uow))
 @champion_router.get("/{division}", response_model=ChampionEntry)
 async def division_champion(
     request: Request, division: str, uow: UnitOfWork = Depends(get_uow)
-) -> ChampionEntry:
+) -> Response:
     """The current champion of a specific division (category_name match)."""
     session = cast(AsyncSession, uow._session)
 
@@ -182,7 +182,7 @@ async def list_rankings(
     request: Request,
     gender: str | None = Query(None, description="MALE, FEMALE"),
     uow: UnitOfWork = Depends(get_uow),
-) -> RankingsResponse:
+) -> Response:
     """All UFC rankings, optionally filtered by gender."""
     session = cast(AsyncSession, uow._session)
 
@@ -204,7 +204,7 @@ async def list_rankings(
 
 
 @ranking_router.get("/mens", response_model=RankingsResponse)
-async def mens_rankings(request: Request, uow: UnitOfWork = Depends(get_uow)) -> RankingsResponse:
+async def mens_rankings(request: Request, uow: UnitOfWork = Depends(get_uow)) -> Response:
     """Men's divisions — all weight classes + P4P."""
     session = cast(AsyncSession, uow._session)
 
@@ -223,7 +223,7 @@ async def mens_rankings(request: Request, uow: UnitOfWork = Depends(get_uow)) ->
 
 
 @ranking_router.get("/womens", response_model=RankingsResponse)
-async def womens_rankings(request: Request, uow: UnitOfWork = Depends(get_uow)) -> RankingsResponse:
+async def womens_rankings(request: Request, uow: UnitOfWork = Depends(get_uow)) -> Response:
     """Women's divisions."""
     session = cast(AsyncSession, uow._session)
 
@@ -242,7 +242,7 @@ async def womens_rankings(request: Request, uow: UnitOfWork = Depends(get_uow)) 
 
 
 @ranking_router.get("/p4p", response_model=RankingCategory)
-async def pound_for_pound(request: Request, uow: UnitOfWork = Depends(get_uow)) -> RankingCategory:
+async def pound_for_pound(request: Request, uow: UnitOfWork = Depends(get_uow)) -> Response:
     """Pound-for-pound rankings."""
     session = cast(AsyncSession, uow._session)
 
@@ -265,7 +265,7 @@ async def pound_for_pound(request: Request, uow: UnitOfWork = Depends(get_uow)) 
 
 
 @ranking_router.get("/{division}", response_model=RankingCategory)
-async def division_rankings(request: Request, division: str, uow: UnitOfWork = Depends(get_uow)) -> RankingCategory:
+async def division_rankings(request: Request, division: str, uow: UnitOfWork = Depends(get_uow)) -> Response:
     """Specific weight class rankings. division=flyweight, bantamweight, etc."""
     session = cast(AsyncSession, uow._session)
 
@@ -295,7 +295,7 @@ promo_router = APIRouter(prefix="/v1/promotions", tags=["promotions"])
 
 
 @promo_router.get("", response_model=list[PromotionListItem])
-async def list_promotions(request: Request, uow: UnitOfWork = Depends(get_uow)) -> list[PromotionListItem]:
+async def list_promotions(request: Request, uow: UnitOfWork = Depends(get_uow)) -> Response:
     """All MMA promotions."""
     session = cast(AsyncSession, uow._session)
 
@@ -442,7 +442,7 @@ async def list_venues(
     request: Request,
     pagination: PaginationDep,
     uow: UnitOfWork = Depends(get_uow),
-) -> PaginatedResponse[VenueListItem]:
+) -> Response:
     """All known venues."""
     session = cast(AsyncSession, uow._session)
 

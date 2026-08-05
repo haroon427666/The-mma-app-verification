@@ -29,5 +29,3 @@ export const motion = {
     speed: 1200,
   },
 } as const;
-
-export const themeIndex = { colors, typography, spacing, radius, shadows, motion };

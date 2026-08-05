@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 from src.api.cache import cache_key, cached_json_response
 from src.db.models.core import Broadcast
@@ -132,7 +132,7 @@ async def list_events(
     country: str | None = Query(None),
     search: str | None = Query(None),
     uow: UnitOfWork = Depends(get_uow),
-) -> PaginatedResponse[EventListItem]:
+) -> Response:
     """List events with pagination, filtering, search."""
     svc = EventService(uow)
 
@@ -167,7 +167,7 @@ async def list_events(
 
 
 @router.get("/upcoming", response_model=list[EventListItem])
-async def upcoming_events(request: Request, limit: int = Query(20, le=50), uow: UnitOfWork = Depends(get_uow)) -> list[EventListItem]:
+async def upcoming_events(request: Request, limit: int = Query(20, le=50), uow: UnitOfWork = Depends(get_uow)) -> Response:
     """Upcoming scheduled events."""
     svc = EventService(uow)
 
@@ -184,7 +184,7 @@ async def upcoming_events(request: Request, limit: int = Query(20, le=50), uow: 
 
 
 @router.get("/live", response_model=list[EventListItem])
-async def live_events(request: Request, uow: UnitOfWork = Depends(get_uow)) -> list[EventListItem]:
+async def live_events(request: Request, uow: UnitOfWork = Depends(get_uow)) -> Response:
     """Currently live or in-progress events."""
     svc = EventService(uow)
 
@@ -223,7 +223,7 @@ async def past_events(
 
 @router.get("/{event_id}", response_model=EventDetailResponse,
             responses={404: {"model": ErrorResponse}})
-async def get_event(request: Request, event_id: str, uow: UnitOfWork = Depends(get_uow)):
+async def get_event(request: Request, event_id: str, uow: UnitOfWork = Depends(get_uow)) -> Response:
     """Event detail — venue, fights, broadcasts, poster."""
     svc = EventService(uow)
 

@@ -8,7 +8,7 @@ Production normalization isn't generic — it's thousands of specific mappings:
 This module provides the real mapping tables + mapper registry.
 """
 
-from platform.normalization import (
+from data_platform.normalization import (
     CanonicalFighter, CanonicalEvent, CanonicalFight, CanonicalRanking,
     lbs_to_kg, inches_to_cm,
 )

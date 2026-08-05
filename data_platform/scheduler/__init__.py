@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Optional
 
-from platform.connectors import BaseConnector, JobPriority
+from data_platform.connectors import BaseConnector, JobPriority
 
 logger = logging.getLogger(__name__)
 

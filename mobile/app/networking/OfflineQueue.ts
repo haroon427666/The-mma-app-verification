@@ -1,5 +1,5 @@
 /** Offline Queue — queue mutations when offline, replay when online */
-import { NetworkError, isRetryableError, isRetryableStatus } from './NetworkUtils';
+import { isRetryableError, isRetryableStatus } from './NetworkUtils';
 
 interface QueuedRequest { id: string; execute: () => Promise<any>; resolve: (v: any) => void; reject: (e: any) => void; retries: number; maxRetries: number; timestamp: number; }
 

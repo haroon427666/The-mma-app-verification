@@ -18,6 +18,7 @@ export const OFFLINE_CONSTANTS = {
   SYNC_PRIORITY: { HIGH: 1, MEDIUM: 5, LOW: 10 } as const,
   MAX_RETRIES: 5, QUEUE_PERSIST_KEY: 'offline_queue',
   LAST_SYNC_KEY: 'last_sync_timestamp', BATCH_SIZE: 50,
+  MAX_QUEUE_SIZE: 500,
 };
 
 export class OfflineLogger {

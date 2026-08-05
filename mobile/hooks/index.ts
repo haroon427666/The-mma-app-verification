@@ -8,11 +8,11 @@ export {
   useRecommendedFighters,
 } from '@/features/home';
 export {
-  useFighterList, useFighterDetail, useFavoriteFighter,
-  useFavoriteFighters, useFighterStats, useFightHistory, useSimilarFighters,
+  useFighters, useFighter, useFavoriteFighter,
+  useStats, useHistory, useSimilarFighters,
 } from '@/features/fighters';
 export { useEvents, useEvent } from '@/features/events';
-export { useRankings } from '@/features/rankings';
+export { useEloRankings } from '@/features/rankings';
 export { useFightPrediction } from '@/features/predictions';
 export { useRecommendations } from '@/features/recommendations';
 export { useSearch } from '@/features/search';

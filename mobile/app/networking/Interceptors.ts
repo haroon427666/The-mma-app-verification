@@ -1,5 +1,6 @@
 /** Interceptors — Logging, Cache, Error, Response */
 import { AxiosInstance } from 'axios';
+import { RateLimitError, APIError } from './NetworkTypes';
 
 export class LoggingInterceptor {
   attach(instance: AxiosInstance): void {
@@ -18,9 +19,9 @@ export class ErrorInterceptor {
       if (!error.response) return Promise.reject(error);
       const { status, data } = error.response;
       // Transform to typed errors
-      if (status === 429) return Promise.reject(new (await import('./NetworkTypes')).RateLimitError());
-      if (status >= 500) return Promise.reject(new (await import('./NetworkTypes')).APIError('Server error', status));
-      if (status === 422) return Promise.reject(new (await import('./NetworkTypes')).APIError('Validation failed', status, data?.code, data?.errors));
+      if (status === 429) return Promise.reject(new RateLimitError());
+      if (status >= 500) return Promise.reject(new APIError('Server error', status));
+      if (status === 422) return Promise.reject(new APIError('Validation failed', status, data?.code, data?.errors));
       return Promise.reject(error);
     });
   }
@@ -31,7 +32,7 @@ export class ResponseInterceptor {
     instance.interceptors.response.use((response) => {
       // Standardize response: unwrap envelope if needed
       const data = response.data;
-      if (data?.success === false) return Promise.reject(new (await import('./NetworkTypes')).APIError(data?.message || 'Request failed', response.status));
+      if (data?.success === false) return Promise.reject(new APIError(data?.message || 'Request failed', response.status));
       return response;
     });
   }

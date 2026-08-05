@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { create } from 'zustand';
 import api from '@/services/api';
-import type { FightPrediction, PredictionDashboard, PredictionHistoryEntry, AccuracyStats, PredictionView, PredictionSort } from '../types';
+import type { FightPrediction, PredictionDashboard, PredictionHistoryEntry, PredictionAccuracyStats, PredictionView, PredictionSort } from '../types';
 
 // ── API ──
 export const predictionsApi = {
@@ -29,7 +29,7 @@ export const predictionsRepo = {
   dashboard: async () => { const { data } = await predictionsApi.dashboard(); return (data?.data ?? data) as PredictionDashboard; },
   highlights: async () => { const { data } = await predictionsApi.highlights(); return (data?.data ?? data) as FightPrediction[]; },
   history: async (params?: { page?: number; limit?: number }) => { const { data } = await predictionsApi.history(params); return (data?.data ?? data) as PredictionHistoryEntry[]; },
-  accuracy: async () => { const { data } = await predictionsApi.accuracy(); return (data?.data ?? data) as AccuracyStats; },
+  accuracy: async () => { const { data } = await predictionsApi.accuracy(); return (data?.data ?? data) as PredictionAccuracyStats; },
   matchup: async (a: string, b: string) => { const { data } = await predictionsApi.matchup(a, b); return data as FightPrediction; },
   save: async (fightId: string) => { await predictionsApi.save(fightId); },
   unsave: async (fightId: string) => { await predictionsApi.unsave(fightId); },
@@ -89,7 +89,7 @@ export function usePredictionHistory(page = 1) {
   return useQuery<PredictionHistoryEntry[]>({ queryKey: [...predictionKeys.history(), page], queryFn: () => predictionsRepo.history({ page }), staleTime: predictionCache.historyStale });
 }
 export function usePredictionAccuracy() {
-  return useQuery<AccuracyStats>({ queryKey: predictionKeys.accuracy(), queryFn: predictionsRepo.accuracy, staleTime: predictionCache.historyStale });
+  return useQuery<PredictionAccuracyStats>({ queryKey: predictionKeys.accuracy(), queryFn: predictionsRepo.accuracy, staleTime: predictionCache.historyStale });
 }
 export function useMatchupPrediction(a: string, b: string) {
   return useQuery<FightPrediction>({ queryKey: predictionKeys.matchup(a, b), queryFn: () => predictionsRepo.matchup(a, b), staleTime: predictionCache.staleTime, enabled: !!a && !!b });

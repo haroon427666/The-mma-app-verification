@@ -4,11 +4,11 @@ Enterprise Scheduler Jobs — pre-built job definitions for every data source.
 Each source (UFC, ESPN, UFCStats, TheSportsDB, Wikipedia, Tapology, Sherdog)
 has a complete schedule with dependencies, retry policies, and monitoring.
 
-All jobs use the JobScheduler from platform.scheduler and BaseConnector
-from platform.connectors.
+All jobs use the JobScheduler from data_platform.scheduler and BaseConnector
+from data_platform.connectors.
 """
 
-from platform.scheduler import JobDefinition, JobPriority, TriggerType
+from data_platform.scheduler import JobDefinition, JobPriority, TriggerType
 
 # ═══════════════════════════════════════════════════════════════════════════
 # ESPN — Primary structured data source

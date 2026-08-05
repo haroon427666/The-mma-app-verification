@@ -49,13 +49,8 @@ def career_stage(age: float) -> str:
     score = age_performance_score(age)
     if score >= 0.95:
         return "Prime"
-    if score >= 0.80:
+    if score >= 0.75:
         return "Established"
-    if score >= 0.50:
-        if age < PEAK_AGE_MIN:
-            return "Rising Prospect"
-        else:
-            return "Veteran"
     if age < PEAK_AGE_MIN:
-        return "Young Prospect"
-    return "Declining"
+        return "Rising Prospect" if score >= 0.30 else "Young Prospect"
+    return "Veteran" if score >= 0.55 else "Declining"

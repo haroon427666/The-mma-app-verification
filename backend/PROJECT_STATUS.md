@@ -1,6 +1,6 @@
 # PROJECT_STATUS.md
 
-**Last updated:** 2026-08-04 (migration-chain fixes 004/005, sync CLI on real SyncEngine, champions endpoints, migration-coverage tests)
+**Last updated:** 2026-08-05 (AI-module restoration complete + validated; mobile bootability tsc 0; `platform/` → `data_platform/` rename — see `SESSION_STATE.md`)
 **Repository:** MMA Backend — `backend/`
 **Stack:** Python 3.12 · FastAPI · SQLAlchemy 2 (async) · SQLite (dev) / PostgreSQL (prod) · Alembic · Pydantic v2 · pytest · ruff · mypy
 
@@ -18,6 +18,19 @@
 > Live Postgres `alembic upgrade head` NOT executed in this environment (no Docker/Postgres).
 > Verified offline via `--sql` render + SQLite `create_all` coverage tests (`tests/integration/test_migration_coverage.py`).
 
+## Monorepo Status (2026-08-05)
+
+This file governs `backend/` only; the sibling AI packages and mobile were also worked on:
+
+- **AI-module restoration complete**: `prediction/`, `recommendation/`, `intelligence/`,
+  `data_platform/` (renamed from `platform/`) + `mobile/features/predictions|recommendations/`
+  + `mobile/intelligence/` restored from checkpoint `ff74cd8` (161 files, uncommitted-deletion
+  recovery), 11 bugs fixed, per-package `verify.py` green (10/10, 10/10, 6/6, 45/45),
+  intelligence pytest 31 passed. The no-AI deletion instructions (`01-instruction-index.md`
+  §Delete table, migration-plan Phase 5) are **superseded** by user directive.
+- **Mobile bootability**: `mobile/` `tsc --noEmit` = **0 errors** (was 67); 3 npm deps added.
+- Backend gates above (319 passed, ruff clean) re-verified after the rename; zero `platform` refs remain.
+
 ---
 
 ## Migration-Cleanup Session (2026-08-04)
@@ -34,7 +47,7 @@ Fixes applied against the 08-03 target architecture (backend portions of the V10
 | Scheduler wiring | `src/scheduler/context.py` (SchedulerContext + `build_scheduler_context()`), `src/config.py` `sync_enabled`, lifespan starts SyncManager only when `SYNC_ENABLED=true` (docker-compose), graceful when unset/DB-down | import test passes; settings default false |
 | Champions endpoints | `champion_router`: `GET /v1/champions`, `/v1/champions/{division}`, `/history` (empty stub — lineage table not modeled) | 10 tests pass |
 
-**Deferred (unchanged by user decision):** TSDB/Octagon enrichment in sync CLI (ESPN-only), champion lineage table (history endpoint returns `[]`), mobile Phase 4, AI module deletions Phase 5.
+**Deferred:** TSDB/Octagon enrichment in sync CLI (ESPN-only), champion lineage table (history endpoint returns `[]`), mobile runtime boot (route files/assets — typecheck-level done 2026-08-05), live Postgres migration apply. **Superseded:** AI module deletions Phase 5 (user revoked — modules restored and kept).
 
 ---
 
@@ -156,7 +169,7 @@ Auth: JWT access/refresh tokens, Argon2 hashing, role hierarchy (admin > premium
 | Scheduler Redis lock/queue not integrated | Medium | `src/scheduler/` is Redis-ready; wiring pending |
 | Notifications channels | Medium | Event bus exists; push/email/telegram/discord/WS plugins pending |
 | SQLite in dev vs Postgres prod | Medium | CI runs SQLite; some SQL (tsvector, upsert constraint syntax) Postgres-specific |
-| AI/analytics sibling dirs (`intelligence/`, `prediction/`, `recommendation/`, `platform/`) | Low | Vendored extras, not part of backend deliverable; un-declared deps (numpy, scikit-learn, xgboost, joblib) |
+| AI/analytics sibling dirs (`intelligence/`, `prediction/`, `recommendation/`, `data_platform/`) | Low | Vendored extras, not part of backend deliverable; un-declared deps (numpy, scikit-learn, xgboost, joblib); each ships a green `verify.py` + intelligence pytest 31 passed |
 | Non-UFC org verification | Medium | Only UFC verified end-to-end; `scripts/verify_additional_organizations.py` |
 | pyproject `tests.*` mypy override unused | Low | Tests excluded from mypy; harmless note |
 

@@ -2,7 +2,7 @@ import type { Theme, ThemeMode } from './ThemeTypes';
 import { brand, success, warning, danger, info, neutral, typography, spacing, radius, elevation, opacity, durations, easings, zIndex, breakpoints } from '../tokens';
 import { surface, text } from '../tokens/semanticColors';
 
-function buildPalette(effectiveMode: 'light' | 'dark' | 'amoled') {
+function buildPalette(effectiveMode: 'light' | 'dark' | 'amoled'): Theme['palette'] {
   const isDark = effectiveMode !== 'light';
   const surf = effectiveMode === 'amoled' ? surface.amoled : isDark ? surface.dark : surface.light;
   const txt = effectiveMode === 'amoled' ? text.amoled : isDark ? text.dark : text.light;

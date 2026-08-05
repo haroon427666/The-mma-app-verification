@@ -25,7 +25,7 @@ export interface ExtendedEvent extends BaseEvent {
   bonuses?: EventBonuses;
 }
 
-export interface FightCardEntry extends BaseFight {
+export interface FightCardEntry extends Omit<BaseFight, 'result' | 'status' | 'cardSegment'> {
   order: number;
   cardSegment: CardSegment;
   weightClass: string;

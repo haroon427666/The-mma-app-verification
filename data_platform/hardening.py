@@ -124,7 +124,8 @@ def run_all_benchmarks() -> list[Benchmark]:
 
     # Normalization benchmark
     def bench_normalize():
-        from platform.normalization import lbs_to_kg, inches_to_cm, name_similarity
+        from data_platform.normalization import lbs_to_kg, inches_to_cm
+        from data_platform.identity import name_similarity
         lbs_to_kg(155), inches_to_cm(66)
         name_similarity("Islam Makhachev", "Islam Makachev")
 
@@ -132,7 +133,7 @@ def run_all_benchmarks() -> list[Benchmark]:
 
     # Identity benchmark
     def bench_identity():
-        from platform.identity import levenshtein, SimilarityEngine
+        from data_platform.identity import levenshtein, SimilarityEngine
         levenshtein("Islam Makhachev", "Islam Makachev")
         SimilarityEngine.compare_fighters(
             {"full_name": "Islam", "last_name": "M", "birth_date": "1991-10-27",
@@ -145,7 +146,7 @@ def run_all_benchmarks() -> list[Benchmark]:
 
     # Quality benchmark
     def bench_quality():
-        from platform.quality import QualityEngine
+        from data_platform.quality import QualityEngine
         engine = QualityEngine()
         engine.assess_fighter({
             "first_name": "Islam", "last_name": "Makhachev",

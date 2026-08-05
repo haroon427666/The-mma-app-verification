@@ -4,12 +4,18 @@ import { typography, spacing, radius, elevation, opacity, durations, easings, zI
 
 export type ThemeMode = 'light' | 'dark' | 'amoled' | 'system';
 
+export interface ThemeContextValue {
+  theme: Theme;
+  setMode: (m: ThemeMode) => void;
+  mode: ThemeMode;
+}
+
 export interface Theme {
   mode: ThemeMode;
   palette: {
     brand: typeof brand; success: typeof success; warning: typeof warning;
     danger: typeof danger; info: typeof info; neutral: typeof neutral;
-    primary: typeof brand; surface: typeof surface.light; text: typeof text.light;
+    primary: typeof brand; surface: (typeof surface)['light' | 'dark' | 'amoled']; text: (typeof text)['light' | 'dark' | 'amoled'];
     background: string; isDark: boolean;
   };
   tokens: {

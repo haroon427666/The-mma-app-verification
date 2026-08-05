@@ -64,7 +64,7 @@ upcoming/live/past, fighters history/statistics). Champions endpoint **does not 
 | F3 | Phase 3: client-first (local favorites, local notifications, calendar, compare) | P2 |
 | F4 | Phase 4: computed/aggregate (records, streaks, leaderboards, H2H) | P3 |
 | F5 | Phase 5: accounts/auth/push (optional; MVP is account-free) | P4 (optional) |
-| F6 | Hard constraints: NO AI, NO betting, NO paid APIs | policy |
+| F6 | Hard constraints: NO AI, NO betting, NO paid APIs | policy — ⛔ **SUPERSEDED re AI (2026-08-05):** user revoked the no-AI deletions; AI modules restored and kept |
 
 ## 6. feature-registry.md (shared, identical)
 
@@ -82,7 +82,7 @@ upcoming/live/past, fighters history/statistics). Champions endpoint **does not 
 
 | # | Instruction |
 |---|---|
-| P1 | MVP scope: browse events/cards, live status, fighter profiles + stats/history, rankings & champions, search, compare, calendar, on-device favorites + reminders; NO accounts, NO push server, NO AI, NO paid | policy |
+| P1 | MVP scope: browse events/cards, live status, fighter profiles + stats/history, rankings & champions, search, compare, calendar, on-device favorites + reminders; NO accounts, NO push server, NO AI, NO paid | policy — ⛔ **SUPERSEDED re AI (2026-08-05):** user revoked the no-AI deletions; AI modules restored and kept |
 
 ## 9. zaro-ai-audit-analysis.md (new; v1 zip review)
 
@@ -174,6 +174,11 @@ Mostly **STALE** for backend (fixed in later iterations).
 | `backend/PROJECT_STATUS.md`, docs | Honest numbers (300 tests, 91 paths, sync status) | 6 |
 
 ### Delete (policy: no AI, no betting)
+
+> ⛔ **SUPERSEDED (2026-08-05) — DO NOT EXECUTE.** The user revoked the no-AI deletion
+> directive. All listed targets were restored from checkpoint `ff74cd8` and validated
+> (`SESSION_STATE.md` §5). This table is retained for the historical record only.
+
 | Path | Reason |
 |---|---|
 | `prediction/`, `recommendation/`, `intelligence/`, `platform/` (top-level) | User rejected ALL AI |
