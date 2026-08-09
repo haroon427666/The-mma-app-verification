@@ -68,9 +68,11 @@ def parse_fighter(data: dict[str, Any]) -> FighterDTO:
 
     # Weight class — INLINE object: {id: 970, text: "Bantamweight", shortName: "Bantamweight", slug: "bantamweight"}
     weight_class_external_id = None
+    weight_class_name = None
     weight_class_data = data.get("weightClass")
     if isinstance(weight_class_data, dict):
         weight_class_external_id = str(weight_class_data.get("id", ""))
+        weight_class_name = weight_class_data.get("text") or weight_class_data.get("shortName")
 
     # Headshot — NOT a direct field. images[] is usually empty.
     # The headshot URL comes from CDN: https://a.espncdn.com/.../athletes/{id}.png
@@ -98,8 +100,13 @@ def parse_fighter(data: dict[str, Any]) -> FighterDTO:
         except (ValueError, TypeError):
             pass
 
-    # Status
-    is_active = data.get("active", False)
+    # Status — presence-guarded: only set when the payload explicitly
+    # provides `active` (research: active status is not guaranteed on all
+    # athlete resources; a blind default would mislabel every fighter).
+    active_raw = data.get("active")
+    is_active: bool | None = (
+        bool(active_raw) if isinstance(active_raw, bool) else None
+    )
 
     # Record is NOT here — must be fetched from /athletes/{id}/records
     # We set defaults; the sync engine will resolve and update
@@ -123,6 +130,7 @@ def parse_fighter(data: dict[str, Any]) -> FighterDTO:
         headshot_url=headshot_url,
         is_active=is_active,
         weight_class_external_id=weight_class_external_id,
+        weight_class_name=weight_class_name,
     )
 
 

@@ -358,6 +358,30 @@ class FailingLock:
         return False
 
 
+class FailingRedis:
+    """A Redis client whose every operation raises (server unreachable)."""
+
+    def __init__(self, exc=None):
+        from redis.exceptions import ConnectionError as RedisConnectionError
+
+        self._exc = exc or RedisConnectionError("redis down")
+
+    async def set(self, *args, **kwargs):
+        raise self._exc
+
+    async def eval(self, *args, **kwargs):
+        raise self._exc
+
+    async def exists(self, *args, **kwargs):
+        raise self._exc
+
+    async def get(self, *args, **kwargs):
+        raise self._exc
+
+    async def expire(self, *args, **kwargs):
+        raise self._exc
+
+
 class StubLocks:
     def __init__(self, lock):
         self._lock = lock
@@ -435,6 +459,32 @@ class TestSchedulerHardening:
         assert await lock.acquire() is False
         assert await lock.is_locked() is False
         assert await lock.extend() is False
+
+    @pytest.mark.asyncio
+    async def test_redis_lock_api_tolerates_backend_failure(self):
+        """T07: every Redis operation failing → lock degrades, never raises."""
+        from src.scheduler.locks import RedisLock
+        lock = RedisLock(FailingRedis(), "sync:fighters")
+        assert await lock.acquire() is True  # degraded: proceed without coordination
+        assert await lock.is_locked() is False
+        assert await lock.extend() is False
+        assert await lock.release() is False
+
+    @pytest.mark.asyncio
+    async def test_job_runs_degraded_when_redis_down(self):
+        """T07: Redis unreachable → lock skipped → job RUNS instead of failing."""
+        from src.scheduler.jobs import JobConfig
+        from src.scheduler.locks import RedisLock
+
+        manager = self._make_manager(RedisLock(FailingRedis(), "test_job"))
+        calls = []
+
+        async def job_fn(ctx):
+            calls.append("ran")
+
+        config = JobConfig(name="test_job")
+        await manager._execute_job("test_job", config, job_fn)
+        assert calls == ["ran"]  # Ran despite Redis being down
 
 
 class TestHealthMonitorAccessor:

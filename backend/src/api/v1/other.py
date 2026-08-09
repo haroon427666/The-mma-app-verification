@@ -10,7 +10,8 @@ from sqlalchemy import select as sa_select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.cache import cache_key, cached_json_response
-from src.db.models.core import Promotion, Ranking, Venue
+from src.api.utils import require_uuid
+from src.db.models.core import Promotion, Ranking, Venue, WeightClass
 from src.db.models.event import Competition, Competitor, Event
 from src.db.models.fighter import Fighter
 from src.db.unit_of_work import UnitOfWork
@@ -35,6 +36,8 @@ from src.schemas.misc import (
     TitleDefenseEntry,
     VenueDetailResponse,
     VenueListItem,
+    WeightClassDetailResponse,
+    WeightClassListItem,
 )
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -827,6 +830,7 @@ async def list_venues(
 @venue_router.get("/{venue_id}", response_model=VenueDetailResponse)
 async def get_venue(venue_id: str, uow: UnitOfWork = Depends(get_uow)) -> VenueDetailResponse:
     """Venue detail — capacity, coordinates, past events."""
+    require_uuid(venue_id)
     session = cast(AsyncSession, uow._session)
     result = await session.execute(sa_select(Venue).where(Venue.id == venue_id))
     venue = result.scalar_one_or_none()
@@ -853,6 +857,7 @@ async def venue_events(
     uow: UnitOfWork = Depends(get_uow),
 ) -> PaginatedResponse[Any]:
     """Events held at this venue."""
+    require_uuid(venue_id)
     session = cast(AsyncSession, uow._session)
     result = await session.execute(
         sa_select(Event).where(Event.venue_id == venue_id)
@@ -869,6 +874,85 @@ async def venue_events(
     return PaginatedResponse(items=items, total=total, page=pagination.page,
                               limit=pagination.limit,
                               pages=(total + pagination.limit - 1) // pagination.limit if total > 0 else 0)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Weight Classes
+# ═══════════════════════════════════════════════════════════════════════════
+
+wc_router = APIRouter(prefix="/v1/weight-classes", tags=["weight-classes"])
+
+
+@wc_router.get("", response_model=PaginatedResponse[WeightClassListItem])
+async def list_weight_classes(
+    request: Request,
+    pagination: PaginationDep,
+    uow: UnitOfWork = Depends(get_uow),
+) -> Response:
+    """All known weight divisions, ordered by name."""
+    session = cast(AsyncSession, uow._session)
+
+    async def loader() -> dict:
+        result = await session.execute(
+            sa_select(WeightClass)
+            .order_by(WeightClass.name.asc())
+            .limit(pagination.limit)
+            .offset((pagination.page - 1) * pagination.limit)
+        )
+        classes = list(result.scalars().all())
+        cnt = await session.execute(sa_select(func.count()).select_from(WeightClass))
+        total = cnt.scalar_one()
+
+        items: list[dict[str, Any]] = []
+        for wc in classes:
+            fcnt = await session.execute(
+                sa_select(func.count()).select_from(Fighter)
+                .where(Fighter.weight_class_id == wc.id)
+            )
+            items.append({
+                "id": wc.id,
+                "name": wc.name,
+                "abbreviation": wc.abbreviation,
+                "gender": wc.gender,
+                "fighter_count": fcnt.scalar_one(),
+            })
+        return PaginatedResponse(
+            items=items, total=total, page=pagination.page, limit=pagination.limit,
+            pages=(total + pagination.limit - 1) // pagination.limit if total > 0 else 0,
+        ).model_dump(mode="json")
+
+    return await cached_json_response(
+        request,
+        cache_key=cache_key("weight-classes:list", pagination.limit, pagination.page),
+        ttl=86400,
+        loader=loader,
+    )
+
+
+@wc_router.get("/{wc_id}", response_model=WeightClassDetailResponse)
+async def get_weight_class(
+    wc_id: str, uow: UnitOfWork = Depends(get_uow)
+) -> WeightClassDetailResponse:
+    """Weight class detail — weight bounds and roster size."""
+    require_uuid(wc_id)
+    session = cast(AsyncSession, uow._session)
+    result = await session.execute(
+        sa_select(WeightClass).where(WeightClass.id == wc_id)
+    )
+    wc = result.scalar_one_or_none()
+    if wc is None:
+        raise HTTPException(404)
+
+    fcnt = await session.execute(
+        sa_select(func.count()).select_from(Fighter)
+        .where(Fighter.weight_class_id == wc_id)
+    )
+
+    return WeightClassDetailResponse(
+        id=wc.id, name=wc.name, abbreviation=wc.abbreviation,
+        min_weight_kg=wc.min_weight_kg, max_weight_kg=wc.max_weight_kg,
+        gender=wc.gender, fighter_count=fcnt.scalar_one(),
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════

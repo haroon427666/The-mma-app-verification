@@ -5,6 +5,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 from src.api.cache import cache_key, cached_json_response
+from src.api.utils import require_uuid
 from src.db.models.core import Broadcast
 from src.db.models.event import Event
 from src.db.unit_of_work import UnitOfWork
@@ -236,6 +237,7 @@ async def past_events(
             responses={404: {"model": ErrorResponse}})
 async def get_event_fights(request: Request, event_id: str, uow: UnitOfWork = Depends(get_uow)) -> Response:
     """Fight card for an event — competitions + competitors with results."""
+    require_uuid(event_id)
     from sqlalchemy import select as sa_select
 
     from src.db.models.event import Competition, Competitor
@@ -274,6 +276,7 @@ async def get_event_fights(request: Request, event_id: str, uow: UnitOfWork = De
             responses={404: {"model": ErrorResponse}})
 async def get_event_results(request: Request, event_id: str, uow: UnitOfWork = Depends(get_uow)) -> Response:
     """Completed fights for an event — only fights with a recorded result."""
+    require_uuid(event_id)
     from sqlalchemy import select as sa_select
 
     from src.db.models.event import Competition, Competitor
@@ -315,6 +318,7 @@ async def get_event_results(request: Request, event_id: str, uow: UnitOfWork = D
             responses={404: {"model": ErrorResponse}})
 async def get_event_statistics(request: Request, event_id: str, uow: UnitOfWork = Depends(get_uow)) -> Response:
     """Aggregated statistics for an event — computed from the fight card."""
+    require_uuid(event_id)
     from sqlalchemy import select as sa_select
 
     from src.db.models.event import Competition, Competitor
@@ -377,6 +381,7 @@ async def get_event_statistics(request: Request, event_id: str, uow: UnitOfWork 
             responses={404: {"model": ErrorResponse}})
 async def get_event(request: Request, event_id: str, uow: UnitOfWork = Depends(get_uow)) -> Response:
     """Event detail — venue, fights, broadcasts, poster."""
+    require_uuid(event_id)
     svc = EventService(uow)
 
     async def loader() -> dict:

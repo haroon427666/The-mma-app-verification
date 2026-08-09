@@ -54,16 +54,17 @@ class SyncPlan:
 
 
 class FullSyncPlan(SyncPlan):
-    """Complete sync: all 9 entity types in dependency order.
+    """Complete sync: all entity types in dependency order.
 
     Order ensures foreign keys exist: promotions → venues → weight_classes
-    → fighters → events → competitions → broadcasts → statistics → rankings.
+    → fighters → events → competitions → broadcasts → statistics → rankings
+    → historical events (winningFight chain, bounded + env-gated).
     """
 
     def __init__(self) -> None:
         super().__init__(
             name="full_sync",
-            description="Complete sync of all 9 entity types in dependency order",
+            description="Complete sync of all entity types in dependency order",
             order=[
                 EntityType.PROMOTION,
                 EntityType.VENUE,
@@ -74,6 +75,21 @@ class FullSyncPlan(SyncPlan):
                 EntityType.BROADCAST,
                 EntityType.STATISTIC,
                 EntityType.RANKING,
+                EntityType.HISTORICAL_EVENT,
+            ],
+        )
+
+
+class HistoricalEventsPlan(SyncPlan):
+    """Historical-event discovery only (rankings → winningFight → events)."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            name="historical_events_sync",
+            description="Historical events via winningFight hooks (bounded, env-gated)",
+            order=[
+                EntityType.RANKING,
+                EntityType.HISTORICAL_EVENT,
             ],
         )
 

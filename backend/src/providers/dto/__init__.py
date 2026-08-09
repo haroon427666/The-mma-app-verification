@@ -53,8 +53,23 @@ class FighterDTO:
     birth_location: str | None = None
     birth_date: datetime | None = None
     headshot_url: str | None = None
-    is_active: bool = True
+    is_active: bool | None = None  # None = unknown/payload-absent → don't overwrite
     weight_class_external_id: str | None = None  # resolved later by sync engine
+    weight_class_name: str | None = None  # inline label, used to create missing weight classes
+
+    # ── Expanded record breakdown (from /athletes/{id}/records) ────────────
+    # None = records not fetched / unavailable → never reset stored values.
+    record_summary: str | None = None
+    ko_tko_wins: int | None = None
+    ko_tko_losses: int | None = None
+    submission_wins: int | None = None
+    submission_losses: int | None = None
+    title_wins: int | None = None
+    title_losses: int | None = None
+    title_draws: int | None = None
+    total_fights: int | None = None
+    win_percentage: float | None = None
+    finish_rate: float | None = None
 
 
 # ── Weight Class ───────────────────────────────────────────────────────────────
@@ -131,6 +146,7 @@ class CompetitionDTO:
     is_main_event: bool = False
     is_title_fight: bool = False
     weight_class_external_id: str | None = None
+    weight_class_name: str | None = None  # inline label, used to create missing weight classes
     result_method: str | None = None
     result_detail: str | None = None
     result_round: int | None = None

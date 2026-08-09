@@ -5,6 +5,7 @@ from typing import Any
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.api.utils import require_uuid
 from src.auth.dependencies import get_current_user
 from src.auth.jwt import TokenPayload
 from src.db.session import get_session
@@ -60,6 +61,7 @@ async def add_event_watchlist(
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, str]:
     """Add event to watchlist."""
+    require_uuid(event_id)
     from src.db.models.auth import WatchlistEvent
     wl = WatchlistEvent(user_id=user.sub, event_id=event_id)
     session.add(wl)
@@ -75,6 +77,7 @@ async def remove_event_watchlist(
     session: AsyncSession = Depends(get_session),
 ) -> None:
     """Remove event from watchlist."""
+    require_uuid(event_id)
     from sqlalchemy import delete as sa_delete
 
     from src.db.models.auth import WatchlistEvent
@@ -94,6 +97,7 @@ async def add_fighter_favorite(
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, str]:
     """Add fighter to favorites."""
+    require_uuid(fighter_id)
     from src.db.models.auth import FighterFavorite
     fav = FighterFavorite(user_id=user.sub, fighter_id=fighter_id)
     session.add(fav)
@@ -109,6 +113,7 @@ async def remove_fighter_favorite(
     session: AsyncSession = Depends(get_session),
 ) -> None:
     """Remove fighter from favorites."""
+    require_uuid(fighter_id)
     from sqlalchemy import delete as sa_delete
 
     from src.db.models.auth import FighterFavorite

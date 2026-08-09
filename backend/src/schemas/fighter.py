@@ -106,6 +106,22 @@ class FighterFightEntry(BaseModel):
 
 # ── Opponent ────────────────────────────────────────────────────────────────
 
+class NextFightResponse(BaseModel):
+    """Next scheduled bout (FTR-107) — `null` when the fighter has none."""
+
+    event_id: str
+    event_name: str
+    event_date: datetime | None = None
+    event_status: str = "SCHEDULED"
+    competition_id: str
+    opponent_id: str | None = None
+    opponent_name: str | None = None
+    corner: str | None = None
+    weight_class: str | None = None
+    is_title_fight: bool = False
+    card_segment: str | None = None
+
+
 class FighterOpponent(BaseModel):
     fighter_id: str
     name: str
@@ -114,6 +130,41 @@ class FighterOpponent(BaseModel):
     nationality: str | None = None
     fights: int = 0  # How many times they fought
     outcomes: list[str] = []  # ["WIN", "LOSS"]
+
+
+# ── Compare (FTR-1905/1906/1907) ─────────────────────────────────────────────
+
+class CompareBoutEntry(BaseModel):
+    """One head-to-head bout between the two compared fighters."""
+
+    competition_id: str
+    event_id: str
+    event_name: str | None = None
+    event_date: datetime | None = None
+    weight_class: str | None = None
+    is_title_fight: bool = False
+    method: str | None = None
+    round: int | None = None
+    result_a: str | None = None
+    result_b: str | None = None
+
+
+class CommonOpponentEntry(BaseModel):
+    """A fighter who faced both compared fighters, with per-side outcomes."""
+
+    id: str
+    name: str
+    headshot_url: str | None = None
+    record: str | None = None
+    vs_a: list[str] = []  # chronological outcomes vs fighter a
+    vs_b: list[str] = []  # chronological outcomes vs fighter b
+
+
+class CompareResponse(BaseModel):
+    a: FighterListItem
+    b: FighterListItem
+    head_to_head: list[CompareBoutEntry] = []
+    common_opponents: list[CommonOpponentEntry] = []
 
 
 # ── Media ───────────────────────────────────────────────────────────────────

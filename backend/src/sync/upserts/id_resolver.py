@@ -10,7 +10,6 @@ This is the key to idempotent upsert: we always look up by external_id first.
 """
 
 import logging
-from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -43,8 +42,8 @@ class IdResolver:
 
     def __init__(self, db: AsyncSession) -> None:
         self._db = db
-        self._cache: dict[tuple[str, str, str], UUID | None] = {}
-        # Cache key: (provider, external_id, entity_type) → internal UUID or None
+        self._cache: dict[tuple[str, str, str], str | None] = {}
+        # Cache key: (provider, external_id, entity_type) → internal UUID string or None
 
     # ── Single ID resolution ───────────────────────────────────────────────
 
@@ -53,8 +52,8 @@ class IdResolver:
         provider: str,
         external_id: str,
         entity_type: str,
-    ) -> UUID | None:
-        """Resolve a single external ID to an internal UUID.
+    ) -> str | None:
+        """Resolve a single external ID to an internal entity UUID (string).
 
         Returns None if no mapping exists (entity needs to be created).
         """
@@ -72,7 +71,7 @@ class IdResolver:
                 )
             )
             row = result.scalar_one_or_none()
-            entity_uuid = UUID(str(row)) if row else None
+            entity_uuid = str(row) if row else None
             self._cache[cache_key] = entity_uuid
             return entity_uuid
         except Exception as e:
@@ -86,7 +85,7 @@ class IdResolver:
         provider: str,
         entity_type: str,
         external_ids: list[str],
-    ) -> dict[str, UUID]:
+    ) -> dict[str, str]:
         """Resolve many external IDs in a single query.
 
         Args:
@@ -95,9 +94,10 @@ class IdResolver:
             external_ids: List of provider-specific IDs.
 
         Returns:
-            dict mapping external_id → internal UUID. Missing IDs are not included.
+            dict mapping external_id → internal entity UUID (string). Missing
+            IDs are not included.
         """
-        result_map: dict[str, UUID] = {}
+        result_map: dict[str, str] = {}
         uncached: list[str] = []
 
         # Check cache first
@@ -124,7 +124,7 @@ class IdResolver:
             )
             for row in result:
                 eid = str(row.external_id)
-                uuid_val = UUID(str(row.entity_id))
+                uuid_val = str(row.entity_id)
                 result_map[eid] = uuid_val
                 self._cache[(provider, eid, entity_type)] = uuid_val
 
@@ -145,7 +145,7 @@ class IdResolver:
         provider: str,
         external_id: str,
         entity_type: str,
-        entity_uuid: UUID,
+        entity_uuid: str,
     ) -> None:
         """Create an external_id mapping for a newly created entity."""
         try:

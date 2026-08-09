@@ -28,9 +28,13 @@ def parse_promotion(data: dict[str, Any]) -> PromotionDTO:
     Returns:
         PromotionDTO.
     """
-    external_id = str(data.get("id", ""))
     name = data.get("name", "") or data.get("displayName", "")
     slug = data.get("slug", "") or name.lower().replace(" ", "-")
+
+    # Canonical external id is the league SLUG: every downstream reference
+    # (event league $ref, athletes/events/rankings endpoints, fetch_promotion
+    # URL) keys on the slug ("ufc"), never the numeric league id.
+    external_id = slug or str(data.get("id", ""))
 
     country = None
     address = data.get("address", {})

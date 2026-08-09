@@ -13,11 +13,12 @@ change detection. No handwritten _changed_fields needed for standard fields.
 import logging
 from abc import ABC, abstractmethod
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from src.db.models import WeightClass
 from src.sync.upsert import UpsertResult
 from src.sync.upserts.id_resolver import IdResolver
 
@@ -41,6 +42,7 @@ class BaseUpsert(ABC):
 
     def __init__(self, resolver: IdResolver) -> None:
         self._resolver = resolver
+        self._wc_cache: dict[str, str] = {}
 
     # ── Public API ──────────────────────────────────────────────────────────
 
@@ -68,7 +70,7 @@ class BaseUpsert(ABC):
 
         # 2. Split
         to_insert: list[tuple[str, Any]] = []
-        to_update: list[tuple[UUID, Any]] = []
+        to_update: list[tuple[str, str, Any]] = []
         for dto in dtos:
             eid = self._extract_external_id(dto)
             if not eid:
@@ -77,7 +79,7 @@ class BaseUpsert(ABC):
             if euuid is None:
                 to_insert.append((eid, dto))
             else:
-                to_update.append((euuid, dto))
+                to_update.append((eid, euuid, dto))
 
         result = UpsertResult()
 
@@ -86,9 +88,9 @@ class BaseUpsert(ABC):
             result += await self._bulk_insert(to_insert)
 
         # 4. Per-row update
-        for euuid, dto in to_update:
+        for eid, euuid, dto in to_update:
             try:
-                changed, uid = await self._update_one(euuid, dto)
+                changed, uid = await self._update_one(euuid, dto, eid)
                 if changed:
                     result.updated += 1
                     result.updated_ids.append(uid)
@@ -116,8 +118,15 @@ class BaseUpsert(ABC):
         eid_to_model: dict[str, Any] = {}
 
         for eid, dto in to_insert:
-            model = self._to_model(dto)
-            model.id = uuid4()
+            try:
+                model = self._prepare_new(self._to_model(dto), eid)
+                await self._enrich_model(model, dto)
+            except Exception as e:
+                logger.error(f"Insert skipped {self.entity_type}/{eid}: {e}")
+                result.errors += 1
+                result.error_details.append(str(e))
+                continue
+            model.id = str(uuid4())
             self._resolver._db.add(model)
             eid_to_model[eid] = model
 
@@ -157,8 +166,9 @@ class BaseUpsert(ABC):
         IntegrityError → re-resolve (other worker inserted) → update.
         """
         try:
-            model = self._to_model(dto)
-            model.id = uuid4()
+            model = self._prepare_new(self._to_model(dto), external_id)
+            await self._enrich_model(model, dto)
+            model.id = str(uuid4())
             self._resolver._db.add(model)
             await self._resolver.register(
                 self.provider, external_id, self.entity_type, model.id
@@ -167,6 +177,9 @@ class BaseUpsert(ABC):
             return UpsertResult(inserted=1, inserted_ids=[model.id])
         except IntegrityError:
             await self._resolver._db.rollback()
+            self._resolver._cache.pop(
+                (self.provider, external_id, self.entity_type), None
+            )
             logger.info(
                 f"Race resolved: {self.entity_type}/{external_id} "
                 f"inserted concurrently — updating"
@@ -179,7 +192,7 @@ class BaseUpsert(ABC):
                     f"Re-resolve failed after IntegrityError: "
                     f"{self.entity_type}/{external_id}"
                 )
-            changed, uid = await self._update_one(euuid, dto)
+            changed, uid = await self._update_one(euuid, dto, external_id)
             return UpsertResult(
                 updated=1 if changed else 0,
                 skipped=0 if changed else 1,
@@ -189,12 +202,15 @@ class BaseUpsert(ABC):
 
     # ── Update ─────────────────────────────────────────────────────────────
 
-    async def _update_one(self, euuid: UUID, dto: Any) -> tuple[bool, UUID]:
+    async def _update_one(
+        self, euuid: str, dto: Any, external_id: str
+    ) -> tuple[bool, str]:
         """Update entity — only if fields changed. Returns (changed, uuid)."""
         existing = await self._load_existing(euuid)
         if existing is None:
-            model = self._to_model(dto)
-            model.id = euuid
+            model = self._prepare_new(self._to_model(dto), external_id)
+            await self._enrich_model(model, dto)
+            model.id = str(euuid)
             self._resolver._db.add(model)
             return True, euuid
 
@@ -208,7 +224,21 @@ class BaseUpsert(ABC):
 
     # ── Helpers ─────────────────────────────────────────────────────────────
 
-    async def _load_existing(self, euuid: UUID) -> Any | None:
+    def _prepare_new(self, model: Any, external_id: str) -> Any:
+        """Set insert-time identity on a new model.
+
+        Entity models carry NOT NULL provider/external_id columns, but DTOs only
+        carry the external ID and _to_model implementations don't fill them.
+        Populate both from the upsert's provider + the extracted external ID,
+        without clobbering values a subclass already set.
+        """
+        if getattr(model, "external_id", None) is None:
+            model.external_id = external_id
+        if getattr(model, "provider", None) is None:
+            model.provider = self.provider
+        return model
+
+    async def _load_existing(self, euuid: str) -> Any | None:
         result: Any = await self._resolver._db.execute(
             select(self._model_class).where(getattr(self._model_class, "id") == euuid)  # noqa: B009
         )
@@ -235,6 +265,63 @@ class BaseUpsert(ABC):
         self._apply_special_fields(model, dto, fields)
 
     # ── Override points ─────────────────────────────────────────────────────
+
+    async def _ensure_weight_class(
+        self, external_id: str, name: str
+    ) -> str | None:
+        """Resolve a weight class external id, creating the row when missing.
+
+        Weight classes arrive as INLINE data on fighters and competitions
+        (e.g. {id: 970, text: "Bantamweight"}), so the weight_class sync job
+        has nothing to fetch. This helper lazily materializes the row on
+        first use and registers it in the resolver so later rows in the same
+        batch resolve without further lookups.
+        """
+        if not external_id or not name:
+            return None
+
+        uuid_val = await self._resolver.resolve(
+            self.provider, external_id, "weight_class"
+        )
+        if uuid_val:
+            return uuid_val
+        if name in self._wc_cache:
+            return self._wc_cache[name]
+
+        existing = await self._resolver._db.execute(
+            select(WeightClass).where(
+                WeightClass.provider == self.provider,
+                WeightClass.name == name,
+            )
+        )
+        wc = existing.scalar_one_or_none()
+        if wc is None:
+            wc = WeightClass(
+                provider=self.provider,
+                external_id=external_id,
+                name=name,
+            )
+            wc.id = str(uuid4())
+            self._resolver._db.add(wc)
+            wc_uuid = str(wc.id)
+        else:
+            wc_uuid = str(wc.id)
+
+        await self._resolver.register(
+            self.provider, external_id, "weight_class", wc_uuid
+        )
+        self._wc_cache[name] = wc_uuid
+        return wc_uuid
+
+    async def _enrich_model(self, model: Any, dto: Any) -> None:
+        """Resolve FK/derived fields on a new model before insert.
+
+        Runs after _to_model on every insert path (bulk, race-retry, and the
+        missing-existing update branch). Default: no-op. Subclasses override to
+        resolve external references via the IdResolver (e.g. an event DTO's
+        promotion_external_id → promotions.id). Raise to skip the row (counted
+        as an error) or to fail the batch.
+        """
 
     def _special_fields(self, existing: Any, dto: Any) -> set[str]:
         """Fields needing custom comparison (e.g. derived values)."""

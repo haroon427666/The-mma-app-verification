@@ -3,7 +3,8 @@ Provider Registry.
 
 Maps promotion slugs (e.g. "ufc", "bellator-mma") to provider instances.
 The sync engine asks the registry "who handles UFC?" and gets the ESPN provider.
-When ONE Championship's provider is built, it registers itself for "one-championship".
+ONE Championship's ESPN league slug is "ofc" (research-verified) — NOT
+"one-championship".
 
 No service or sync code changes when a new provider is added.
 """

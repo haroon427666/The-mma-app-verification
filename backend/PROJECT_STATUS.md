@@ -1,6 +1,7 @@
 # PROJECT_STATUS.md
 
 **Last updated:** 2026-08-05 (Phase 7 item 5 contract audit complete — 100 routes, 0 phantom mobile paths; 3 new event sub-routes; see `SESSION_STATE.md`)
+**Updated again:** 2026-08-06 (milestone "Make the Data Flow + Contract Integrity" T01–T18 COMPLETE — see the appended section below; earlier entries preserved)
 **Repository:** MMA Backend — `backend/`
 **Stack:** Python 3.12 · FastAPI · SQLAlchemy 2 (async) · SQLite (dev) / PostgreSQL (prod) · Alembic · Pydantic v2 · pytest · ruff · mypy
 
@@ -201,3 +202,60 @@ Auth: JWT access/refresh tokens, Argon2 hashing, role hierarchy (admin > premium
 ## Environment
 
 `backend/.env.example` — DATABASE_URL, JWT secrets, provider endpoints/keys, scheduler interval, Redis URL (Phase 1), feature flags. Run tests with SQLite defaults; no external services required.
+
+---
+
+## Milestone T01–T18 — "Make the Data Flow + Contract Integrity" (2026-08-06, COMPLETE)
+
+Appended at milestone close; the sections above (2026-08-04/05) remain historical. Full detail
+in the root docs: `PROJECT_STATE.md`, `SESSION_STATE.md`, `EXECUTION_PLAN.md`, `PLAN_HISTORY.md`
+(08-05 + 08-06 freeze entries). This file covers the backend only; mobile T16/T17 work is
+recorded in the root docs.
+
+### What changed in the backend this milestone
+
+1. **Sync write path fixed + proven live (T01–T05):** `BaseUpsert` fills NOT NULL
+   `provider`/`external_id`; ESPN pagination re-driven by the probe-proven `limit`+`page`
+   contract; FK enrichment for event/competition/fighter; engine per-job commits with
+   `sync_runs`/`sync_jobs`; promotion external_id = slug `"ufc"`; ranking job iterates
+   promotions; broadcast job fetches events first; ranking upsert sets `provider`.
+   **Live acceptance:** 9/9 jobs COMPLETED, promotions 48, fighters 1829 (full pool),
+   rankings 110 rows, sync_runs 1.
+2. **Degradation (T06–T07):** `/api/scheduler/status` → 503 without Redis; `RedisLock`
+   never raises when Redis is unreachable.
+3. **Real user data (T08–T10):** favorites DB-backed; preferences persisted
+   (`UserPreference`); duplicate notifications router stubs deleted (fixed `/v1/notifications`
+   → `[]` and `/read-all` no-op shadowing).
+4. **Contract integrity (T11–T15):** pagination shape `{items,total,page,limit,pages}` pinned
+   (7 contract tests); `require_uuid()` 404 guards on all 18 UUID `{id}` routes (15 tests);
+   **`/v1/weight-classes` + `/{id}`** (FTR-701/702 — table was empty; `_ensure_weight_class()`
+   now materializes divisions from inline ESPN data: 14 divisions, 1828 fighters linked);
+   **`/v1/fighters/{id}/next-fight`** (FTR-107, `NextFight | null`, 15-min TTL);
+   **`/v1/compare?a=&b=`** (FTR-1905/1906/1907 — summaries + head-to-head + common opponents).
+5. **Mobile contract alignment (T16–T17, mobile):** base URL un-faked; TS models re-derived
+   snake_case from backend schemas (see root docs).
+
+### Current quality gates (final, 2026-08-06)
+
+| Gate | Command (from `backend/`) | Result |
+|---|---|---|
+| Tests | `python -m pytest -q` | ✅ **419 passed, 1 skipped** (env-gated live sync test) |
+| Lint | `python -m ruff check src` | ✅ clean |
+| Types | `python -m mypy src` | ✅ no issues in 186 source files |
+| Migrations | `alembic upgrade head` on live Postgres | ✅ applied 001→005, 27 tables (2026-08-05) |
+| Live sync acceptance | `MMA_LIVE_SYNC=1` (env-gated test) | ✅ PASSED ~4 min (T05); re-run 1831 fighters, 14 weight classes (T13) |
+| Mobile (sibling) | `npx tsc --noEmit` + `npx expo export --platform web` | ✅ 0 errors; bundled OK |
+
+Historical counts above (339 → 360 → 374 → 404 → 411 → 419) document the growth; the current
+baseline is **419 passed, 1 skipped**.
+
+### Live environment notes (still valid)
+
+PostgreSQL 18 service `postgresql-x64-18` running locally: role/db `mma`/`mma` (superuser
+`postgres:REDACTED` — never commit). URL `postgresql+asyncpg://mma:mma@localhost:5432/mma`.
+Scheduler/live tests require `MMA_LIVE_SYNC=1`; normal pytest stays offline (SQLite).
+
+### Repository state at close
+
+HEAD `d3ecc68`; the entire T01–T18 working tree is **uncommitted** (~83 files). Commit only on
+user request. Next work: Backlog items in `EXECUTION_PLAN.md` §Backlog.

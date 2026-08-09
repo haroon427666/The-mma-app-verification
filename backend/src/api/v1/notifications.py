@@ -5,6 +5,7 @@ from typing import Any, cast
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.api.utils import require_uuid
 from src.auth.dependencies import get_current_user
 from src.auth.jwt import TokenPayload
 from src.db.session import get_session
@@ -48,6 +49,7 @@ async def mark_read(
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, str]:
     """Mark a notification as read."""
+    require_uuid(notif_id)
     from sqlalchemy import update as sa_update
 
     from src.db.models.auth import Notification
@@ -85,6 +87,7 @@ async def delete_notification(
     session: AsyncSession = Depends(get_session),
 ) -> None:
     """Delete a notification."""
+    require_uuid(notif_id)
     from sqlalchemy import delete as sa_delete
 
     from src.db.models.auth import Notification

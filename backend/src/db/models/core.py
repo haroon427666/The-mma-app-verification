@@ -125,7 +125,11 @@ class Statistic(Base, TimestampMixin):
     )
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=new_uuid)
-    competitor_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("competitors.id"))
+    # NULL for career stats (fighter-scoped, /athletes/{id}/statistics);
+    # set for per-fight stats (competitors/{id}/statistics).
+    competitor_id: Mapped[str | None] = mapped_column(
+        UUID(as_uuid=False), ForeignKey("competitors.id"), nullable=True
+    )
     fighter_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("fighters.id"))
 
     category: Mapped[str] = mapped_column(String(30), nullable=False)

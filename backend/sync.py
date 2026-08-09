@@ -120,12 +120,13 @@ async def close_providers(providers: dict):
 
 
 def build_engine():
-    """Build the real SyncEngine with all 9 ESPN jobs."""
+    """Build the real SyncEngine with all ESPN jobs."""
     from src.providers.espn.jobs import (
         ESPN_BroadcastSyncJob,
         ESPN_CompetitionSyncJob,
         ESPN_EventSyncJob,
         ESPN_FighterSyncJob,
+        ESPN_HistoricalEventSyncJob,
         ESPN_PromotionSyncJob,
         ESPN_RankingSyncJob,
         ESPN_StatisticSyncJob,
@@ -146,6 +147,7 @@ def build_engine():
         EntityType.BROADCAST: ESPN_BroadcastSyncJob(),
         EntityType.STATISTIC: ESPN_StatisticSyncJob(),
         EntityType.RANKING: ESPN_RankingSyncJob(),
+        EntityType.HISTORICAL_EVENT: ESPN_HistoricalEventSyncJob(),
     }
     return SyncEngine(jobs=jobs, statestore=MemorySyncStateStore())
 

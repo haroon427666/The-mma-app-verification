@@ -6,7 +6,6 @@ Carries both counts AND IDs for debugging and audit trails.
 
 from dataclasses import dataclass, field
 from typing import Any
-from uuid import UUID
 
 
 @dataclass
@@ -23,14 +22,14 @@ class UpsertResult:
     errors: int = 0
 
     # IDs for debugging / audit trails
-    inserted_ids: list[UUID] = field(default_factory=list)
-    """UUIDs of entities that were created in this batch."""
+    inserted_ids: list[str] = field(default_factory=list)
+    """UUID strings of entities that were created in this batch."""
 
-    updated_ids: list[UUID] = field(default_factory=list)
-    """UUIDs of entities that had changes applied."""
+    updated_ids: list[str] = field(default_factory=list)
+    """UUID strings of entities that had changes applied."""
 
-    skipped_ids: list[UUID] = field(default_factory=list)
-    """UUIDs of entities that were unchanged (no fields differed)."""
+    skipped_ids: list[str] = field(default_factory=list)
+    """UUID strings of entities that were unchanged (no fields differed)."""
 
     error_details: list[str] = field(default_factory=list)
     """Error messages for failed operations."""

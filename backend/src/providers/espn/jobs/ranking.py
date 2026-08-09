@@ -1,6 +1,6 @@
 """ESPN Ranking sync job."""
 
-from typing import Any, cast
+from typing import Any
 
 from src.sync.job import SyncJob
 from src.sync.types import EntityType
@@ -15,7 +15,13 @@ class ESPN_RankingSyncJob(SyncJob):
 
     async def _fetch(self, ctx: Any, state: Any) -> list[Any]:
         provider = ctx.provider
-        return cast(list[Any], await provider.fetch_rankings())
+        # fetch_rankings is per-promotion (league slug) — fetch for every
+        # synced promotion so UFC/PFL/Bellator rankings all land.
+        promotions = await provider.fetch_promotions()
+        rankings: list[Any] = []
+        for promo in promotions:
+            rankings.extend(await provider.fetch_rankings(promo.external_id))
+        return rankings
 
     async def _upsert(self, ctx: Any, dtos: list[Any]) -> dict[str, int]:
         from src.sync.upserts.id_resolver import IdResolver

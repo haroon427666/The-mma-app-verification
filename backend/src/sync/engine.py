@@ -118,6 +118,12 @@ class SyncEngine:
         )
         run_id = ctx.run_id
 
+        # Record run start (durable row + commit) when a DB session is provided
+        if db_session is not None:
+            try:
+                await self._record_run_start(db_session, run_id, plan, provider, mode)
+            except Exception as e:  # pragma: no cover - defensive
+                logger.warning(f"Failed to record run start: {run_id} — {e}")
 
         ctx.progress = ProgressTracker(total_jobs=plan.job_count)
         ctx.metrics = SyncMetrics()
@@ -137,6 +143,7 @@ class SyncEngine:
 
         job_results: list[JobResult] = []
         overall_status = SyncStatus.COMPLETED
+        run_error: str | None = None
 
         try:
             for job in ordered_jobs:
@@ -155,11 +162,22 @@ class SyncEngine:
                 )
                 job_results.append(job_result)
 
+                # Persist job record + commit per job (partial-run durability)
+                if db_session is not None:
+                    try:
+                        await self._record_job(db_session, run_id, job, job_result)
+                    except Exception as e:  # pragma: no cover - defensive
+                        logger.warning(
+                            f"Failed to record job result: "
+                            f"{job.entity_type.value} — {e}"
+                        )
+
                 # Persist state after each job
                 await self._save_state(state)
 
                 if job_result.status == JobStatus.FAILED and job.critical:
                     overall_status = SyncStatus.FAILED
+                    run_error = job_result.error_msg
                     logger.error(
                         f"Critical job failed: {job.entity_type.value}. "
                         f"Aborting plan '{plan.name}'."
@@ -177,6 +195,7 @@ class SyncEngine:
 
         except Exception as e:
             overall_status = SyncStatus.CANCELLED
+            run_error = str(e)
             logger.warning(f"Sync run cancelled: {run_id} — {e}")
 
         # Finalize
@@ -191,6 +210,13 @@ class SyncEngine:
             completed_at=completed_at,
             duration_ms=abs(duration_ms),
         )
+
+        # Persist run outcome (guarded: record failures must not fail the run)
+        if db_session is not None:
+            try:
+                await self._record_run_end(db_session, run_id, result, overall_status, run_error)
+            except Exception as e:  # pragma: no cover - defensive
+                logger.warning(f"Failed to record run end: {run_id} — {e}")
 
         # Fire after_sync event
         await self._events.fire_after_sync(self._event_ctx(ctx), result)
@@ -207,6 +233,88 @@ class SyncEngine:
         )
 
         return result
+
+    # ── Run / job records (sync_runs, sync_jobs) ───────────────────────────
+
+    async def _record_run_start(
+        self,
+        session: Any,
+        run_id: str,
+        plan: SyncPlan,
+        provider: BaseDataProvider,
+        mode: SyncMode | None,
+    ) -> None:
+        """Insert a durable RUNNING row for this run and commit immediately.
+
+        The immediate commit guarantees the run is observable even if the
+        process dies mid-sync (partial-run durability).
+        """
+        from src.db.models.support import SyncRun
+
+        record = SyncRun(
+            id=run_id,
+            status="RUNNING",
+            mode=mode.value if mode else "auto",
+            provider=provider.provider_slug,
+        )
+        session.add(record)
+        await session.commit()
+
+    async def _record_job(
+        self,
+        session: Any,
+        run_id: str,
+        job: SyncJob,
+        job_result: JobResult,
+    ) -> None:
+        """Insert the per-entity job row and commit per job.
+
+        Per-job commits mean completed jobs survive later failures — the
+        sync_runs table reflects what actually persisted.
+        """
+        from src.db.models.support import SyncJob as SyncJobRecord
+
+        record = SyncJobRecord(
+            sync_run_id=run_id,
+            entity_type=job.entity_type.value,
+            status=job_result.status.value,
+            records_inserted=job_result.records_inserted,
+            records_updated=job_result.records_updated,
+            records_skipped=job_result.records_skipped,
+            records_errors=job_result.records_errors,
+            api_calls=job_result.api_calls,
+            duration_ms=job_result.duration_ms,
+            error=job_result.error_msg,
+        )
+        session.add(record)
+        await session.commit()
+
+    async def _record_run_end(
+        self,
+        session: Any,
+        run_id: str,
+        result: SyncResult,
+        overall_status: SyncStatus,
+        error: str | None,
+    ) -> None:
+        """Update the run row with final status, rollup metrics, and commit."""
+        from datetime import UTC, datetime
+
+        from src.db.models.support import SyncRun
+
+        record = await session.get(SyncRun, run_id)
+        if record is None:
+            return
+        record.status = overall_status.value
+        record.completed_at = datetime.now(UTC)
+        record.total_inserted = result.total_inserted
+        record.total_updated = result.total_updated
+        record.total_skipped = result.total_skipped
+        record.total_errors = result.total_errors
+        record.api_calls = result.total_api_calls
+        record.duration_ms = result.duration_ms
+        record.error = error
+        await session.commit()
 
     # ── Dependency resolution ──────────────────────────────────────────────
 

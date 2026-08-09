@@ -96,6 +96,19 @@ DEPENDENCY_MAP: dict[EntityType, list[EntityType]] = {
     #   FK: rankings.fighter_id → fighters.id (NOT NULL)
     #   FK: rankings.weight_class_id → weight_classes.id (NULLABLE)
     #   Promotions, fighters, and weight classes MUST exist.
+
+    # ── Historical Event (winningFight discovery chain) ────────────────────
+    EntityType.HISTORICAL_EVENT: [
+        EntityType.RANKING,
+        EntityType.PROMOTION,
+        EntityType.FIGHTER,
+        EntityType.VENUE,
+        EntityType.WEIGHT_CLASS,
+    ],
+    #   Discovery source: rankings → ranks[].winningFight → events/{id}.
+    #   Upserts events (FK: promotion/venue) + competitions (FK: event, and
+    #   nested competitors reference fighters) — so rankings, promotions,
+    #   fighters, venues, and weight classes must exist first.
 }
 
 

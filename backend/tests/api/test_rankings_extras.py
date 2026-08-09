@@ -305,7 +305,7 @@ class TestSimilarFighters:
         session.execute.side_effect = [target_res, cand_res]
         uow._session = session
 
-        resp = asyncio.run(get_similar_fighters(_request(), "f-1", uow=uow))
+        resp = asyncio.run(get_similar_fighters(_request(), "11111111-1111-4111-8111-111111111111", uow=uow))
         body = json.loads(resp.body)
         assert body["fighter"]["full_name"] == "Target Guy"
         assert len(body["similar"]) == 2

@@ -44,8 +44,10 @@ def parse_competition(
     # Weight class — INLINE object {id, text:"Lightweight", abbreviation:"Lightweight"}
     weight_class_data = comp_data.get("type", {}) or {}
     weight_class_external_id = None
+    weight_class_name = None
     if isinstance(weight_class_data, dict):
         weight_class_external_id = str(weight_class_data.get("id", ""))
+        weight_class_name = weight_class_data.get("text") or weight_class_data.get("abbreviation")
 
     # Title fight detection: types[] contains entries like {text:"UFC Bantamweight Title"}
     is_title_fight = False
@@ -81,6 +83,7 @@ def parse_competition(
         is_main_event=(match_number == 1),  # Main event is match 1
         is_title_fight=is_title_fight,
         weight_class_external_id=weight_class_external_id,
+        weight_class_name=weight_class_name,
         # Result fields — filled by parse_competition_status()
         result_method=None,
         result_detail=None,

@@ -89,6 +89,7 @@ class RankingUpsert:
                             )
 
                         ranking = Ranking(
+                            provider=self.provider,
                             promotion_id=promo_uuid,
                             fighter_id=fighter_uuid,
                             weight_class_id=wclass_uuid,

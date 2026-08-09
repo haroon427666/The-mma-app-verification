@@ -8,6 +8,7 @@ from sqlalchemy import select as sa_select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.cache import cache_key, cached_json_response
+from src.api.utils import require_uuid
 from src.db.models.event import Competition, Competitor
 from src.db.models.fighter import Fighter
 from src.db.unit_of_work import UnitOfWork
@@ -148,6 +149,7 @@ async def recent_fights(limit: int = Query(50, le=100), uow: UnitOfWork = Depend
             responses={404: {"model": ErrorResponse}})
 async def get_fight(request: Request, fight_id: str, uow: UnitOfWork = Depends(get_uow)) -> Response:
     """Fight detail — both competitors, result, round-by-round stats."""
+    require_uuid(fight_id)
     session = cast(AsyncSession, uow._session)
 
     async def loader() -> dict:

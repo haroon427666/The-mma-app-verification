@@ -13,7 +13,7 @@ Key architectural decisions:
 """
 
 import logging
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any
 
 from src.providers.dto import (
     BroadcastDTO,
@@ -27,18 +27,21 @@ from src.providers.dto import (
     WeightClassDTO,
 )
 from src.providers.espn.client import ESPNClient
-from src.providers.espn.config import ENDPOINTS, ESPNClientConfig
+from src.providers.espn.config import ENDPOINTS, ESPNClientConfig, sync_league_slugs
 from src.providers.espn.parsers.broadcast import parse_broadcast_list
 from src.providers.espn.parsers.competition import (
     parse_competition,
     parse_competition_status,
 )
 from src.providers.espn.parsers.event import extract_competitions_from_event, parse_event
-from src.providers.espn.parsers.fighter import parse_fighter, parse_fighter_records
+from src.providers.espn.parsers.fighter import parse_fighter
 from src.providers.espn.parsers.promotion import parse_promotion
 from src.providers.espn.parsers.ranking import parse_ranking_category
-from src.providers.espn.parsers.statistics import parse_statistics
-from src.providers.espn.reference import RefResolver
+from src.providers.espn.reference import RefResolver, extract_id_from_ref
+
+if TYPE_CHECKING:
+    from src.providers.espn.parsers.records import FighterRecord
+    from src.providers.espn.parsers.statistics import FighterStatistics
 
 logger = logging.getLogger(__name__)
 
@@ -108,21 +111,135 @@ class ESPNProvider:
 
     # ── Fighters ───────────────────────────────────────────────────────────
 
+    @staticmethod
+    def _item_id(item: dict[str, Any]) -> str | None:
+        """Extract an athlete ID from a list item (either $ref or inline id)."""
+        if not isinstance(item, dict):
+            return None
+        if "$ref" in item:
+            return extract_id_from_ref(str(item["$ref"]))
+        raw_id = item.get("id")
+        return str(raw_id) if raw_id is not None else None
+
+    async def fetch_athlete_ids(
+        self,
+        league_slugs: list[str] | None = None,
+        include_global: bool = True,
+        limit: int = 1000,
+    ) -> set[str]:
+        """Discover the deduplicated ESPN athlete ID universe.
+
+        Sources (research P0 discovery):
+        1. Global flat listing: /athletes (~38,006 IDs) — never alone;
+           hidden profiles are only reachable via other refs.
+        2. League rosters: /leagues/{slug}/athletes for the configured set
+           (default active majors; ESPN_SYNC_LEAGUES overrides).
+
+        Returns a deduplicated set of ESPN athlete IDs (no profile resolution —
+        this is the cheap enumeration pass; profiles are resolved separately
+        with bounded concurrency). Resumable via SyncState checkpoint.
+        """
+        await self._ensure_started()
+
+        slugs = league_slugs or list(sync_league_slugs())
+        ids: set[str] = set()
+
+        # 1. Global flat listing
+        if include_global:
+            try:
+                async for page in self._client.paginate(
+                    ENDPOINTS["global_athletes"],
+                    params={"limit": limit},
+                ):
+                    for item in page.get("items", []):
+                        item_id = self._item_id(item)
+                        if item_id:
+                            ids.add(item_id)
+            except Exception as e:
+                logger.error(f"Global athlete listing failed: {e}")
+
+        # 2. League rosters
+        for slug in slugs:
+            try:
+                async for page in self._client.paginate(
+                    ENDPOINTS["athletes"].format(league_slug=slug),
+                    params={"limit": limit},
+                ):
+                    for item in page.get("items", []):
+                        item_id = self._item_id(item)
+                        if item_id:
+                            ids.add(item_id)
+            except Exception as e:
+                logger.warning(f"League roster failed ({slug}): {e}")
+
+        logger.info(
+            f"Athlete discovery: {len(ids)} unique IDs "
+            f"(global={include_global}, leagues={slugs})"
+        )
+        return ids
+
     async def fetch_fighters(
         self,
         promotion_external_id: str | None = None,
         limit: int = 100,
         offset: int = 0,
     ) -> list[FighterDTO]:
+        """League-scoped fighter fetch (backward-compatible single-league path)."""
         await self._ensure_started()
 
         league_slug = promotion_external_id or "ufc"
         path = ENDPOINTS["athletes"].format(league_slug=league_slug)
-        params: dict[str, Any] = {"limit": limit, "offset": offset}
+        params: dict[str, Any] = {"limit": limit, "page": offset // limit + 1}
 
         resolved = await self._resolve_paginated(path, params=params)
         fighters = [parse_fighter(item) for item in resolved]
         logger.info(f"Fetched {len(fighters)} fighters from ESPN ({league_slug})")
+        return fighters
+
+    async def fetch_fighters_by_ids(
+        self,
+        athlete_ids: list[str],
+        max_concurrency: int | None = None,
+    ) -> list[FighterDTO]:
+        """Resolve athlete profiles by ESPN ID with bounded concurrency.
+
+        The discovery ID set may include IDs not present on any listing
+        (hidden profiles reachable only via ranking/event refs). Each ID is
+        fetched exactly once (client response cache + in-flight dedup handle
+        duplicates and parallel fan-out).
+        """
+        import asyncio
+
+        await self._ensure_started()
+
+        sem = asyncio.Semaphore(
+            max_concurrency or self._config.max_concurrency
+        )
+
+        async def fetch_one(athlete_id: str) -> FighterDTO | None:
+            async with sem:
+                try:
+                    data = await self._client.get_json(
+                        ENDPOINTS["athlete"].format(athlete_id=athlete_id)
+                    )
+                    return parse_fighter(data)
+                except Exception as e:
+                    logger.warning(f"Athlete profile failed ({athlete_id}): {e}")
+                    return None
+
+        # Bound coroutine creation on large censuses (~38k IDs): gather in
+        # chunks so the full ID set is never materialized as tasks at once.
+        BATCH = 1000
+        fighters: list[FighterDTO] = []
+        for start in range(0, len(athlete_ids), BATCH):
+            chunk = athlete_ids[start : start + BATCH]
+            results = await asyncio.gather(*(fetch_one(i) for i in chunk))
+            fighters.extend(f for f in results if f is not None)
+
+        logger.info(
+            f"Resolved {len(fighters)}/{len(athlete_ids)} athlete profiles "
+            f"(concurrency={max_concurrency or self._config.max_concurrency})"
+        )
         return fighters
 
     async def fetch_fighter(self, external_id: str) -> FighterDTO | None:
@@ -137,29 +254,72 @@ class ESPNProvider:
             return None
 
     async def fetch_fighter_records(self, external_id: str) -> dict[str, int]:
-        """Fetch fighter W/L/D/NC record from /athletes/{id}/records."""
+        """Fetch fighter W/L/D/NC record from /athletes/{id}/records.
+
+        Backward-compatible wrapper returning the simple W/L/D/NC dict.
+        Prefer ``fetch_fighter_record`` for the full breakdown.
+        """
+        record = await self.fetch_fighter_record(external_id)
+        if record is None:
+            return {"wins": 0, "losses": 0, "draws": 0, "no_contests": 0}
+        return {
+            "wins": record.wins,
+            "losses": record.losses,
+            "draws": record.draws,
+            "no_contests": record.no_contests,
+        }
+
+    async def fetch_fighter_record(self, external_id: str) -> "FighterRecord | None":
+        """Fetch the full fighter record breakdown from /athletes/{id}/records.
+
+        Returns None when the endpoint is unavailable/empty — callers must NOT
+        reset stored records in that case (research GAP: records used to
+        persist as 0-0-0-0 because the flow was never invoked).
+        """
+        from src.providers.espn.parsers.records import parse_fighter_records as parse_full
+
         await self._ensure_started()
         try:
             data = await self._client.get_json(
                 ENDPOINTS["athlete_records"].format(athlete_id=external_id)
             )
-            return parse_fighter_records(data)
+            record = parse_full(data)
+            # A "real" record has a summary or counts; empty responses mean
+            # unavailable (e.g. non-MMA or content-dependent athletes).
+            if not record.record_summary and record.total_fights == 0:
+                logger.debug(f"Records empty for fighter {external_id} — skipping")
+                return None
+            return record
         except Exception as e:
-            logger.error(f"Failed to fetch records for fighter {external_id}: {e}")
-            return {"wins": 0, "losses": 0, "draws": 0, "no_contests": 0}
+            logger.warning(f"Failed to fetch records for fighter {external_id}: {e}")
+            return None
 
     async def fetch_fighter_statistics(
         self, fighter_external_id: str
-    ) -> list[StatisticDTO]:
+    ) -> "FighterStatistics | list[StatisticDTO]":
+        """Fetch career statistics from /athletes/{id}/statistics.
+
+        Returns the parsed FighterStatistics (use .raw_dtos for storage);
+        empty FighterStatistics when the endpoint is unavailable or the
+        athlete has no stats (content-dependent — never fabricate).
+        """
+        from src.providers.espn.parsers.statistics import (
+            parse_statistics as parse_stats,
+        )
+
         await self._ensure_started()
         try:
             data = await self._client.get_json(
                 ENDPOINTS["athlete_statistics"].format(athlete_id=fighter_external_id)
             )
-            return cast(list[StatisticDTO], parse_statistics(data, fighter_external_id))
+            return parse_stats(data, fighter_external_id)
         except Exception as e:
-            logger.error(f"Failed to fetch statistics for fighter {fighter_external_id}: {e}")
-            return []
+            logger.warning(
+                f"Failed to fetch statistics for fighter {fighter_external_id}: {e}"
+            )
+            from src.providers.espn.parsers.statistics import FighterStatistics
+
+            return FighterStatistics(fighter_external_id=fighter_external_id)
 
     # ── Weight Classes ─────────────────────────────────────────────────────
 
@@ -196,7 +356,7 @@ class ESPNProvider:
 
         league_slug = promotion_external_id or "ufc"
         path = ENDPOINTS["events"].format(league_slug=league_slug)
-        params: dict[str, Any] = {"limit": limit, "offset": offset}
+        params: dict[str, Any] = {"limit": limit, "page": offset // limit + 1}
 
         resolved = await self._resolve_paginated(path, params=params)
         events = [parse_event(item) for item in resolved]
@@ -368,6 +528,114 @@ class ESPNProvider:
         except Exception as e:
             logger.error(f"Failed to fetch rankings for {promotion_external_id}: {e}")
             return []
+
+    # ── Historical event discovery (winningFight hooks) ────────────────────
+
+    async def fetch_eventlog_hooks(
+        self, athlete_ids: list[str] | None = None
+    ) -> list[dict[str, Any]]:
+        """Fetch athlete eventlogs (bounded) — returns raw eventlog payloads.
+
+        Eventlog is CONTENT_DEPENDENT (P0): athletes without logged fights
+        return empty/unavailable payloads; those are skipped. The caller
+        (historical job) extracts event refs from each payload.
+
+        Bounded by ESPN_EVENTLOG_MAX_FIGHTERS (default 50) to keep the
+        request budget inside the research envelope.
+        """
+        import os
+
+        await self._ensure_started()
+
+        if athlete_ids is None:
+            # Caller must supply IDs; without a DB hook we default to none.
+            return []
+
+        try:
+            limit = int(os.environ.get("ESPN_EVENTLOG_MAX_FIGHTERS", "50") or 50)
+        except ValueError:
+            limit = 50
+        try:
+            max_pages = int(os.environ.get("ESPN_EVENTLOG_MAX_PAGES", "5") or 5)
+        except ValueError:
+            max_pages = 5
+
+        ids = list(athlete_ids)[:limit]
+        payloads: list[dict[str, Any]] = []
+
+        for athlete_id in ids:
+            try:
+                # Eventlog is page-paginated (pageSize 25). Veterans with
+                # long careers span multiple pages (live-verified: DJ has
+                # 30 fights → 2 pages) — fetch them all (bounded by cap).
+                merged: dict[str, Any] | None = None
+                page = 1
+                while page <= max_pages:
+                    data = await self._client.get_json(
+                        ENDPOINTS["athlete_eventlog"].format(athlete_id=athlete_id),
+                        params={"page": page, "limit": 25},
+                    )
+                    events = data.get("events", {}) or {}
+                    items = events.get("items", []) or []
+                    if merged is None:
+                        merged = data
+                    else:
+                        merged.setdefault("events", {}).setdefault("items", []).extend(items)
+                    if not items:
+                        break
+                    page_count = 0
+                    try:
+                        page_count = int(events.get("pageCount") or 0)
+                    except (TypeError, ValueError):
+                        pass
+                    if page_count and page >= page_count:
+                        break
+                    page += 1
+
+                if merged and ((merged.get("events", {}) or {}).get("items", []) or []):
+                    payloads.append(merged)
+            except Exception as e:
+                logger.warning(f"Eventlog failed for athlete {athlete_id}: {e}")
+
+        logger.info(
+            f"Eventlog hooks: {len(payloads)}/{len(ids)} athletes had logged fights"
+        )
+        return payloads
+
+    async def fetch_winning_fight_refs(
+        self, promotion_external_id: str
+    ) -> list[str]:
+        """Collect winningFight $refs from all ranking categories of a league.
+
+        Research: every rank entry carries a winningFight ref pointing at the
+        fighter's last competition (legacy 400/600-series event ids). This is
+        THE historical-event discovery hook — /leagues/{slug}/events is
+        upcoming-only and must never be used for history.
+        """
+        await self._ensure_started()
+        assert self._resolver is not None
+
+        from src.providers.espn.parsers.ranking import extract_winning_fight_refs
+
+        refs: list[str] = []
+        try:
+            path = ENDPOINTS["rankings"].format(league_slug=promotion_external_id)
+            categories_data = await self._client.get_json(path)
+            category_refs = categories_data.get("items", [])
+
+            resolved_categories = await self._resolver.resolve_all(category_refs)
+            for cat_data in resolved_categories:
+                refs.extend(extract_winning_fight_refs(cat_data))
+        except Exception as e:
+            logger.warning(
+                f"WinningFight refs failed for {promotion_external_id}: {e}"
+            )
+
+        unique = sorted(set(refs))
+        logger.info(
+            f"WinningFight hooks for {promotion_external_id}: {len(unique)}"
+        )
+        return unique
 
     # ── Health ─────────────────────────────────────────────────────────────
 

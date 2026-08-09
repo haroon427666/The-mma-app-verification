@@ -4,11 +4,14 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.api.utils import require_uuid
 from src.auth.dependencies import get_current_user
 from src.auth.jwt import TokenPayload
+from src.db.session import get_session
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +19,6 @@ user_router = APIRouter(prefix="/v1/me", tags=["user"])
 pref_router = APIRouter(prefix="/v1/me/preferences", tags=["preferences"])
 fav_router = APIRouter(prefix="/v1/me/favorites", tags=["favorites"])
 watch_router = APIRouter(prefix="/v1/me/watchlist", tags=["watchlist"])
-notif_router = APIRouter(prefix="/v1/notifications", tags=["notifications"])
 session_router = APIRouter(prefix="/v1/me/sessions", tags=["sessions"])
 
 
@@ -96,16 +98,6 @@ class SessionResponse(BaseModel):
     current: bool = False  # Is this the current session?
 
 
-class NotificationItem(BaseModel):
-    id: str
-    type: str
-    title: str
-    message: str | None = None
-    payload: dict[str, Any] | None = None
-    read: bool = False
-    created_at: datetime | None = None
-
-
 # ── Profile ───────────────────────────────────────────────────────────────────
 
 @user_router.get("", response_model=ProfileResponse)
@@ -138,55 +130,206 @@ async def delete_account(user: TokenPayload = Depends(get_current_user)) -> None
 
 # ── Preferences ────────────────────────────────────────────────────────────────
 
+def _preferences_response(prefs: Any) -> PreferencesResponse:
+    return PreferencesResponse(
+        theme=prefs.theme,
+        default_homepage=prefs.default_homepage,
+        default_sort=prefs.default_sort,
+        default_weight_classes=prefs.default_weight_classes or [],
+        default_promotions=prefs.default_promotions or [],
+        notify_upcoming_fight=prefs.notify_upcoming_fight,
+        notify_event_starting=prefs.notify_event_starting,
+        notify_ranking_changed=prefs.notify_ranking_changed,
+        notify_fight_cancelled=prefs.notify_fight_cancelled,
+        notify_new_main_event=prefs.notify_new_main_event,
+        notify_title_fight=prefs.notify_title_fight,
+    )
+
+
+async def _get_user_preferences(
+    user_id: str, session: AsyncSession
+) -> Any:
+    from sqlalchemy import select as sa_select
+
+    from src.db.models.auth import UserPreference
+
+    result = await session.execute(
+        sa_select(UserPreference).where(UserPreference.user_id == user_id)
+    )
+    return result.scalar_one_or_none()
+
+
 @pref_router.get("", response_model=PreferencesResponse)
-async def get_preferences(user: TokenPayload = Depends(get_current_user)) -> PreferencesResponse:
-    return PreferencesResponse()
+async def get_preferences(
+    user: TokenPayload = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> PreferencesResponse:
+    """DB-backed preferences; defaults when the user has no row yet."""
+    prefs = await _get_user_preferences(user.sub, session)
+    if prefs is None:
+        return PreferencesResponse()
+    return _preferences_response(prefs)
 
 
 @pref_router.patch("", response_model=PreferencesResponse)
 async def update_preferences(
     req: UpdatePreferencesRequest,
     user: TokenPayload = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
 ) -> PreferencesResponse:
-    # Production: merge partial update with existing preferences
-    return PreferencesResponse(**req.model_dump(exclude_unset=True))
+    """Merge a partial update into the user's preferences row (upsert)."""
+    from src.db.models.auth import UserPreference
+
+    prefs = await _get_user_preferences(user.sub, session)
+    if prefs is None:
+        prefs = UserPreference(user_id=user.sub)
+        session.add(prefs)
+    for field, value in req.model_dump(exclude_unset=True).items():
+        setattr(prefs, field, value)
+    await session.flush()
+    response = _preferences_response(prefs)
+    await session.commit()
+    return response
 
 
 # ── Favorites ──────────────────────────────────────────────────────────────────
 
+def _require_uuid(value: str) -> None:
+    """Reject non-UUID ids early (404, not a DB-level 500)."""
+    require_uuid(value)
+
+
 @fav_router.get("", response_model=FavoriteResponse)
-async def get_favorites(user: TokenPayload = Depends(get_current_user)) -> FavoriteResponse:
-    return FavoriteResponse()
+async def get_favorites(
+    user: TokenPayload = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> FavoriteResponse:
+    """DB-backed favorites: fighters + events for the current user."""
+    from sqlalchemy import select as sa_select
+
+    from src.db.models.auth import EventFavorite, FighterFavorite
+
+    fighters = await session.execute(
+        sa_select(FighterFavorite.fighter_id)
+        .where(FighterFavorite.user_id == user.sub)
+        .order_by(FighterFavorite.created_at.desc())
+    )
+    events = await session.execute(
+        sa_select(EventFavorite.event_id)
+        .where(EventFavorite.user_id == user.sub)
+        .order_by(EventFavorite.created_at.desc())
+    )
+    return FavoriteResponse(
+        fighters=[row[0] for row in fighters.all()],
+        events=[row[0] for row in events.all()],
+    )
 
 
 @fav_router.post("/fighters/{fighter_id}", status_code=201)
-async def favorite_fighter(fighter_id: str, user: TokenPayload = Depends(get_current_user)) -> dict[str, str]:
+async def favorite_fighter(
+    fighter_id: str,
+    user: TokenPayload = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
+    """Add a fighter to the user's favorites (idempotent)."""
+    from sqlalchemy import select as sa_select
+
+    from src.db.models.auth import FighterFavorite
+
+    _require_uuid(fighter_id)
+    existing = await session.execute(
+        sa_select(FighterFavorite).where(
+            FighterFavorite.user_id == user.sub,
+            FighterFavorite.fighter_id == fighter_id,
+        )
+    )
+    if existing.scalar_one_or_none() is None:
+        session.add(FighterFavorite(user_id=user.sub, fighter_id=fighter_id))
+        await session.flush()
+        await session.commit()
     return {"status": "added", "fighter_id": fighter_id}
 
 
 @fav_router.delete("/fighters/{fighter_id}", status_code=204)
-async def unfavorite_fighter(fighter_id: str, user: TokenPayload = Depends(get_current_user)) -> None:
-    return
+async def unfavorite_fighter(
+    fighter_id: str,
+    user: TokenPayload = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    from sqlalchemy import delete as sa_delete
+
+    from src.db.models.auth import FighterFavorite
+
+    _require_uuid(fighter_id)
+    await session.execute(
+        sa_delete(FighterFavorite).where(
+            FighterFavorite.user_id == user.sub,
+            FighterFavorite.fighter_id == fighter_id,
+        )
+    )
+    await session.commit()
 
 
 @fav_router.post("/events/{event_id}", status_code=201)
-async def favorite_event(event_id: str, user: TokenPayload = Depends(get_current_user)) -> dict[str, str]:
+async def favorite_event(
+    event_id: str,
+    user: TokenPayload = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
+    """Add an event to the user's favorites (idempotent)."""
+    from sqlalchemy import select as sa_select
+
+    from src.db.models.auth import EventFavorite
+
+    _require_uuid(event_id)
+    existing = await session.execute(
+        sa_select(EventFavorite).where(
+            EventFavorite.user_id == user.sub,
+            EventFavorite.event_id == event_id,
+        )
+    )
+    if existing.scalar_one_or_none() is None:
+        session.add(EventFavorite(user_id=user.sub, event_id=event_id))
+        await session.flush()
+        await session.commit()
     return {"status": "added", "event_id": event_id}
 
 
 @fav_router.delete("/events/{event_id}", status_code=204)
-async def unfavorite_event(event_id: str, user: TokenPayload = Depends(get_current_user)) -> None:
-    return
+async def unfavorite_event(
+    event_id: str,
+    user: TokenPayload = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    from sqlalchemy import delete as sa_delete
+
+    from src.db.models.auth import EventFavorite
+
+    _require_uuid(event_id)
+    await session.execute(
+        sa_delete(EventFavorite).where(
+            EventFavorite.user_id == user.sub,
+            EventFavorite.event_id == event_id,
+        )
+    )
+    await session.commit()
 
 
-@fav_router.post("/promotions/{slug}", status_code=201)
-async def favorite_promotion(slug: str, user: TokenPayload = Depends(get_current_user)) -> dict[str, str]:
-    return {"status": "added", "slug": slug}
+@fav_router.post("/promotions/{slug}", status_code=501)
+async def favorite_promotion(
+    slug: str,
+    user: TokenPayload = Depends(get_current_user),
+) -> dict[str, str]:
+    """Promotion favorites have no backing table — explicit 501, never a fake add."""
+    raise HTTPException(501, "Promotion favorites are not supported")
 
 
-@fav_router.delete("/promotions/{slug}", status_code=204)
-async def unfavorite_promotion(slug: str, user: TokenPayload = Depends(get_current_user)) -> None:
-    return
+@fav_router.delete("/promotions/{slug}", status_code=501)
+async def unfavorite_promotion(
+    slug: str,
+    user: TokenPayload = Depends(get_current_user),
+) -> None:
+    raise HTTPException(501, "Promotion favorites are not supported")
 
 
 # ── Watchlist ──────────────────────────────────────────────────────────────────
@@ -203,30 +346,6 @@ async def watchlist_event(event_id: str, user: TokenPayload = Depends(get_curren
 
 @watch_router.delete("/events/{event_id}", status_code=204)
 async def unwatchlist_event(event_id: str, user: TokenPayload = Depends(get_current_user)) -> None:
-    return
-
-
-# ── Notifications ──────────────────────────────────────────────────────────────
-
-@notif_router.get("", response_model=list[NotificationItem])
-async def get_notifications(
-    read: bool | None = Query(None, description="Filter: read/unread/all"),
-    limit: int = Query(50, le=100),
-    user: TokenPayload = Depends(get_current_user),
-) -> list[NotificationItem]:
-    return []
-
-
-@notif_router.patch("/{notification_id}", response_model=NotificationItem)
-async def mark_notification_read(
-    notification_id: str,
-    user: TokenPayload = Depends(get_current_user),
-) -> NotificationItem:
-    raise HTTPException(404)
-
-
-@notif_router.patch("/read-all", status_code=204)
-async def mark_all_read(user: TokenPayload = Depends(get_current_user)) -> None:
     return
 
 

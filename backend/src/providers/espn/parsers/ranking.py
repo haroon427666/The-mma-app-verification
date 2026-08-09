@@ -9,10 +9,54 @@ Key findings:
 - NO weightClass reference at the ranking entry level
 """
 
+import re
 from typing import Any
 
 from src.providers.dto import RankingDTO
 from src.providers.espn.reference import extract_id_from_ref
+
+# ── Historical-event hooks: winningFight refs ─────────────────────────────────
+# Every rank entry carries a winningFight $ref pointing at the fighter's last
+# competition: .../leagues/{league}/events/{event_id}/competitions/{competition_id}
+# (research: 47 cached hooks; legacy 400/600-series event ids — THE historical
+# event discovery hook, since /leagues/{slug}/events is upcoming-only).
+
+_WINNING_FIGHT_RE = re.compile(
+    r"/leagues/(?P<league>[^/]+)/events/(?P<event_id>\d+)/competitions/(?P<competition_id>\d+)"
+)
+
+
+def parse_winning_fight_ref(ref_url: str) -> dict[str, str] | None:
+    """Extract (league, event_id, competition_id) from a winningFight $ref URL.
+
+    Returns None when the URL does not match the competition-ref shape.
+    """
+    if not ref_url:
+        return None
+    match = _WINNING_FIGHT_RE.search(ref_url)
+    if not match:
+        return None
+    return {
+        "league": match.group("league"),
+        "event_id": match.group("event_id"),
+        "competition_id": match.group("competition_id"),
+    }
+
+
+def extract_winning_fight_refs(data: dict[str, Any]) -> list[str]:
+    """Collect all winningFight $ref URLs from a ranking category payload.
+
+    The rank entries carry the refs; we return them deduplicated and ordered.
+    """
+    refs: set[str] = set()
+    ranks = data.get("ranks", []) or []
+    for entry in ranks:
+        if not isinstance(entry, dict):
+            continue
+        wf = entry.get("winningFight", {})
+        if isinstance(wf, dict) and isinstance(wf.get("$ref"), str):
+            refs.add(str(wf["$ref"]))
+    return sorted(refs)
 
 
 def parse_ranking_category(

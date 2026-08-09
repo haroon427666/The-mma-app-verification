@@ -8,7 +8,6 @@ Competitor rows are protected by DB unique constraint (competition_id, fighter_i
 """
 
 import logging
-from uuid import UUID
 
 from src.domain.models.competition import Competition
 from src.domain.models.competitor import Competitor
@@ -40,6 +39,7 @@ class CompetitionUpsert(BaseUpsert):
         "result_detail": "result_detail",
         "result_round": "result_round",
         "result_time": "result_time",
+        "weight_class_name": "weight_class_name",
     }
 
     @property
@@ -51,8 +51,9 @@ class CompetitionUpsert(BaseUpsert):
 
     def _to_model(self, dto: CompetitionDTO) -> Competition:
         return Competition(
-            event_id=None,         # resolved by sync engine
-            weight_class_id=None,  # resolved by sync engine
+            event_id=None,         # resolved in _enrich_model
+            weight_class_id=None,  # resolved in _enrich_model
+            weight_class_name=dto.weight_class_name,
             order_num=dto.order_num,
             card_segment=dto.card_segment,
             status=dto.status,
@@ -63,6 +64,27 @@ class CompetitionUpsert(BaseUpsert):
             result_round=dto.result_round,
             result_time=dto.result_time,
         )
+
+    async def _enrich_model(self, model: Competition, dto: CompetitionDTO) -> None:
+        """Resolve the competition's event (NOT NULL FK) and weight class."""
+        if dto.event_external_id:
+            event_uuid = await self._resolver.resolve(
+                self.provider, dto.event_external_id, "event"
+            )
+            if event_uuid:
+                model.event_id = event_uuid
+            else:
+                raise ValueError(
+                    f"Competition {dto.external_id}: event "
+                    f"{dto.event_external_id} not synced"
+                )
+        if dto.weight_class_external_id:
+            wclass_uuid = await self._ensure_weight_class(
+                dto.weight_class_external_id,
+                dto.weight_class_name or dto.weight_class_external_id,
+            )
+            if wclass_uuid:
+                model.weight_class_id = wclass_uuid
 
     # ── Nested competitor handling ─────────────────────────────────────────
 
@@ -91,7 +113,7 @@ class CompetitionUpsert(BaseUpsert):
         return result
 
     async def _upsert_competitors(
-        self, competition_uuid: UUID, dto: CompetitionDTO
+        self, competition_uuid: str, dto: CompetitionDTO
     ) -> UpsertResult:
         """Idempotent competitor upsert via DB unique constraint on (comp_id, fighter_id)."""
         from sqlalchemy import select

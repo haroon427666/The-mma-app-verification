@@ -107,6 +107,14 @@ class FighterService:
         """Recent + upcoming fights for a fighter."""
         return await self._uow.fighters.get_recent_fights(fighter_id, limit)
 
+    async def get_next_fight(self, fighter_id: str) -> dict[str, Any] | None:
+        """Nearest upcoming bout for the fighter, or None."""
+        return await self._uow.fighters.get_next_fight(fighter_id)
+
+    async def compare_fighters(self, a_id: str, b_id: str) -> dict[str, Any]:
+        """Head-to-head + common opponents for two fighters (FTR-1905/1906/1907)."""
+        return await self._uow.fighters.get_compare(a_id, b_id)
+
     async def get_fighter_media(self, fighter_id: str) -> dict[str, Any] | None:
         """Fighter images — headshot, cutout, render, CDN fallback."""
         fighter = await self._uow.fighters.get_by_id(fighter_id)

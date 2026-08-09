@@ -2,6 +2,11 @@
 
 Prevents duplicate execution across multiple worker processes.
 Locks auto-expire so a crashed worker doesn't hold locks forever.
+
+Degraded mode (T07): when the Redis backend is unreachable, lock
+acquisition is SKIPPED — jobs run without cross-worker coordination
+instead of crashing. Documented tradeoff: two workers could double-run
+a job while Redis is down.
 """
 
 import asyncio
@@ -10,6 +15,8 @@ import time
 import uuid
 from types import TracebackType
 from typing import Any, Self
+
+from redis.exceptions import RedisError
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +44,10 @@ class RedisLock:
 
         Args:
             timeout: Seconds to wait. 0 = try once, don't wait.
+
+        Degraded mode: if Redis is unreachable the lock is skipped and True
+        is returned — the job runs without cross-worker coordination rather
+        than crashing the scheduler loop.
         """
         if self._redis is None:
             # No Redis backend — cannot coordinate; skip rather than crash.
@@ -46,18 +57,25 @@ class RedisLock:
         self._token = str(uuid.uuid4())
         deadline = time.monotonic() + timeout
 
-        while True:
-            acquired = await self._redis.set(
-                self._name, self._token, nx=True, ex=self._ttl,
+        try:
+            while True:
+                acquired = await self._redis.set(
+                    self._name, self._token, nx=True, ex=self._ttl,
+                )
+                if acquired:
+                    logger.debug(f"Lock acquired: {self._name}")
+                    return True
+
+                if timeout == 0 or time.monotonic() >= deadline:
+                    return False
+
+                await asyncio.sleep(0.1)
+        except (RedisError, OSError) as e:
+            logger.warning(
+                f"Lock '{self._name}' backend unavailable ({e}) — "
+                f"running degraded without cross-worker coordination"
             )
-            if acquired:
-                logger.debug(f"Lock acquired: {self._name}")
-                return True
-
-            if timeout == 0 or time.monotonic() >= deadline:
-                return False
-
-            await asyncio.sleep(0.1)
+            return True
 
     async def release(self) -> bool:
         """Release the lock. Only succeeds if we still own it."""
@@ -72,7 +90,14 @@ class RedisLock:
             return 0
         end
         """
-        result = await self._redis.eval(script, 1, self._name, self._token)
+        try:
+            result = await self._redis.eval(script, 1, self._name, self._token)
+        except (RedisError, OSError) as e:
+            logger.warning(
+                f"Lock '{self._name}' release failed — Redis unavailable ({e})"
+            )
+            self._token = None
+            return False
         released: bool = result == 1
         if released:
             logger.debug(f"Lock released: {self._name}")
@@ -83,19 +108,29 @@ class RedisLock:
         """Extend the lock TTL. Useful for long-running jobs."""
         if self._redis is None or self._token is None:
             return False
-        current = await self._redis.get(self._name)
-        if current is not None:
-            token = current.decode() if isinstance(current, bytes) else current
-            if token == self._token:
+        try:
+            current = await self._redis.get(self._name)
+            if current is not None and current == self._token:
                 await self._redis.expire(self._name, self._ttl + extra_seconds)
                 return True
+        except (RedisError, OSError) as e:
+            logger.warning(
+                f"Lock '{self._name}' extend failed — Redis unavailable ({e})"
+            )
+            return False
         return False
 
     async def is_locked(self) -> bool:
         if self._redis is None:
             return False
-        exists: int = await self._redis.exists(self._name)
-        return exists > 0
+        try:
+            exists: int = await self._redis.exists(self._name)
+            return exists > 0
+        except (RedisError, OSError) as e:
+            logger.warning(
+                f"Lock '{self._name}' status check failed — Redis unavailable ({e})"
+            )
+            return False
 
     async def __aenter__(self) -> Self:
         if not await self.acquire():

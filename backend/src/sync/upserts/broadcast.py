@@ -9,7 +9,6 @@ Does NOT extend BaseUpsert because broadcasts lack provider external IDs.
 
 import logging
 from typing import TYPE_CHECKING
-from uuid import UUID
 
 from src.domain.models.broadcast import Broadcast
 from src.providers.dto import BroadcastDTO
@@ -27,12 +26,11 @@ class BroadcastUpsert:
     entity_type = "broadcast"
     provider = "espn"
 
-    _event_uuid_map: dict[str, UUID] = {}
-
     def __init__(self, resolver: "IdResolver") -> None:
         self._resolver: IdResolver = resolver
+        self._event_uuid_map: dict[str, str] = {}
 
-    def set_event_map(self, event_map: dict[str, UUID]) -> None:
+    def set_event_map(self, event_map: dict[str, str]) -> None:
         self._event_uuid_map = event_map
 
     async def upsert_batch(self, dtos: list[BroadcastDTO]) -> UpsertResult:
@@ -51,6 +49,10 @@ class BroadcastUpsert:
         for dto in dtos:
             try:
                 event_uuid = self._event_uuid_map.get(dto.event_external_id)
+                if event_uuid is None:
+                    event_uuid = await self._resolver.resolve(
+                        self.provider, dto.event_external_id, "event"
+                    )
                 if event_uuid is None:
                     result.errors += 1
                     continue
@@ -79,6 +81,7 @@ class BroadcastUpsert:
                         result.skipped += 1
                 else:
                     broadcast = Broadcast(
+                        provider=self.provider,
                         event_id=event_uuid,
                         network=dto.network,
                         region=dto.region,

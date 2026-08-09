@@ -26,6 +26,9 @@ ENDPOINTS = {
     "league": f"{ESPN_BASE_URL}/leagues/{{league_slug}}",
 
     # ── Athletes (Fighters) ────────────────────────────────────────────────
+    # GLOBAL flat listing (research: ~38,006 IDs; MUST NOT be used alone —
+    # hidden profiles like DJ/Rousey/Gracie are reachable only via other refs)
+    "global_athletes": f"{ESPN_BASE_URL}/athletes",
     # List: league-scoped → returns $ref URLs to /athletes/{id}
     "athletes": f"{ESPN_BASE_URL}/leagues/{{league_slug}}/athletes",
     # Detail: inline data (name, weight, height, reach, weightClass, stance, etc.)
@@ -64,6 +67,9 @@ ENDPOINTS = {
 }
 
 # ── VERIFIED ESPN League Slugs ─────────────────────────────────────────────────
+# Research: 49 total (48 enumerated + CES verified separately). The union census
+# is 38,014 IDs. ONE Championship's ESPN slug is "ofc" — NOT "one-championship".
+# "other" (~27,286 IDs) is compositionally unresolved; excluded from the active set.
 
 ESPN_LEAGUE_SLUGS: dict[str, str] = {
     "ufc": "ufc",
@@ -76,8 +82,9 @@ ESPN_LEAGUE_SLUGS: dict[str, str] = {
     "ifc": "ifc",
     "ksw": "ksw",
     "lfa": "lfa",
-    "one-championship": "one-championship",
-    # 48 total confirmed leagues — these are the verified active/major ones
+    "ofc": "ofc",  # ONE Championship (research-verified; NOT "one-championship")
+    # 49 total confirmed leagues (48 enumerated + CES). Remaining slugs resolve
+    # via the live /leagues listing at sync time.
 }
 
 # ── STATUS MAPPING (VERIFIED) ──────────────────────────────────────────────────
@@ -113,12 +120,23 @@ RESULT_METHOD_MAP: dict[str, str] = {
 
 @dataclass
 class ESPNClientConfig:
-    """Configuration for the ESPN HTTP client."""
+    """Configuration for the ESPN HTTP client.
+
+    Rate envelope from frozen performance research (PERFORMANCE_FINAL_REPORT):
+    4–8 workers at 2–5 req/sec sustained. The previous 10 rps / burst 15 was
+    more aggressive than the measured safe envelope. Defaults now sit inside it.
+    """
 
     base_url: str = ESPN_BASE_URL
-    # Rate limiting — token bucket
-    rate_limit_per_second: float = 10.0
-    burst_size: int = 15
+    # Rate limiting — token bucket (research envelope: 2–5 req/sec sustained)
+    rate_limit_per_second: float = 3.0
+    burst_size: int = 6
+    # Bounded concurrency for parallel resolution (research: 4–8 workers)
+    max_concurrency: int = 6
+    # Response cache (URL-canonicalized, in-flight dedup)
+    cache_enabled: bool = True
+    cache_ttl_seconds: float = 300.0
+    cache_max_entries: int = 10_000
     # Retry
     max_retries: int = 3
     retry_backoff_base: float = 2.0
@@ -136,3 +154,31 @@ class ESPNClientConfig:
     # Default lang/region for all requests
     default_lang: str = "en"
     default_region: str = "us"
+
+
+# ── SYNC DISCOVERY SCOPE ───────────────────────────────────────────────────────
+# Which league rosters the fighter discovery enumerates (in addition to the
+# global flat listing). Active/major MMA promotions per research. Overridable
+# via ESPN_SYNC_LEAGUES (comma-separated).
+
+DEFAULT_SYNC_LEAGUES: tuple[str, ...] = ("ufc", "bellator", "pfl", "ksw", "ifc", "ofc")
+
+# Eventlog ingestion bounds (read by provider.fetch_eventlog_hooks):
+# - ESPN_EVENTLOG_MAX_FIGHTERS: athletes sampled per run (default 50)
+# - ESPN_EVENTLOG_MAX_PAGES: pages per athlete's eventlog (default 5 =
+#   125 fights at pageSize 25; live-verified veterans span 2+ pages)
+
+
+def sync_league_slugs() -> tuple[str, ...]:
+    """Resolve the league roster set for athlete discovery.
+
+    Env override wins: ESPN_SYNC_LEAGUES="ufc,bellator" etc.
+    """
+    import os
+
+    raw = os.environ.get("ESPN_SYNC_LEAGUES")
+    if raw:
+        slugs = [s.strip() for s in raw.split(",") if s.strip()]
+        if slugs:
+            return tuple(slugs)
+    return DEFAULT_SYNC_LEAGUES

@@ -1,7 +1,13 @@
 """StatisticsUpsert — idempotent statistic upsert.
 
-Statistics are tied to a specific competitor row: (fighter_id, competition_id).
-If the competitor cannot be resolved, the statistic is SKIPPED — it will be
+Two shapes:
+1. CAREER stats (fighter-scoped, /athletes/{id}/statistics):
+   competition_external_id == "" → row keyed by (fighter_id, category, label)
+   with competitor_id NULL (partial unique index protects duplicates).
+2. PER-FIGHT stats (competitors/{id}/statistics):
+   competition_external_id set → row keyed by competitor_id + label.
+
+If a competitor cannot be resolved, the per-fight stat is SKIPPED — it will be
 retried on the next sync run after the fighter/competition is synced.
 
 NO GUESSING: we never attach stats to a "most recent" competitor.
@@ -63,9 +69,11 @@ class StatisticsUpsert:
                     result.skipped += 1
                     continue
 
-                # Resolve competitor: (competition_id, fighter_id)
+                is_career = not dto.competition_external_id
+
+                # Per-fight: resolve competitor (competition_id, fighter_id)
                 competitor_id = None
-                if dto.competition_external_id:
+                if not is_career:
                     comp_uuid = await self._resolver.resolve(
                         self.provider, dto.competition_external_id, "competition"
                     )
@@ -78,23 +86,34 @@ class StatisticsUpsert:
                         )
                         competitor_id = row.scalar_one_or_none()
 
-                if competitor_id is None:
-                    logger.warning(
-                        f"Statistic skipped: competitor not found for "
-                        f"fighter={dto.fighter_external_id} "
-                        f"competition={dto.competition_external_id} "
-                        f"— will retry next run"
-                    )
-                    result.skipped += 1
-                    continue
+                    if competitor_id is None:
+                        logger.warning(
+                            f"Statistic skipped: competitor not found for "
+                            f"fighter={dto.fighter_external_id} "
+                            f"competition={dto.competition_external_id} "
+                            f"— will retry next run"
+                        )
+                        result.skipped += 1
+                        continue
 
-                # Upsert the statistic by (competitor_id, label)
-                existing = await self._resolver._db.execute(
-                    select(Statistic).where(
-                        Statistic.competitor_id == competitor_id,
-                        Statistic.label == dto.label,
+                # Upsert: career keyed by (fighter_id, category, label) with
+                # NULL competitor_id; per-fight keyed by (competitor_id, label).
+                if is_career:
+                    existing = await self._resolver._db.execute(
+                        select(Statistic).where(
+                            Statistic.competitor_id.is_(None),
+                            Statistic.fighter_id == fighter_uuid,
+                            Statistic.category == dto.category,
+                            Statistic.label == dto.label,
+                        )
                     )
-                )
+                else:
+                    existing = await self._resolver._db.execute(
+                        select(Statistic).where(
+                            Statistic.competitor_id == competitor_id,
+                            Statistic.label == dto.label,
+                        )
+                    )
                 existing_row = existing.scalar_one_or_none()
 
                 if existing_row:
@@ -109,6 +128,7 @@ class StatisticsUpsert:
                 else:
                     stat = Statistic(
                         competitor_id=competitor_id,
+                        fighter_id=fighter_uuid,
                         category=dto.category,
                         label=dto.label,
                         value=dto.value,

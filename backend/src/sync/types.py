@@ -22,6 +22,7 @@ class EntityType(str, Enum):
     BROADCAST = "broadcast"
     RANKING = "ranking"
     STATISTIC = "statistic"
+    HISTORICAL_EVENT = "historical_event"
 
 
 # ── Sync Status ───────────────────────────────────────────────────────────────
@@ -151,11 +152,11 @@ ESPN_CAPABILITIES = ProviderCapabilities(
     supports_broadcasts=True,
     supports_incremental=False,       # ESPN has no updated_since filter for MMA
     supports_pagination=True,
-    supports_cursor_pagination=False,  # Offset-based pagination
+    supports_cursor_pagination=False,  # Page-based pagination (page 1-indexed)
     supports_etag=False,
     supports_bulk_fetch=False,
-    rate_limit_rps=10.0,
+    rate_limit_rps=3.0,               # Research envelope: 2–5 req/sec sustained
     max_page_size=100,
     is_verified=True,                  # Verified 2026-08-01 against live API
-    coverage_level="full",              # UFC is fully covered
+    coverage_level="full",             # Active majors fully covered
 )

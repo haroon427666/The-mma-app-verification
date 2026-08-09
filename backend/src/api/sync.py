@@ -45,9 +45,22 @@ def get_manager() -> Any:
 
 @router.get("/status")
 async def scheduler_status() -> Any:
-    """Full scheduler dashboard — jobs, queue, health, locks, live mode."""
+    """Full scheduler dashboard — jobs, queue, health, locks, live mode.
+
+    Degrades to 503 (not 500) when the sync backend is unavailable — e.g.
+    Redis configured but unreachable while SYNC_ENABLED=true — so the admin
+    dashboard shows an explicit message instead of crashing.
+    """
     manager = get_manager()
-    return await manager.get_status()
+    try:
+        return await manager.get_status()
+    except Exception as e:
+        logger.error(f"Scheduler status unavailable: {e}")
+        raise HTTPException(
+            503,
+            "Scheduler status unavailable — sync backend degraded "
+            "(Redis unreachable or scheduler not healthy)",
+        )
 
 
 @router.get("/jobs")

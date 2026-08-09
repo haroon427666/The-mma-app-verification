@@ -17,7 +17,9 @@ class TestPromotionParser:
     def test_ufc_fields(self, ufc_promotion, parse_promotion):
         dto = parse_promotion(ufc_promotion)
         assert dto.provider == "espn"
-        assert dto.external_id == "3321"
+        # Canonical external id is the league slug — events/rankings/fighters
+        # all reference promotions via the slug ("ufc"), never the numeric id.
+        assert dto.external_id == "ufc"
         assert dto.name == "Ultimate Fighting Championship"
         assert dto.slug == "ufc"
         assert dto.season_year == 2026

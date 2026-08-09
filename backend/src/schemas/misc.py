@@ -196,6 +196,30 @@ class VenueDetailResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ── Weight Class ─────────────────────────────────────────────────────────────
+
+class WeightClassListItem(BaseModel):
+    id: str
+    name: str
+    abbreviation: str | None = None
+    gender: str | None = None
+    fighter_count: int = 0
+
+    model_config = {"from_attributes": True}
+
+
+class WeightClassDetailResponse(BaseModel):
+    id: str
+    name: str
+    abbreviation: str | None = None
+    min_weight_kg: float | None = None
+    max_weight_kg: float | None = None
+    gender: str | None = None
+    fighter_count: int = 0
+
+    model_config = {"from_attributes": True}
+
+
 # ── Search ─────────────────────────────────────────────────────────────────
 
 class SearchResultItem(BaseModel):

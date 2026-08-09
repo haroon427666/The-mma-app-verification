@@ -9,6 +9,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+EVENT_ID = "11111111-1111-4111-8111-111111111111"
+
 
 def _make_fake_uow(executions=None, event=None):
     """executions: list of row-lists returned by session.execute().scalars().all()"""
@@ -77,7 +79,7 @@ class TestEventFights:
             _competitor("c2", "fC", "RED", outcome="WIN"),
         ]
         uow = _make_fake_uow(executions=[[comp1, comp2], competitors])
-        resp = asyncio.run(get_event_fights(_request(), "evt-1", uow=uow))
+        resp = asyncio.run(get_event_fights(_request(), EVENT_ID, uow=uow))
 
         data = resp.body  # cached_json_response returns the raw Response
         import json
@@ -118,7 +120,7 @@ class TestEventResults:
             _competitor("c1", "fB", "BLUE", outcome="WIN"),
         ]
         uow = _make_fake_uow(executions=[[comp], competitors])
-        resp = asyncio.run(get_event_results(_request(), "evt-1", uow=uow))
+        resp = asyncio.run(get_event_results(_request(), EVENT_ID, uow=uow))
 
         import json
         payload = json.loads(resp.body) if isinstance(resp.body, (bytes, str)) else resp.body
@@ -165,7 +167,7 @@ class TestEventStatistics:
         ]
         fighters = [_fighter("f1", "USA"), _fighter("f3", "Brazil"), _fighter("f4", "USA")]
         uow = _make_fake_uow(executions=[comps, competitors, fighters])
-        resp = asyncio.run(get_event_statistics(_request(), "evt-1", uow=uow))
+        resp = asyncio.run(get_event_statistics(_request(), EVENT_ID, uow=uow))
 
         import json
         payload = json.loads(resp.body) if isinstance(resp.body, (bytes, str)) else resp.body
@@ -182,7 +184,7 @@ class TestEventStatistics:
         from src.api.v1.events import get_event_statistics
 
         uow = _make_fake_uow(executions=[[], [], []])
-        resp = asyncio.run(get_event_statistics(_request(), "evt-1", uow=uow))
+        resp = asyncio.run(get_event_statistics(_request(), EVENT_ID, uow=uow))
 
         import json
         payload = json.loads(resp.body) if isinstance(resp.body, (bytes, str)) else resp.body

@@ -210,6 +210,62 @@ class FighterRepository(BaseRepository[Fighter]):
 
         return fights
 
+    async def get_next_fight(self, fighter_id: str) -> dict[str, Any] | None:
+        """Nearest upcoming competition for the fighter (FTR-107).
+
+        Semantics: the earliest bout on an event that has not finished and is
+        not cancelled, ordered by event date ascending (null dates last), then
+        card order. Past-dated but still-SCHEDULED events are excluded so the
+        home countdown row (FTR-1508/1602) never shows a stale bout.
+        """
+        from datetime import UTC, datetime
+
+        from sqlalchemy import or_
+
+        from src.db.models.event import Competition, Competitor, Event
+        from src.db.models.fighter import Fighter
+
+        now_utc = datetime.now(UTC)
+        result = await self._session.execute(
+            sa_select(Competition, Event)
+            .join(Event, Competition.event_id == Event.id)
+            .join(Competitor, Competitor.competition_id == Competition.id)
+            .where(Competitor.fighter_id == fighter_id)
+            .where(Event.status.not_in(["FINAL", "CANCELLED"]))
+            .where(or_(Event.date_utc >= now_utc, Event.date_utc.is_(None)))
+            .order_by(Event.date_utc.asc().nulls_last(), Competition.order_num.asc())
+            .limit(1)
+        )
+        row = result.first()
+        if row is None:
+            return None
+        comp, event = row
+
+        both_result = await self._session.execute(
+            sa_select(Competitor).where(Competitor.competition_id == comp.id)
+        )
+        both = list(both_result.scalars().all())
+
+        this_corner = next((c for c in both if c.fighter_id == fighter_id), None)
+        opponent = next((c for c in both if c.fighter_id != fighter_id), None)
+
+        opponent_fighter = None
+        if opponent:
+            opp_result = await self._session.execute(
+                sa_select(Fighter).where(Fighter.id == opponent.fighter_id)
+            )
+            opponent_fighter = opp_result.scalar_one_or_none()
+
+        return {
+            "competition": comp,
+            "event_id": event.id,
+            "event_name": event.name,
+            "event_date": event.date_utc,
+            "event_status": event.status,
+            "opponent": opponent_fighter,
+            "corner": this_corner,
+        }
+
     # ── Simple queries ───────────────────────────────────────────────────
 
     async def get_active(self, limit: int = 1000) -> list[Fighter]:
@@ -223,3 +279,108 @@ class FighterRepository(BaseRepository[Fighter]):
             sa_select(Fighter).where(Fighter.weight_class_name == name)
         )
         return list(result.scalars().all())
+
+    # ── Compare (FTR-1905/1906/1907) ────────────────────────────────────
+
+    async def get_compare(self, fighter_a_id: str, fighter_b_id: str) -> dict[str, Any]:
+        """Head-to-head bouts + common opponents for two fighters.
+
+        Both fighters are expected to exist (the route 404s earlier). A
+        competition always belongs to an event, so joins are safe.
+        """
+        from datetime import UTC, datetime
+
+        from src.db.models.event import Competition, Competitor, Event
+
+        async def fetch_rows(fighter_id: str) -> list[Any]:
+            result = await self._session.execute(
+                sa_select(Competitor, Competition, Event)
+                .join(Competition, Competitor.competition_id == Competition.id)
+                .join(Event, Competition.event_id == Event.id)
+                .where(Competitor.fighter_id == fighter_id)
+            )
+            return list(result.all())
+
+        rows_a = await fetch_rows(fighter_a_id)
+        rows_b = await fetch_rows(fighter_b_id)
+
+        comps_a = {r[1].id for r in rows_a}
+        comps_b = {r[1].id for r in rows_b}
+
+        # ── Head-to-head: bouts where both competed ────────────────────
+        h2h_comp_ids = comps_a & comps_b
+        by_comp: dict[str, dict[str, Competitor]] = {}
+        for row in rows_a + rows_b:
+            comp_id = row[1].id
+            by_comp.setdefault(comp_id, {})[row[0].fighter_id] = row[0]
+
+        h2h: list[dict[str, Any]] = []
+        for row in rows_a:
+            comp, event = row[1], row[2]
+            if comp.id not in h2h_comp_ids:
+                continue
+            corners = by_comp[comp.id]
+            h2h.append({
+                "competition_id": comp.id,
+                "event_id": event.id,
+                "event_name": event.name,
+                "event_date": event.date_utc,
+                "weight_class": comp.weight_class_name,
+                "is_title_fight": comp.is_title_fight or False,
+                "method": comp.result_method,
+                "round": comp.result_round,
+                "result_a": corners[fighter_a_id].outcome,
+                "result_b": corners[fighter_b_id].outcome,
+            })
+        h2h.sort(
+            key=lambda e: (e["event_date"] is None, e["event_date"] or datetime.min.replace(tzinfo=UTC)),
+            reverse=True,
+        )
+
+        # ── Common opponents: fighters who faced both ──────────────────
+        common: list[dict[str, Any]] = []
+        if comps_a and comps_b:
+            others = list(
+                (
+                    await self._session.execute(
+                        sa_select(Competitor, Competition, Event)
+                        .join(Competition, Competitor.competition_id == Competition.id)
+                        .join(Event, Competition.event_id == Event.id)
+                        .where(Competition.id.in_(comps_a | comps_b))
+                        .where(Competitor.fighter_id.not_in([fighter_a_id, fighter_b_id]))
+                    )
+                ).all()
+            )
+
+            opps_of_a = {r[0].fighter_id for r in others if r[1].id in comps_a}
+            opps_of_b = {r[0].fighter_id for r in others if r[1].id in comps_b}
+            common_ids = opps_of_a & opps_of_b
+
+            if common_ids:
+                fighters_result = await self._session.execute(
+                    sa_select(Fighter).where(Fighter.id.in_(common_ids))
+                )
+                fighters_by_id = {f.id: f for f in fighters_result.scalars().all()}
+
+                def outcomes_for(vs_side: set[str], fighter_id: str) -> list[str]:
+                    bouts = [
+                        (r[2].date_utc or datetime.min.replace(tzinfo=UTC), r[0].outcome)
+                        for r in others
+                        if r[1].id in vs_side and r[0].fighter_id == fighter_id
+                    ]
+                    bouts.sort(key=lambda b: b[0])
+                    return [o for _, o in bouts if o]
+
+                ordered_ids = sorted(common_ids, key=lambda i: (
+                    (fighters_by_id[i].last_name or "").lower(),
+                    (fighters_by_id[i].first_name or "").lower(),
+                ))
+                common = [
+                    {
+                        "fighter": fighters_by_id[fid],
+                        "vs_a": outcomes_for(comps_a, fid),
+                        "vs_b": outcomes_for(comps_b, fid),
+                    }
+                    for fid in ordered_ids
+                ]
+        return {"head_to_head": h2h, "common_opponents": common}
