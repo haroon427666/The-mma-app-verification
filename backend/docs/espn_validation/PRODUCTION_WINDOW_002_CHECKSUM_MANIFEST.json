@@ -1,0 +1,99 @@
+{
+  "manifest": "Production Window 002 evidence — SHA-256 checksum manifest",
+  "created": "2026-08-10",
+  "algorithm": "SHA-256",
+  "purpose": "Permanent integrity record for the Window 002 production expansion evidence (runs b86436ab and 0c8c2567).",
+  "self_hash_policy": "This manifest intentionally does NOT contain its own SHA-256. A self-referential hash is circular (any modification changes the hash, including one that updates it). See PRODUCTION_WINDOW_002_FILE_MAP.md for recompute commands.",
+  "window": 2,
+  "config": {
+    "ESPN_FIGHTER_SYNC_LIMIT": "2000",
+    "ESPN_EVENTLOG_ENABLED": "0",
+    "others": "defaults"
+  },
+  "runs": [
+    {
+      "id": "b86436ab-4303-4123-9ccb-2212d961dbac",
+      "role": "window",
+      "status": "COMPLETED",
+      "duration_ms": 1473903.399,
+      "inserted": 2060,
+      "updated": 988,
+      "skipped": 2008,
+      "errors": 0
+    },
+    {
+      "id": "0c8c2567-f696-4ed6-9307-6ef25ce751a1",
+      "role": "idempotency rerun",
+      "status": "COMPLETED",
+      "duration_ms": 1474151.917,
+      "inserted": 18,
+      "updated": 1598,
+      "skipped": 3440,
+      "errors": 0,
+      "note": "fighter inserted=0 — idempotency proven"
+    }
+  ],
+  "note": "Paths are relative to the repository root. All files are new/untracked additions; the committed acceptance evidence (CHECKSUM_MANIFEST.json) is intentionally NOT modified.",
+  "files": [
+    {
+      "path": "backend/ESPN_PRODUCTION_JOURNEY.md",
+      "sha256": "34b098ec9e2faa7c1d20f2f451bc5cb6f201f179836ae919f6e46d9aaddfb8b8",
+      "note": "A-to-Z journey + decision gate"
+    },
+    {
+      "path": "backend/docs/espn_validation/PRODUCTION_WINDOW_002_AFTER.json",
+      "sha256": "fe7151b902bc05fd239413dbf153e3e5e91d675ab54c0dba877090f3a7e1a53e",
+      "note": "post-run DB audit"
+    },
+    {
+      "path": "backend/docs/espn_validation/PRODUCTION_WINDOW_002_COVERAGE_ANALYSIS.md",
+      "sha256": "7c36d997cae1a97ef3931b4c44693b93964bb4551b2d8dd1627380e0122c6f85",
+      "note": "Q1-Q11 coverage analysis"
+    },
+    {
+      "path": "backend/docs/espn_validation/PRODUCTION_WINDOW_002_DISCOVERY_PROBE.json",
+      "sha256": "e02bb1f3b45fc5608c4d566880813be4b6400199fde45b5c88f4418192af5549",
+      "note": "live discovery enumeration + representative positions"
+    },
+    {
+      "path": "backend/docs/espn_validation/PRODUCTION_WINDOW_002_FILE_MAP.md",
+      "sha256": "4378ed13c6eaa3d1040befc481a35eafc946d53fec008c65557e147da0c093e7",
+      "note": "file map"
+    },
+    {
+      "path": "backend/docs/espn_validation/PRODUCTION_WINDOW_002_PREFLIGHT.json",
+      "sha256": "079590c3cdcea652e6377f34310e77dfebc8207d6e9795a5f8daa84ad55c0a1e",
+      "note": "read-only DB baseline"
+    },
+    {
+      "path": "backend/docs/espn_validation/PRODUCTION_WINDOW_002_RANKING_VERIFY.json",
+      "sha256": "8681db236fe20e3fecc3181a65823ee22e5591c399376de226e8695a46a3c01c",
+      "note": "live ranking DTO census"
+    },
+    {
+      "path": "backend/docs/espn_validation/PRODUCTION_WINDOW_002_REPORT.md",
+      "sha256": "652816e459e73325f10aeb9e510bd42d1132d50902f5cdebafa119a8da538b2c",
+      "note": "window run report"
+    },
+    {
+      "path": "backend/docs/espn_validation/PRODUCTION_WINDOW_002_REPRESENTATIVE_TEST.json",
+      "sha256": "4e0a6b5b440f2f6785567c37888bc624ee0bc2ca4c7a718ed0d796bc83290baa",
+      "note": "33 live profile probes + DB match"
+    },
+    {
+      "path": "backend/docs/espn_validation/PRODUCTION_WINDOW_002_RERUN_SYNC_LOG.txt",
+      "sha256": "54e99dce06d092e830babcdd0ccb93f35a85e3f1ff6dddc6deb45900ce9490da",
+      "note": "idempotency rerun log (run 0c8c2567)"
+    },
+    {
+      "path": "backend/docs/espn_validation/PRODUCTION_WINDOW_002_SYNC_LOG.txt",
+      "sha256": "d797e7ce0c07cdef5b857d521893bac32c943f461e880633e3a8e8b1ed7ce573",
+      "note": "window run log (run b86436ab)"
+    },
+    {
+      "path": "backend/docs/espn_validation/PRODUCTION_WINDOW_002_TIMELINE.md",
+      "sha256": "c130e9b2f2ad470b60e2b2af232659bdec7aca980b254be3364ea8e8ed60a9bf",
+      "note": "chronological timeline"
+    }
+  ]
+}

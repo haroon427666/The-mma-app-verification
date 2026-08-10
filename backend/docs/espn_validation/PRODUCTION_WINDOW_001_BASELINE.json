@@ -1,0 +1,69 @@
+{
+  "kind": "PRODUCTION_WINDOW_001_BASELINE",
+  "captured_at": "2026-08-10",
+  "database": "localhost:5432/mma (read-only)",
+  "alembic_version": "006",
+  "row_counts": {
+    "fighters": 100,
+    "fighter_records": 100,
+    "statistics": 48,
+    "events": 6,
+    "competitions": 73,
+    "competitors": 4,
+    "rankings": 4,
+    "promotions": 48,
+    "venues": 0,
+    "broadcasts": 1,
+    "weight_classes": 13,
+    "sync_runs": 2,
+    "sync_jobs": 20,
+    "sync_checkpoints": 0,
+    "external_ids": 240,
+    "provider_payloads": 0,
+    "provider_conflicts": 0,
+    "dead_letters": 0,
+    "users": 0,
+    "devices": 0,
+    "notifications": 0,
+    "favorite_events": 0,
+    "favorite_fighters": 0,
+    "watchlist_events": 0,
+    "user_preferences": 0,
+    "user_sessions": 0
+  },
+  "duplicate_provider_external_id": {
+    "fighters": [],
+    "events": [],
+    "competitions": []
+  },
+  "orphans": {
+    "competitions_without_event": 0,
+    "competitors_without_competition": 0,
+    "fighter_records_without_fighter": 0,
+    "statistics_without_fighter": 0,
+    "sync_jobs_without_run": 0
+  },
+  "espn_fighters": 100,
+  "espn_events": 6,
+  "non_espn_fighters": 0,
+  "non_espn_events": 0,
+  "sync_runs_total": 2,
+  "last_sync_run_started_at": "2026-08-10 00:00:45.120113+05:00",
+  "representative_fighter_ids_present": [
+    "2335653"
+  ],
+  "sample_fighters": [
+    [
+      "2085811",
+      null
+    ],
+    [
+      "2125311",
+      null
+    ],
+    [
+      "2158767",
+      null
+    ]
+  ]
+}

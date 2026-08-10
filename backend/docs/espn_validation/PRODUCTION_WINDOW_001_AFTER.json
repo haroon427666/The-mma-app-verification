@@ -1,0 +1,188 @@
+{
+  "kind": "PRODUCTION_WINDOW_001_AFTER",
+  "captured_at": "2026-08-10",
+  "database": "localhost:5432/mma (read-only)",
+  "window": 1000,
+  "row_counts": {
+    "fighters": 1000,
+    "fighter_records": 999,
+    "statistics": 368,
+    "events": 24,
+    "competitions": 260,
+    "competitors": 35,
+    "rankings": 12,
+    "promotions": 48,
+    "venues": 0,
+    "broadcasts": 3,
+    "weight_classes": 17,
+    "sync_runs": 3,
+    "sync_jobs": 30,
+    "sync_checkpoints": 0,
+    "external_ids": 1349,
+    "provider_payloads": 0,
+    "provider_conflicts": 0,
+    "dead_letters": 0,
+    "users": 0,
+    "devices": 0,
+    "notifications": 0,
+    "favorite_events": 0,
+    "favorite_fighters": 0,
+    "watchlist_events": 0,
+    "user_preferences": 0,
+    "user_sessions": 0
+  },
+  "duplicate_provider_external_id": {
+    "fighters": [],
+    "events": [],
+    "competitions": []
+  },
+  "orphans": {
+    "competitions_without_event": 0,
+    "competitors_without_competition": 0,
+    "fighter_records_without_fighter": 0,
+    "statistics_without_fighter": 0,
+    "sync_jobs_without_run": 0,
+    "external_ids_fighter_without_fighter": 0
+  },
+  "null_checks": {
+    "fighters_is_active_null": 0,
+    "fighters_first_last_null": 0,
+    "events_status_name_promo_null": 0,
+    "statistics_null_cat_label": 0,
+    "competitions_event_id_null": 0,
+    "competitors_competition_id_null": 0
+  },
+  "espn_fighters": 1000,
+  "espn_events": 24,
+  "non_espn_fighters": 0,
+  "non_espn_events": 0,
+  "non_espn_competitions": 0,
+  "sync_run": {
+    "id": "eb70f094-8420-4741-b53d-b1d5ef4cc4bc",
+    "status": "COMPLETED",
+    "mode": "auto",
+    "provider": "espn",
+    "started_at": "2026-08-10 15:58:18.861152+05:00",
+    "completed_at": "2026-08-10 16:11:59.362813+05:00",
+    "duration_ms": 820613.269,
+    "inserted": 2369,
+    "updated": 90,
+    "skipped": 729,
+    "api_calls": 0,
+    "errors": 0
+  },
+  "sync_jobs": [
+    {
+      "entity": "broadcast",
+      "status": "COMPLETED",
+      "inserted": 2,
+      "updated": 0,
+      "skipped": 0,
+      "errors": 0,
+      "api_calls": 0,
+      "duration_ms": 2625.0
+    },
+    {
+      "entity": "competition",
+      "status": "COMPLETED",
+      "inserted": 5,
+      "updated": 0,
+      "skipped": 10,
+      "errors": 0,
+      "api_calls": 0,
+      "duration_ms": 296.99999999138527
+    },
+    {
+      "entity": "event",
+      "status": "COMPLETED",
+      "inserted": 1,
+      "updated": 0,
+      "skipped": 0,
+      "errors": 0,
+      "api_calls": 0,
+      "duration_ms": 703.0000000086147
+    },
+    {
+      "entity": "fighter",
+      "status": "COMPLETED",
+      "inserted": 1799,
+      "updated": 90,
+      "skipped": 110,
+      "errors": 0,
+      "api_calls": 0,
+      "duration_ms": 696907.0000000065
+    },
+    {
+      "entity": "historical_event",
+      "status": "COMPLETED",
+      "inserted": 230,
+      "updated": 0,
+      "skipped": 521,
+      "errors": 0,
+      "api_calls": 0,
+      "duration_ms": 6280.999999988126
+    },
+    {
+      "entity": "promotion",
+      "status": "COMPLETED",
+      "inserted": 0,
+      "updated": 0,
+      "skipped": 48,
+      "errors": 0,
+      "api_calls": 0,
+      "duration_ms": 15890.00000001397
+    },
+    {
+      "entity": "ranking",
+      "status": "COMPLETED",
+      "inserted": 12,
+      "updated": 0,
+      "skipped": 0,
+      "errors": 0,
+      "api_calls": 0,
+      "duration_ms": 32344.000000011874
+    },
+    {
+      "entity": "statistic",
+      "status": "COMPLETED",
+      "inserted": 320,
+      "updated": 0,
+      "skipped": 40,
+      "errors": 0,
+      "api_calls": 0,
+      "duration_ms": 65453.000000008615
+    },
+    {
+      "entity": "venue",
+      "status": "COMPLETED",
+      "inserted": 0,
+      "updated": 0,
+      "skipped": 0,
+      "errors": 0,
+      "api_calls": 0,
+      "duration_ms": 0.0
+    },
+    {
+      "entity": "weight_class",
+      "status": "COMPLETED",
+      "inserted": 0,
+      "updated": 0,
+      "skipped": 0,
+      "errors": 0,
+      "api_calls": 0,
+      "duration_ms": 0.0
+    }
+  ],
+  "eventlog_job_present": false,
+  "promotions_in_sync_set": 6,
+  "representative_fighters": [
+    [
+      "2335653",
+      null
+    ],
+    [
+      "2335697",
+      null
+    ]
+  ]
+}

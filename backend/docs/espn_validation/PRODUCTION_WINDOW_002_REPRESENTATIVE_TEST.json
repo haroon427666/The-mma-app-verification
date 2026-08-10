@@ -1,0 +1,249 @@
+{
+  "band_sample_ids": [
+    2488769,
+    2498638,
+    2499775,
+    2500188,
+    2500570,
+    2500734,
+    2501246,
+    2501541,
+    2501791,
+    2502019,
+    2502274,
+    2502283
+  ],
+  "results": [
+    {
+      "id": 2488769,
+      "http": 200,
+      "name": "Charlie West",
+      "is_active": false,
+      "db_name": null
+    },
+    {
+      "id": 2498638,
+      "http": 200,
+      "name": "Eduardo Maiorino",
+      "is_active": false,
+      "db_name": null
+    },
+    {
+      "id": 2499775,
+      "http": 200,
+      "name": "Brian Johnston",
+      "is_active": false,
+      "db_name": null
+    },
+    {
+      "id": 2500188,
+      "http": 200,
+      "name": "Brian Szohr",
+      "is_active": false,
+      "db_name": null
+    },
+    {
+      "id": 2500570,
+      "http": 200,
+      "name": "Shad Smith",
+      "is_active": false,
+      "db_name": null
+    },
+    {
+      "id": 2500734,
+      "http": 200,
+      "name": "Carlos Zevallos",
+      "is_active": false,
+      "db_name": null
+    },
+    {
+      "id": 2501246,
+      "http": 200,
+      "name": "Sanjin Kadunc",
+      "is_active": false,
+      "db_name": null
+    },
+    {
+      "id": 2501541,
+      "http": 200,
+      "name": "Norifumi Yamamoto",
+      "is_active": false,
+      "db_name": null
+    },
+    {
+      "id": 2501791,
+      "http": 200,
+      "name": "Rob Schinkle",
+      "is_active": false,
+      "db_name": null
+    },
+    {
+      "id": 2502019,
+      "http": 200,
+      "name": "Eric Harcrow",
+      "is_active": false,
+      "db_name": null
+    },
+    {
+      "id": 2502274,
+      "http": 200,
+      "name": "Josh Bennett",
+      "is_active": false,
+      "db_name": null
+    },
+    {
+      "id": 2502283,
+      "http": 200,
+      "name": "Tony Mendoza",
+      "is_active": false,
+      "db_name": null
+    },
+    {
+      "id": 2512089,
+      "http": 200,
+      "name": "Demetrious Johnson",
+      "is_active": true,
+      "db_name": null
+    },
+    {
+      "id": 2563796,
+      "http": 200,
+      "name": "Ronda Rousey",
+      "is_active": true,
+      "db_name": null
+    },
+    {
+      "id": 2335697,
+      "http": 200,
+      "name": "Royce Gracie",
+      "is_active": false,
+      "db_name": "Royce Gracie"
+    },
+    {
+      "id": 2335653,
+      "http": 200,
+      "name": "Ken Shamrock",
+      "is_active": false,
+      "db_name": "Ken Shamrock"
+    },
+    {
+      "id": 3933168,
+      "http": 200,
+      "name": "Francis Ngannou",
+      "is_active": true,
+      "db_name": null
+    },
+    {
+      "id": 2335639,
+      "http": 200,
+      "name": "Jon Jones",
+      "is_active": true,
+      "db_name": "Jon Jones"
+    },
+    {
+      "id": 2335659,
+      "http": 200,
+      "name": "Georges St-Pierre",
+      "is_active": false,
+      "db_name": "Georges St-Pierre"
+    },
+    {
+      "id": 2509290,
+      "http": 200,
+      "name": "Daniel Cormier",
+      "is_active": false,
+      "db_name": null
+    },
+    {
+      "id": 2611557,
+      "http": 200,
+      "name": "Khabib Nurmagomedov",
+      "is_active": false,
+      "db_name": null
+    },
+    {
+      "id": 2504951,
+      "http": 200,
+      "name": "Stipe Miocic",
+      "is_active": true,
+      "db_name": null
+    },
+    {
+      "id": 2504169,
+      "http": 200,
+      "name": "Charles Oliveira",
+      "is_active": true,
+      "db_name": null
+    },
+    {
+      "id": 3022677,
+      "http": 200,
+      "name": "Conor McGregor",
+      "is_active": true,
+      "db_name": null
+    },
+    {
+      "id": 2516131,
+      "http": 200,
+      "name": "Amanda Nunes",
+      "is_active": true,
+      "db_name": null
+    },
+    {
+      "id": 3088812,
+      "http": 200,
+      "name": "Kamaru Usman",
+      "is_active": true,
+      "db_name": null
+    },
+    {
+      "id": 4285679,
+      "http": 200,
+      "name": "Israel Adesanya",
+      "is_active": true,
+      "db_name": null
+    },
+    {
+      "id": 3949584,
+      "http": 200,
+      "name": "Alexander Volkanovski",
+      "is_active": true,
+      "db_name": null
+    },
+    {
+      "id": 4189320,
+      "http": 200,
+      "name": "Deiveson Figueiredo",
+      "is_active": true,
+      "db_name": null
+    },
+    {
+      "id": 2506250,
+      "http": 200,
+      "name": "Jan Blachowicz",
+      "is_active": true,
+      "db_name": null
+    },
+    {
+      "id": 2506549,
+      "http": 200,
+      "name": "Dustin Poirier",
+      "is_active": true,
+      "db_name": null
+    },
+    {
+      "id": 3023388,
+      "http": 200,
+      "name": "Henry Cejudo",
+      "is_active": true,
+      "db_name": null
+    },
+    {
+      "id": 2431343,
+      "http": 200,
+      "name": "Frank Shamrock",
+      "is_active": false,
+      "db_name": "Frank Shamrock"
+    }
+  ]
+}

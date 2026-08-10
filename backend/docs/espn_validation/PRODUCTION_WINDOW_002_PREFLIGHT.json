@@ -1,0 +1,433 @@
+{
+  "kind": "PREFLIGHT_WINDOW_002",
+  "captured_at": "2026-08-10",
+  "alembic_version": "006",
+  "row_counts": {
+    "fighters": 1000,
+    "fighter_records": 999,
+    "statistics": 368,
+    "events": 24,
+    "competitions": 260,
+    "competitors": 35,
+    "rankings": 12,
+    "promotions": 48,
+    "venues": 0,
+    "broadcasts": 3,
+    "weight_classes": 17,
+    "sync_runs": 3,
+    "sync_jobs": 30,
+    "sync_checkpoints": 0,
+    "external_ids": 1349,
+    "provider_payloads": 0,
+    "provider_conflicts": 0,
+    "dead_letters": 0,
+    "users": 0,
+    "devices": 0,
+    "notifications": 0,
+    "favorite_events": 0,
+    "favorite_fighters": 0,
+    "watchlist_events": 0,
+    "user_preferences": 0,
+    "user_sessions": 0
+  },
+  "duplicate_provider_external_id": {
+    "fighters": [],
+    "events": [],
+    "competitions": []
+  },
+  "orphans": {
+    "competitions_without_event": 0,
+    "competitors_without_competition": 0,
+    "fighter_records_without_fighter": 0,
+    "statistics_without_fighter": 0,
+    "sync_jobs_without_run": 0,
+    "fighter_records_fighter_null": 0
+  },
+  "null_checks": {
+    "fighters_is_active_null": 0,
+    "fighters_first_last_null": 0,
+    "events_status_name_promo_null": 0,
+    "statistics_null_cat_label": 0,
+    "competitions_event_id_null": 0,
+    "competitors_competition_id_null": 0
+  },
+  "espn_fighters": 1000,
+  "espn_events": 24,
+  "non_espn_fighters": 0,
+  "non_espn_events": 0,
+  "non_espn_competitions": 0,
+  "fighter_external_id_range": [
+    1000,
+    2085811,
+    2488768
+  ],
+  "sync_runs": [
+    [
+      "eb70f094-8420-4741-b53d-b1d5ef4cc4bc",
+      "COMPLETED",
+      "auto",
+      "espn",
+      "2026-08-10 15:58:18.861152+05:00",
+      "2026-08-10 16:11:59.362813+05:00",
+      820613.269,
+      2369,
+      90,
+      729,
+      0
+    ],
+    [
+      "5e400b2a-cb2c-4986-ad24-c7712e58ed2f",
+      "COMPLETED",
+      "auto",
+      "espn",
+      "2026-08-10 00:00:45.120113+05:00",
+      "2026-08-10 00:00:50.373064+05:00",
+      5252.951,
+      4,
+      100,
+      422,
+      0
+    ],
+    [
+      "accd73ad-4a32-413c-a2ca-68430d9b3054",
+      "COMPLETED",
+      "auto",
+      "espn",
+      "2026-08-09 23:58:11.770931+05:00",
+      "2026-08-10 00:00:32.920019+05:00",
+      141246.289,
+      384,
+      0,
+      142,
+      0
+    ]
+  ],
+  "sync_jobs": [
+    [
+      "2026-08-09 23:58:11.770931+05:00",
+      "broadcast",
+      "COMPLETED",
+      1,
+      0,
+      0,
+      0,
+      3906.0000000026776
+    ],
+    [
+      "2026-08-09 23:58:11.770931+05:00",
+      "competition",
+      "COMPLETED",
+      12,
+      0,
+      24,
+      0,
+      250.0
+    ],
+    [
+      "2026-08-09 23:58:11.770931+05:00",
+      "event",
+      "COMPLETED",
+      1,
+      0,
+      0,
+      0,
+      750.0
+    ],
+    [
+      "2026-08-09 23:58:11.770931+05:00",
+      "fighter",
+      "COMPLETED",
+      200,
+      0,
+      0,
+      0,
+      77640.99999998871
+    ],
+    [
+      "2026-08-09 23:58:11.770931+05:00",
+      "historical_event",
+      "COMPLETED",
+      70,
+      0,
+      118,
+      0,
+      7500.0
+    ],
+    [
+      "2026-08-09 23:58:11.770931+05:00",
+      "promotion",
+      "COMPLETED",
+      48,
+      0,
+      0,
+      0,
+      15406.000000002678
+    ],
+    [
+      "2026-08-09 23:58:11.770931+05:00",
+      "ranking",
+      "COMPLETED",
+      4,
+      0,
+      0,
+      0,
+      27343.999999997322
+    ],
+    [
+      "2026-08-09 23:58:11.770931+05:00",
+      "statistic",
+      "COMPLETED",
+      48,
+      0,
+      0,
+      0,
+      8297.000000005937
+    ],
+    [
+      "2026-08-09 23:58:11.770931+05:00",
+      "venue",
+      "COMPLETED",
+      0,
+      0,
+      0,
+      0,
+      0.0
+    ],
+    [
+      "2026-08-09 23:58:11.770931+05:00",
+      "weight_class",
+      "COMPLETED",
+      0,
+      0,
+      0,
+      0,
+      0.0
+    ],
+    [
+      "2026-08-10 00:00:45.120113+05:00",
+      "broadcast",
+      "COMPLETED",
+      0,
+      0,
+      1,
+      0,
+      14.999999999417923
+    ],
+    [
+      "2026-08-10 00:00:45.120113+05:00",
+      "competition",
+      "COMPLETED",
+      0,
+      0,
+      36,
+      0,
+      16.00000000325963
+    ],
+    [
+      "2026-08-10 00:00:45.120113+05:00",
+      "event",
+      "COMPLETED",
+      0,
+      0,
+      1,
+      0,
+      0.0
+    ],
+    [
+      "2026-08-10 00:00:45.120113+05:00",
+      "fighter",
+      "COMPLETED",
+      0,
+      100,
+      100,
+      0,
+      125.0
+    ],
+    [
+      "2026-08-10 00:00:45.120113+05:00",
+      "historical_event",
+      "COMPLETED",
+      0,
+      0,
+      188,
+      0,
+      77.99999999406282
+    ],
+    [
+      "2026-08-10 00:00:45.120113+05:00",
+      "promotion",
+      "COMPLETED",
+      0,
+      0,
+      48,
+      0,
+      16.00000000325963
+    ],
+    [
+      "2026-08-10 00:00:45.120113+05:00",
+      "ranking",
+      "COMPLETED",
+      4,
+      0,
+      0,
+      0,
+      63.00000000919681
+    ],
+    [
+      "2026-08-10 00:00:45.120113+05:00",
+      "statistic",
+      "COMPLETED",
+      0,
+      0,
+      48,
+      0,
+      4921.999999991385
+    ],
+    [
+      "2026-08-10 00:00:45.120113+05:00",
+      "venue",
+      "COMPLETED",
+      0,
+      0,
+      0,
+      0,
+      0.0
+    ],
+    [
+      "2026-08-10 00:00:45.120113+05:00",
+      "weight_class",
+      "COMPLETED",
+      0,
+      0,
+      0,
+      0,
+      0.0
+    ],
+    [
+      "2026-08-10 15:58:18.861152+05:00",
+      "broadcast",
+      "COMPLETED",
+      2,
+      0,
+      0,
+      0,
+      2625.0
+    ],
+    [
+      "2026-08-10 15:58:18.861152+05:00",
+      "competition",
+      "COMPLETED",
+      5,
+      0,
+      10,
+      0,
+      296.99999999138527
+    ],
+    [
+      "2026-08-10 15:58:18.861152+05:00",
+      "event",
+      "COMPLETED",
+      1,
+      0,
+      0,
+      0,
+      703.0000000086147
+    ],
+    [
+      "2026-08-10 15:58:18.861152+05:00",
+      "fighter",
+      "COMPLETED",
+      1799,
+      90,
+      110,
+      0,
+      696907.0000000065
+    ],
+    [
+      "2026-08-10 15:58:18.861152+05:00",
+      "historical_event",
+      "COMPLETED",
+      230,
+      0,
+      521,
+      0,
+      6280.999999988126
+    ],
+    [
+      "2026-08-10 15:58:18.861152+05:00",
+      "promotion",
+      "COMPLETED",
+      0,
+      0,
+      48,
+      0,
+      15890.00000001397
+    ],
+    [
+      "2026-08-10 15:58:18.861152+05:00",
+      "ranking",
+      "COMPLETED",
+      12,
+      0,
+      0,
+      0,
+      32344.000000011874
+    ],
+    [
+      "2026-08-10 15:58:18.861152+05:00",
+      "statistic",
+      "COMPLETED",
+      320,
+      0,
+      40,
+      0,
+      65453.000000008615
+    ],
+    [
+      "2026-08-10 15:58:18.861152+05:00",
+      "venue",
+      "COMPLETED",
+      0,
+      0,
+      0,
+      0,
+      0.0
+    ],
+    [
+      "2026-08-10 15:58:18.861152+05:00",
+      "weight_class",
+      "COMPLETED",
+      0,
+      0,
+      0,
+      0,
+      0.0
+    ]
+  ],
+  "unique_indexes_present": [
+    "ix_competitors_fighter_id",
+    "ix_rankings_fighter_id",
+    "ix_statistics_fighter_id",
+    "uq_broadcasts_event_network_region",
+    "uq_competitions_provider_external",
+    "uq_competitors_comp_fighter",
+    "uq_events_provider_external",
+    "uq_external_ids_entity_provider",
+    "uq_fav_events_user_event",
+    "uq_fav_fighters_user_fighter",
+    "uq_fighter_records_fighter_id",
+    "uq_fighters_provider_external",
+    "uq_promotions_provider_external",
+    "uq_statistics_career_fighter_cat_label",
+    "uq_statistics_comp_cat_label",
+    "uq_sync_checkpoints_entity_provider",
+    "uq_user_preferences_user_id",
+    "uq_users_apple_id",
+    "uq_users_email",
+    "uq_users_google_id",
+    "uq_users_username",
+    "uq_venues_provider_external",
+    "uq_watchlist_user_event",
+    "uq_weight_classes_provider_external"
+  ]
+}
