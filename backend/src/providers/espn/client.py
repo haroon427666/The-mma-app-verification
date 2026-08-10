@@ -513,6 +513,7 @@ class ESPNClient:
         path: str,
         params: dict[str, Any] | None = None,
         limit: int | None = None,
+        start_page: int = 1,
     ) -> AsyncIterator[dict[str, Any]]:
         """Paginate through ESPN API results.
 
@@ -535,6 +536,9 @@ class ESPNClient:
             path: API path
             params: Query parameters
             limit: Maximum items to yield (None = all pages)
+            start_page: First page to fetch (resumable walks pass the last
+                processed page + 1 so an interrupted census never restarts
+                from page 1; default 1 preserves the original behavior).
 
         Yields:
             Full JSON response for each page.
@@ -542,7 +546,7 @@ class ESPNClient:
         if params is None:
             params = {}
         params.setdefault("limit", self.config.page_limit)
-        params.setdefault("page", 1)
+        params.setdefault("page", start_page)
 
         total_yielded = 0
         pages_yielded = 0

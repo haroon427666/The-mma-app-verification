@@ -111,7 +111,21 @@ class ESPN_HistoricalEventSyncJob(SyncJob):
         if _eventlog_enabled():
             athlete_ids = await self._known_fighter_ids(ctx)
             if athlete_ids:
-                for payload in await provider.fetch_eventlog_hooks(athlete_ids):
+                payloads = await provider.fetch_eventlog_hooks(athlete_ids)
+                for payload in payloads:
+                    # Relationship surface → discovery registry: competitor
+                    # athlete refs feed the fighter window (deduplicated; the
+                    # registry's unique constraint makes this idempotent).
+                    from src.providers.espn.discovery import DiscoveryService
+                    from src.providers.espn.parsers.eventlog import (
+                        extract_eventlog_athlete_ids,
+                    )
+
+                    ref_athletes = extract_eventlog_athlete_ids(payload)
+                    if ref_athletes:
+                        await DiscoveryService(session=ctx.db).register_ids(
+                            ref_athletes, source="eventlog"
+                        )
                     for entry in parse_eventlog_refs(payload):
                         event_id = entry["event_id"]
                         if event_id not in hooks:

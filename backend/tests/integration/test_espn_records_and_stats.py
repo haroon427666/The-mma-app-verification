@@ -339,67 +339,100 @@ class TestCareerStatisticsPersistence:
 
 
 class TestDiscoveryFighterJob:
+    """Discovery job tests against the registry-driven contract.
+
+    The C/D rewrite replaced fetch_athlete_ids + in-memory checkpoint with the
+    durable discovery registry (sync_discovered_athletes) + per-source walks:
+    _fetch ensures the census is enumerated (via the client's paginate), then
+    takes the next N UNCONSUMED registry ids as its window. These tests use a
+    fake client that pages the global listing, so the walk registers the ids
+    and the window/fetch/records flow is exercised end to end.
+    """
+
+    @staticmethod
+    def _ref(eid: str) -> dict:
+        return {"$ref": f"https://sports.core.api.espn.com/v2/sports/mma/athletes/{eid}"}
+
+    @staticmethod
+    def _page(*eids: str) -> dict:
+        return {"items": [TestDiscoveryFighterJob._ref(e) for e in eids]}
+
+    class FakeClient:
+        """Client stand-in: pages per path, CLOSED breaker, zero error metrics."""
+
+        def __init__(self, pages_by_path: dict):
+            from types import SimpleNamespace
+
+            from src.providers.espn.client import CircuitState
+
+            self.pages_by_path = pages_by_path
+            self._circuit_breaker = SimpleNamespace(state=CircuitState.CLOSED)
+            self.metrics = {
+                "network_errors": 0,
+                "server_errors_5xx": 0,
+                "rate_limited_429": 0,
+            }
+
+        async def paginate(self, path, params=None, limit=None, start_page=1):
+            for idx in range(start_page - 1, len(self.pages_by_path.get(path, []))):
+                yield self.pages_by_path[path][idx]
+
+    class FakeProvider:
+        """Provider stand-in: resolves the window, returns records for one id."""
+
+        _config = type("_Cfg", (), {"max_concurrency": 2})()
+
+        def __init__(self, client):
+            self._client = client
+
+        async def fetch_fighters_by_ids(self, athlete_ids):
+            from src.providers.dto import FighterDTO
+
+            return [
+                FighterDTO(
+                    provider="espn",
+                    external_id=a,
+                    first_name="F",
+                    last_name=a,
+                )
+                for a in athlete_ids
+            ]
+
+        async def fetch_fighter_record(self, external_id):
+            from src.providers.espn.parsers.records import FighterRecord
+
+            if external_id == "3088812":
+                return FighterRecord(
+                    wins=21,
+                    losses=5,
+                    record_summary="21-5-0",
+                    ko_tko_wins=9,
+                    total_fights=26,
+                    finish_rate=round(10 / 21, 4),
+                )
+            return None  # unavailable → no record
+
     @pytest.mark.asyncio
     async def test_job_resolves_ids_and_attaches_records(self, db_session):
-        """Discovery job: fake provider returns IDs; records attach to DTOs."""
+        """Discovery job: walk registers ids; records attach to DTOs."""
+        from src.providers.espn.config import ENDPOINTS
+        from src.providers.espn.discovery import DiscoveryService
         from src.providers.espn.jobs.fighter import ESPN_FighterSyncJob
         from src.sync.context import SyncContext
         from src.sync.state import SyncState
         from src.sync.types import EntityType
 
-        class FakeProvider:
-            class _Cfg:
-                max_concurrency = 2
-
-            _config = _Cfg()
-
-            async def fetch_athlete_ids(self):
-                return {"3088812", "2354359"}
-
-            async def fetch_fighters_by_ids(self, athlete_ids):
-                from src.providers.dto import FighterDTO
-
-                return [
-                    FighterDTO(
-                        provider="espn",
-                        external_id="3088812",
-                        first_name="Islam",
-                        last_name="Makhachev",
-                    ),
-                    FighterDTO(
-                        provider="espn",
-                        external_id="2354359",
-                        first_name="Jason",
-                        last_name="Reinhardt",
-                    ),
-                ]
-
-            async def fetch_fighter_record(self, external_id):
-                from src.providers.espn.parsers.records import FighterRecord
-
-                if external_id == "3088812":
-                    return FighterRecord(
-                        wins=21,
-                        losses=5,
-                        record_summary="21-5-0",
-                        ko_tko_wins=9,
-                        total_fights=26,
-                        finish_rate=round(10 / 21, 4),
-                    )
-                return None  # unavailable → no record
-
-        provider = FakeProvider()
+        client = self.FakeClient(
+            {ENDPOINTS["global_athletes"]: [self._page("3088812", "2354359")]}
+        )
+        provider = self.FakeProvider(client)
         job = ESPN_FighterSyncJob()
         state = SyncState.for_entity(EntityType.FIGHTER, "espn")
 
-        from src.sync.clock import SystemClock
-
-        ctx = SyncContext(provider=provider, db=db_session, clock=SystemClock())
+        ctx = SyncContext(provider=provider, db=db_session)
         dtos = await job._fetch(ctx, state)
 
         assert len(dtos) == 2
-        # Checkpoint cached for resumability
-        assert state.checkpoint.get("athlete_ids") == ["2354359", "3088812"]
 
         by_id = {d.external_id: d for d in dtos}
         # Records attached for the fighter with a real record
@@ -409,8 +442,16 @@ class TestDiscoveryFighterJob:
         # Unavailable records → None fields (never fabricate / never reset)
         assert by_id["2354359"].record_summary is None
 
+        # Registry holds the discovered ids, unconsumed (consumption happens in
+        # _upsert after a successful batch persist)
+        service = DiscoveryService(session=db_session)
+        assert await service.registry_count() == 2
+        assert await service.pending_count() == 2
+
     @pytest.mark.asyncio
     async def test_job_window_respects_sync_limit(self, db_session, monkeypatch):
+        """Window = next N unconsumed registry ids (bounded per run)."""
+        from src.providers.espn.config import ENDPOINTS
         from src.providers.espn.jobs.fighter import ESPN_FighterSyncJob
         from src.sync.context import SyncContext
         from src.sync.state import SyncState
@@ -418,30 +459,14 @@ class TestDiscoveryFighterJob:
 
         monkeypatch.setenv("ESPN_FIGHTER_SYNC_LIMIT", "1")
 
-        class FakeProvider:
-            _config = type("_Cfg", (), {"max_concurrency": 2})()
-
-            async def fetch_athlete_ids(self):
-                return {"1", "2", "3"}
-
-            async def fetch_fighters_by_ids(self, athlete_ids):
-                from src.providers.dto import FighterDTO
-
-                return [
-                    FighterDTO(
-                        provider="espn",
-                        external_id=a,
-                        first_name="F",
-                        last_name=a,
-                    )
-                    for a in athlete_ids
-                ]
-
-            async def fetch_fighter_record(self, external_id):
-                return None
-
+        client = self.FakeClient(
+            {ENDPOINTS["global_athletes"]: [self._page("1", "2", "3")]}
+        )
+        provider = self.FakeProvider(client)
         job = ESPN_FighterSyncJob()
         state = SyncState.for_entity(EntityType.FIGHTER, "espn")
-        ctx = SyncContext(provider=FakeProvider(), db=db_session)
+        ctx = SyncContext(provider=provider, db=db_session)
+
         dtos = await job._fetch(ctx, state)
         assert len(dtos) == 1  # bounded window
+        assert dtos[0].external_id == "1"  # ascending window order

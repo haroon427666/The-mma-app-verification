@@ -3,7 +3,17 @@
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -19,7 +29,12 @@ class ExternalId(Base, TimestampMixin):
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=new_uuid)
     entity_type: Mapped[str] = mapped_column(String(30), nullable=False)
-    entity_id: Mapped[str] = mapped_column(UUID(as_uuid=False), nullable=False)
+    # String(36) on SQLite: NUMERIC-affinity UUIDs with all-digit hex are
+    # stored as REAL floats and crash the result processor on read-back.
+    # Postgres keeps the native UUID type (variant is dialect-scoped).
+    entity_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False).with_variant(String(36), "sqlite"), nullable=False
+    )
     provider: Mapped[str] = mapped_column(String(20), nullable=False)
     external_id: Mapped[str] = mapped_column(String(50), nullable=False)
 
@@ -76,7 +91,13 @@ class SyncJob(Base, TimestampMixin):
 class SyncCheckpoint(Base, TimestampMixin):
     """Resume checkpoint per entity + provider."""
     __tablename__ = "sync_checkpoints"
-    __table_args__ = ({"comment": "Sync resume checkpoints"},)
+    __table_args__ = (
+        UniqueConstraint(
+            "entity_type", "provider",
+            name="uq_sync_checkpoints_entity_provider",
+        ),
+        {"comment": "Sync resume checkpoints"},
+    )
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=new_uuid)
     entity_type: Mapped[str] = mapped_column(String(30), nullable=False)
@@ -87,6 +108,67 @@ class SyncCheckpoint(Base, TimestampMixin):
     status: Mapped[str] = mapped_column(String(20), default="IN_PROGRESS")
     last_error: Mapped[str | None] = mapped_column(Text)
     completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    data: Mapped[dict | None] = mapped_column(JSONType)
+    """Serialized SyncState payload (checkpoint dict, timestamps, cursors)."""
+
+
+class SyncDiscoveredAthlete(Base, TimestampMixin):
+    """Deduplicated athlete-ID registry — convergence point for every discovery
+    surface (global listing walk, roster walks, ranking injection,
+    competition/eventlog refs). One row per (provider, external_id)."""
+    __tablename__ = "sync_discovered_athletes"
+    __table_args__ = (
+        UniqueConstraint(
+            "provider", "external_id",
+            name="uq_sync_discovered_athletes_provider_external",
+        ),
+        {"comment": "Deduplicated athlete-ID discovery registry"},
+    )
+
+    id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True, autoincrement=True,
+    )
+    provider: Mapped[str] = mapped_column(String(20), nullable=False)
+    external_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    source: Mapped[str] = mapped_column(String(50), nullable=False)
+    # String(36) on SQLite: avoids NUMERIC-affinity corruption of UUID hex
+    # values (all-digit hex is converted to REAL by SQLite). Postgres keeps
+    # the native UUID type (variant is dialect-scoped).
+    run_id: Mapped[str | None] = mapped_column(
+        UUID(as_uuid=False).with_variant(String(36), "sqlite")
+    )
+    consumed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    """False = still queued for the fighter window; True = synced or dead-ended."""
+
+
+class SyncDiscoveryCheckpoint(Base, TimestampMixin):
+    """Per-source resumable discovery-walk state (page/offset/count/completion)."""
+    __tablename__ = "sync_discovery_checkpoints"
+    __table_args__ = (
+        UniqueConstraint(
+            "provider", "source", "league_slug",
+            name="uq_sync_discovery_checkpoints_source",
+        ),
+        {"comment": "Per-source discovery-walk checkpoints (resumable census)"},
+    )
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=new_uuid)
+    provider: Mapped[str] = mapped_column(String(20), nullable=False)
+    source: Mapped[str] = mapped_column(String(50), nullable=False)
+    league_slug: Mapped[str] = mapped_column(String(30), nullable=False, default="")
+    page: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    offset: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    discovered_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    last_athlete_id: Mapped[str | None] = mapped_column(String(50))
+    status: Mapped[str] = mapped_column(String(20), default="IN_PROGRESS", nullable=False)
+    last_error: Mapped[str | None] = mapped_column(Text)
+    completed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # String(36) on SQLite: same NUMERIC-affinity avoidance as above.
+    run_id: Mapped[str | None] = mapped_column(
+        UUID(as_uuid=False).with_variant(String(36), "sqlite")
+    )
+    last_processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class ProviderPayload(Base, TimestampMixin):

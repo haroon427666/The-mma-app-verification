@@ -31,6 +31,9 @@ logger = logging.getLogger(__name__)
 # .../leagues/{league}/events/{event_id} — league slug may contain dashes
 _EVENT_REF_RE = re.compile(r"/leagues/(?P<league>[^/]+)/events/(?P<event_id>\d+)")
 
+# .../competitions/{comp_id}/competitors/{athlete_id}
+_ATHLETE_REF_RE = re.compile(r"/competitors/(\d+)$")
+
 
 def parse_eventlog_refs(data: dict[str, Any]) -> list[dict[str, str]]:
     """Extract (league, event_id) refs from an athlete eventlog payload.
@@ -76,3 +79,28 @@ def parse_eventlog_event_ids(data: dict[str, Any]) -> list[str]:
             seen.add(entry["event_id"])
             result.append(entry["event_id"])
     return result
+
+
+def extract_eventlog_athlete_ids(data: dict[str, Any]) -> list[str]:
+    """Competitor athlete IDs from an eventlog payload (competitor $refs).
+
+    Used to feed the discovery registry (source='eventlog') so athletes that
+    only appear as eventlog competitors enter the fighter pipeline even if the
+    flat listing never surfaces them. Content-dependent: absent items → empty.
+    """
+    seen: set[str] = set()
+    events = data.get("events", {}) or {}
+    items = events.get("items", []) or []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        competitor = item.get("competitor", {}) or {}
+        ref_url = (
+            competitor.get("$ref") if isinstance(competitor, dict) else None
+        )
+        if not isinstance(ref_url, str):
+            continue
+        match = _ATHLETE_REF_RE.search(ref_url)
+        if match:
+            seen.add(match.group(1))
+    return sorted(seen)

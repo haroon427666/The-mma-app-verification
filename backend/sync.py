@@ -119,8 +119,13 @@ async def close_providers(providers: dict):
     logger.info("All providers closed")
 
 
-def build_engine():
-    """Build the real SyncEngine with all ESPN jobs."""
+def build_engine(session: AsyncSession | None = None):
+    """Build the real SyncEngine with all ESPN jobs.
+
+    With a DB session the engine uses DatabaseSyncStateStore so checkpoints
+    survive process restarts (crash-resume). Without one (tests, scheduler)
+    it falls back to the in-memory store.
+    """
     from src.providers.espn.jobs import (
         ESPN_BroadcastSyncJob,
         ESPN_CompetitionSyncJob,
@@ -134,7 +139,7 @@ def build_engine():
         ESPN_WeightClassSyncJob,
     )
     from src.sync.engine import SyncEngine
-    from src.sync.state_store import MemorySyncStateStore
+    from src.sync.state_store import DatabaseSyncStateStore, MemorySyncStateStore
     from src.sync.types import EntityType
 
     jobs = {
@@ -149,7 +154,12 @@ def build_engine():
         EntityType.RANKING: ESPN_RankingSyncJob(),
         EntityType.HISTORICAL_EVENT: ESPN_HistoricalEventSyncJob(),
     }
-    return SyncEngine(jobs=jobs, statestore=MemorySyncStateStore())
+    statestore = (
+        DatabaseSyncStateStore(session)
+        if session is not None
+        else MemorySyncStateStore()
+    )
+    return SyncEngine(jobs=jobs, statestore=statestore)
 
 
 def _build_plan(plan_name: str, entity_filter: str | None):
@@ -200,7 +210,7 @@ async def run_sync(
     from src.sync.types import SyncMode
 
     plan = _build_plan(plan_name, entity_filter)
-    engine = build_engine()
+    engine = build_engine(session)
     espn = providers["espn"]
 
     logger.info(

@@ -125,9 +125,25 @@ class CompetitionUpsert(BaseUpsert):
                 self.provider, comp_dto.fighter_external_id, "fighter"
             )
             if fighter_uuid is None:
+                # Fighter not yet synced — queue the ID in the discovery
+                # registry so the next fighter window picks it up (relationship
+                # surfaces feed the normal pipeline; no speculative creation).
+                try:
+                    from src.providers.espn.discovery import DiscoveryService
+
+                    await DiscoveryService(
+                        session=self._resolver._db
+                    ).register_ids(
+                        [comp_dto.fighter_external_id], source="competition"
+                    )
+                except Exception as reg_err:
+                    logger.debug(
+                        f"Registry registration failed for "
+                        f"{comp_dto.fighter_external_id}: {reg_err}"
+                    )
                 logger.warning(
                     f"Competitor skipped: fighter {comp_dto.fighter_external_id} "
-                    f"not yet synced"
+                    f"not yet synced (queued for discovery)"
                 )
                 result.skipped += 1
                 continue
