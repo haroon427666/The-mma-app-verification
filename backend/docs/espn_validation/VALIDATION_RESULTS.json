@@ -1,0 +1,185 @@
+{
+  "document": "ESPN MMA integration — machine-readable acceptance evidence (preserved 2026-08-10)",
+  "accepted_commit": "cda302cc6f986aeabfad8ce2f790f5a37667a670",
+  "accepted_commit_subject": "feat(espn): complete validated ESPN MMA integration",
+  "author": "Haroon Afridi",
+  "author_date_iso": "2026-08-10T00:37:23+05:00",
+  "parent_commit": "d3ecc68f42edc755582b7266a760cecd12c432e2",
+  "current_head": "b723c7109da95b678e2ab67bf6aa12af84e0b217",
+  "head_tree_equals_accepted_tree": true,
+  "primary_source": "backend/ESPN_PRODUCTION_VALIDATION_REPORT.md",
+  "sources": {
+    "validation_report": "backend/ESPN_PRODUCTION_VALIDATION_REPORT.md",
+    "implementation_report": "backend/ESPN_INTEGRATION_REPORT.md",
+    "integration_plan": "backend/ESPN_INTEGRATION_PLAN.md",
+    "endpoint_catalog": "backend/ESPN_ENDPOINT_CATALOG.md",
+    "migration_006": "backend/alembic/versions/006_statistics_career.py",
+    "benchmark_script": "backend/scripts/espn_live_benchmark.py",
+    "verify_script": "backend/verify_espn.py",
+    "frozen_research_start": "C:/Users/-/Desktop/zip for xhatgpt/espn endpoint checks/research/espn_endpoint_discovery/START_HERE.md"
+  },
+  "checks": [
+    {
+      "id": "commit_exists",
+      "label": "Accepted commit exists in git history",
+      "status": "PASS",
+      "evidence": "git cat-file -t cda302c"
+    },
+    {
+      "id": "head_tree_identical",
+      "label": "HEAD tree identical to accepted commit (merge with empty diff)",
+      "status": "PASS",
+      "evidence": "git diff b723c71 cda302c is empty"
+    },
+    {
+      "id": "static_pytest",
+      "label": "Full test suite result at validation close",
+      "status": "PASS",
+      "value": "455 passed, 2 skipped (env-gated live tests)",
+      "evidence": "VALIDATION_REPORT §14; 457 test defs in tree = 455+2"
+    },
+    {
+      "id": "static_ruff",
+      "label": "ruff clean",
+      "status": "PASS",
+      "value": "All checks passed",
+      "evidence": "VALIDATION_REPORT §14"
+    },
+    {
+      "id": "static_mypy",
+      "label": "mypy clean",
+      "status": "PASS",
+      "value": "no issues found in 189 source files",
+      "evidence": "VALIDATION_REPORT §14"
+    },
+    {
+      "id": "alembic_consistent",
+      "label": "Alembic head/current consistent at 006",
+      "status": "PASS",
+      "evidence": "VALIDATION_REPORT §14; live DB alembic_version=006"
+    },
+    {
+      "id": "live_sync_run1",
+      "label": "Live full-sync run 1",
+      "status": "PASS",
+      "value": "10/10 jobs COMPLETED, 0 errors; duration_ms 141246.289; inserted 384, skipped 142",
+      "evidence": "VALIDATION_REPORT §10; DB sync_runs accd73ad"
+    },
+    {
+      "id": "live_sync_run2",
+      "label": "Live full-sync run 2 (idempotency)",
+      "status": "PASS",
+      "value": "10/10 jobs COMPLETED, 0 errors; duration_ms 5252.951; updated 100, skipped 422; identical row counts",
+      "evidence": "VALIDATION_REPORT §10, §12; DB sync_runs 5e400b2a"
+    },
+    {
+      "id": "live_probes",
+      "label": "Representative surface probes",
+      "status": "PASS",
+      "value": "16/16 probes OK/EMPTY per content-dependency; hidden profiles resolve; records 29-17-2/15-2-2; eventlog pages=2; 19 winningFight refs; 133 ranks; ofc=408",
+      "evidence": "VALIDATION_REPORT §10"
+    },
+    {
+      "id": "db_integrity",
+      "label": "Database integrity post-acceptance",
+      "status": "PASS",
+      "value": "0 dupes (provider,external_id); 0 fighter_records dupes; 0 orphans; migration 006 applied + verified",
+      "evidence": "VALIDATION_REPORT §11; live DB re-verification 2026-08-10"
+    },
+    {
+      "id": "benchmark_envelope",
+      "label": "Rate envelope enforced post-fix",
+      "status": "PASS",
+      "value": "2.68–3.22 req/s at 1/2/4/8 workers (was 8.36 pre-fix); 0 failures/retries/429s; dedup 20/40; cache reuse 0 new calls",
+      "evidence": "VALIDATION_REPORT §13"
+    },
+    {
+      "id": "bugs_fixed",
+      "label": "Five validation bugs fixed and re-validated live",
+      "status": "PASS",
+      "value": "breaker 4xx semantics; token-bucket rewrite; eventlog pagination; historical event-ID dedup; live test upgrades",
+      "evidence": "VALIDATION_REPORT §16–§17"
+    },
+    {
+      "id": "readiness",
+      "label": "Production readiness assessment",
+      "status": "PASS",
+      "value": "READY_FOR_COMMIT",
+      "evidence": "VALIDATION_REPORT §19"
+    },
+    {
+      "id": "research_frozen",
+      "label": "Frozen research workspace untouched by this package",
+      "status": "PASS",
+      "evidence": "external workspace read-only; no writes performed"
+    },
+    {
+      "id": "boundary_no_production_changes",
+      "label": "No production files modified by this evidence package",
+      "status": "PASS",
+      "evidence": "git status delta contains only backend/docs/espn_validation/* (new files)"
+    }
+  ],
+  "db_verification_2026_08_10": {
+    "alembic_version": "006",
+    "row_counts": {
+      "fighters": 100,
+      "fighter_records": 100,
+      "events": 6,
+      "competitions": 73,
+      "competitors": 4,
+      "rankings": 4,
+      "statistics": 48,
+      "promotions": 48,
+      "venues": 0,
+      "weight_classes": 13,
+      "broadcasts": 1,
+      "sync_runs": 2,
+      "sync_jobs": 20,
+      "sync_checkpoints": 0,
+      "external_ids": 240,
+      "provider_payloads": 0,
+      "provider_conflicts": 0,
+      "dead_letters": 0,
+      "users": 0
+    },
+    "sync_runs": [
+      {
+        "id": "accd73ad-4a32-413c-a2ca-68430d9b3054",
+        "status": "COMPLETED",
+        "provider": "espn",
+        "duration_ms": 141246.289,
+        "total_inserted": 384,
+        "total_updated": 0,
+        "total_skipped": 142,
+        "total_errors": 0
+      },
+      {
+        "id": "5e400b2a-cb2c-4986-ad24-c7712e58ed2f",
+        "status": "COMPLETED",
+        "provider": "espn",
+        "duration_ms": 5252.951,
+        "total_inserted": 4,
+        "total_updated": 100,
+        "total_skipped": 422,
+        "total_errors": 0
+      }
+    ]
+  },
+  "remaining_limitations": [
+    "Rousey ID 2563797 resolves to 'Alexis' (live cross-ID collision; research documented same class: Fedor 2335301 -> Frank Mir)",
+    "Cross-promotion historical events attributed to first ref scope (e.g. Bellator 214 -> ufc)",
+    "Full census ~38k profiles ~3.5h at 3 rps; use ESPN_FIGHTER_SYNC_LIMIT windows",
+    "Discovery checkpoint in-process only (MemorySyncStateStore); DB-backed store is future work",
+    "Statistics count varies 48 vs 88 between runs (listing churn; content-dependent)",
+    "Eventlog capped at 5 pages/fighter (125 fights)",
+    "'other' league (~27,286 IDs) excluded from active discovery",
+    "alembic check unsupported (pre-existing)",
+    "venues = 0 (pre-existing)"
+  ],
+  "gaps": [
+    "Exact per-phase implementation timestamps UNKNOWN (not recorded)",
+    "Exact live-probe/benchmark wall-clock timestamps UNKNOWN (only sync_runs timestamps are recorded)",
+    "pytest/ruff/mypy were not re-run at package time (lightweight preservation policy); the recorded results are from the 2026-08-09 validation close"
+  ]
+}

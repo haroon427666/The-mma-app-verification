@@ -1,0 +1,134 @@
+{
+  "manifest": "ESPN integration acceptance evidence — SHA-256 checksum manifest",
+  "created": "2026-08-10",
+  "algorithm": "SHA-256",
+  "purpose": "Permanent integrity record for the acceptance evidence package and the critical existing evidence files it relies upon.",
+  "self_hash_policy": "This manifest intentionally does NOT contain its own SHA-256. A self-referential hash is circular (any modification changes the hash, including one that updates it). The manifest's integrity/version anchor is git history once committed. See VERIFICATION.md for recompute commands.",
+  "accepted_commit": "cda302cc6f986aeabfad8ce2f790f5a37667a670",
+  "accepted_commit_subject": "feat(espn): complete validated ESPN MMA integration",
+  "current_head": "b723c7109da95b678e2ab67bf6aa12af84e0b217",
+  "head_tree_equals_accepted_tree": true,
+  "note": "Paths are relative to the repository root. 'evidence' = files created by this package; 'critical-existing' = pre-existing files, unchanged, hashed at package time.",
+  "files": [
+    {
+      "path": "backend/docs/espn_validation/README.md",
+      "sha256": "178e4437d163c27a6f065ee7d5947537d53a73c4246590905401b1ce137466fa",
+      "kind": "evidence",
+      "note": "package overview"
+    },
+    {
+      "path": "backend/docs/espn_validation/ACCEPTANCE_EVIDENCE.md",
+      "sha256": "f7d8be42c11bdfb9b9b5fb2ce0882122641fd060c49a149d6d70581360a80712",
+      "kind": "evidence",
+      "note": "acceptance record"
+    },
+    {
+      "path": "backend/docs/espn_validation/VALIDATION_RESULTS.json",
+      "sha256": "40665b673101b176884426c3141d43a6a4fc9a2c3c3debbbc9f56833a4112b0c",
+      "kind": "evidence",
+      "note": "machine-readable results"
+    },
+    {
+      "path": "backend/docs/espn_validation/VALIDATION_FILE_MAP.md",
+      "sha256": "b902acf1c6ad103375d41654592e19448deb5401d63400fdfe0bb2e8a7ec5351",
+      "kind": "evidence",
+      "note": "file map"
+    },
+    {
+      "path": "backend/docs/espn_validation/VALIDATION_TIMELINE.md",
+      "sha256": "df738d27352d488563659b8dda3b240a4c5d956c20d043ca32de4977b449cc42",
+      "kind": "evidence",
+      "note": "timeline"
+    },
+    {
+      "path": "backend/docs/espn_validation/VERIFICATION.md",
+      "sha256": "cf8c00a1313e06fdd427c870e3f84816cec720cbf70be932f425b38bbb50d325",
+      "kind": "evidence",
+      "note": "verification guide"
+    },
+    {
+      "path": "backend/ESPN_INTEGRATION_PLAN.md",
+      "sha256": "18ad66dfd25e90f50a1fee5a32ac0b3e77aff704537a4f7d2cf1fbdf5ed0e4f0",
+      "kind": "critical-existing",
+      "note": "architecture (in accepted commit)"
+    },
+    {
+      "path": "backend/ESPN_INTEGRATION_REPORT.md",
+      "sha256": "cba4565741696b5c652dc5d3a2160af855bebe73468675a340a872d1a41215d3",
+      "kind": "critical-existing",
+      "note": "implementation record (in accepted commit)"
+    },
+    {
+      "path": "backend/ESPN_PRODUCTION_VALIDATION_REPORT.md",
+      "sha256": "dc7e12f3e1bc0563f9bebe8b8d5b6facc11870747f895a806327ea9aeaff12b4",
+      "kind": "critical-existing",
+      "note": "primary acceptance evidence (in accepted commit)"
+    },
+    {
+      "path": "backend/ESPN_ENDPOINT_CATALOG.md",
+      "sha256": "33c200bdd4b3509ddc9502098f35b2df6a327a932f25190b037ab424845e4c2a",
+      "kind": "critical-existing",
+      "note": "endpoint catalog (in accepted commit)"
+    },
+    {
+      "path": "backend/alembic/versions/006_statistics_career.py",
+      "sha256": "efde2340e982dc98b103c18326a576e1e72414942304724e708c75ad4287aa51",
+      "kind": "critical-existing",
+      "note": "migration (in accepted commit)"
+    },
+    {
+      "path": "backend/scripts/espn_live_benchmark.py",
+      "sha256": "b4a094e1c441ff8f496afca9923d215d0db2802affbca6fb42ec5397411c0908",
+      "kind": "critical-existing",
+      "note": "benchmark script (in accepted commit)"
+    },
+    {
+      "path": "backend/verify_espn.py",
+      "sha256": "a324898e7519938ccb9a566a82843bc9750c1f4a11c72f6f182ed0fd7c8dead3",
+      "kind": "critical-existing",
+      "note": "Phase 5.5 verification suite (pre-existing, not in commit)"
+    },
+    {
+      "path": "backend/tests/unit/test_espn_discovery.py",
+      "sha256": "d2e2e6fdc3bdb84a9032ceeed505b490a09e0a31a964393d399491a9195f0cda",
+      "kind": "critical-existing",
+      "note": "tests (in accepted commit)"
+    },
+    {
+      "path": "backend/tests/unit/test_espn_pagination.py",
+      "sha256": "901129f54b8bec7927b75061e625801022d5f9be89cdf22ea73b1f93de66f67d",
+      "kind": "critical-existing",
+      "note": "tests (in accepted commit)"
+    },
+    {
+      "path": "backend/tests/unit/test_upserts.py",
+      "sha256": "813ad95afcd7eccbab06831ff58c616573663cc5a74be24c1ee44c706d01243f",
+      "kind": "critical-existing",
+      "note": "tests (in accepted commit)"
+    },
+    {
+      "path": "backend/tests/integration/test_sync_live.py",
+      "sha256": "2437184b27c0d3095e4dca3d9ec4e9804f81ed70bd19a76fa31c472eed8c2e1c",
+      "kind": "critical-existing",
+      "note": "tests (in accepted commit)"
+    },
+    {
+      "path": "backend/tests/integration/test_espn_live_probes.py",
+      "sha256": "1c4f4be4dcc637b36cb4d26cde57126fc9a4cca22792ab283ae197821c2adc97",
+      "kind": "critical-existing",
+      "note": "tests (in accepted commit)"
+    },
+    {
+      "path": "backend/tests/integration/test_espn_records_and_stats.py",
+      "sha256": "4a872eead76a359e16090466d6b1d3e3ba37a4b7b3da3ce56f139e3d97ac8c00",
+      "kind": "critical-existing",
+      "note": "tests (in accepted commit)"
+    },
+    {
+      "path": "backend/tests/integration/test_sync_engine_records.py",
+      "sha256": "f60d82ca707e1f79bc498737a14d2af0a80982450b71e7dfd816bcdf80c36122",
+      "kind": "critical-existing",
+      "note": "tests (in accepted commit)"
+    }
+  ]
+}
