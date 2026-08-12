@@ -27,6 +27,7 @@ from src.schemas.fighter import (
     FighterMediaResponse,
     FighterProfileResponse,
     FighterRankingEntry,
+    FighterRecordFetchStatus,
     FighterRecordResponse,
     FighterStatsResponse,
     NextFightResponse,
@@ -62,9 +63,25 @@ def _fighter_to_list_item(fighter: Any) -> FighterListItem:
     )
 
 
+def _record_fetch_to_schema(status: Any) -> FighterRecordFetchStatus | None:
+    """Map FighterProviderRecordStatus ORM → FighterRecordFetchStatus schema."""
+    if status is None:
+        return None
+    return FighterRecordFetchStatus(
+        status=status.status,
+        provider=status.provider,
+        last_checked_at=status.last_checked_at,
+        last_http_status=status.last_http_status,
+        result_detail=status.result_detail,
+        retry_count=status.retry_count,
+        provenance=status.provenance,
+    )
+
+
 def _fighter_to_profile(
     fighter: Any,
     record: Any = None,
+    record_fetch: Any = None,
     rankings: Any = None,
     recent_fights: Any = None,
 ) -> FighterProfileResponse:
@@ -98,6 +115,7 @@ def _fighter_to_profile(
         is_active=fighter.is_active if fighter.is_active is not None else True,
         debut_date=fighter.debut_date,
         record=_record_to_schema(record) if record else None,
+        record_fetch=_record_fetch_to_schema(record_fetch),
         statistics=FighterStatsResponse(),
         rankings=[
             FighterRankingEntry(
@@ -212,6 +230,7 @@ async def get_fighter(request: Request, fighter_id: str, uow: UnitOfWork = Depen
         return _fighter_to_profile(
             fighter=detail["fighter"],
             record=detail.get("record"),
+            record_fetch=detail.get("record_fetch"),
             rankings=detail.get("rankings"),
             recent_fights=detail.get("recent_fights"),
         ).model_dump(mode="json")

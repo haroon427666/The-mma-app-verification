@@ -176,6 +176,30 @@ class FighterMediaResponse(BaseModel):
     cdn_url: str | None = None
 
 
+# ── Record-fetch status (Phase D, additive) ──────────────────────────────────
+
+class FighterRecordFetchStatus(BaseModel):
+    """Persisted per-provider fighter-record fetch outcome (Phase D, additive).
+
+    Present (non-null) in a profile ONLY when a
+    `fighter_provider_record_status` row exists — i.e. the provider was
+    queried and returned no usable record (`CONFIRMED_ABSENT`) or the fetch
+    failed (`FETCH_FAILED` / `PERMANENT_FAILURE`).
+
+    It is deliberately `null` when the fighter has a real record (the
+    `record` field is the canonical HAS_RECORD signal) or has never been
+    checked (NOT_CHECKED). No synthetic "AVAILABLE" state is fabricated.
+    """
+
+    status: str  # RecordFetchStatus: CONFIRMED_ABSENT | FETCH_FAILED | PERMANENT_FAILURE
+    provider: str
+    last_checked_at: datetime | None = None
+    last_http_status: int | None = None
+    result_detail: str | None = None
+    retry_count: int = 0
+    provenance: str | None = None
+
+
 # ── Profile (for /fighters/{id}) ────────────────────────────────────────────
 
 class FighterProfileResponse(BaseModel):
@@ -227,6 +251,11 @@ class FighterProfileResponse(BaseModel):
     # Meta
     source_provider: str | None = None
     synced_at: datetime | None = None
+
+    # Phase D (additive): persisted record-fetch outcome — null unless the
+    # provider was checked and returned no usable record (see
+    # FighterRecordFetchStatus docstring for exact semantics).
+    record_fetch: FighterRecordFetchStatus | None = None
 
     model_config = {"from_attributes": True}
 

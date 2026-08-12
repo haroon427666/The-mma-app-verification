@@ -16,6 +16,7 @@ from src.db.models.fighter import Fighter, FighterRecord
 from src.db.models.support import (
     DeadLetter,
     ExternalId,
+    FighterProviderRecordStatus,
     ProviderConflict,
     ProviderPayload,
     SyncCheckpoint,
@@ -34,6 +35,7 @@ __all__ = [
     "ExternalId",
     "Fighter",
     "FighterFavorite",
+    "FighterProviderRecordStatus",
     "FighterRecord",
     "Notification",
     "Promotion",

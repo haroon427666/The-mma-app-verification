@@ -21,6 +21,10 @@ class EntityType(str, Enum):
     COMPETITION = "competition"
     BROADCAST = "broadcast"
     RANKING = "ranking"
+    RECORDS = "records"
+    """Records-only backfill — operates on existing fighters, never the
+    discovery registry (W007: re-fetch fighter_records for fighters whose
+    records were never fetched or were interrupted by a breaker episode)."""
     STATISTIC = "statistic"
     HISTORICAL_EVENT = "historical_event"
 
@@ -44,6 +48,40 @@ class JobStatus(str, Enum):
     FAILED = "FAILED"
     SKIPPED = "SKIPPED"
     CANCELLED = "CANCELLED"
+
+
+# ── Record Fetch Outcome / Status (Phase D) ──────────────────────────────────
+
+
+class RecordFetchOutcome(str, Enum):
+    """Wire-level classification of a single provider /records fetch (Phase D).
+
+    Exists so absence evidence is never confused with failure: only EMPTY
+    maps to CONFIRMED_ABSENT; FAILED is always retryable and never absence.
+    """
+
+    AVAILABLE = "AVAILABLE"
+    """Provider returned a usable record payload."""
+    EMPTY = "EMPTY"
+    """Provider served no usable payload (200 empty body or content 404)."""
+    FAILED = "FAILED"
+    """Transient failure (429/5xx/network/breaker) — retryable, NOT absence."""
+
+
+class RecordFetchStatus(str, Enum):
+    """Persisted per-provider fighter-record fetch status (Phase D).
+
+    Stored in fighter_provider_record_status.status. HAS_RECORD (a
+    fighter_records row present) and NOT_CHECKED (no status row) are the
+    implicit states; only non-available outcomes are persisted.
+    """
+
+    CONFIRMED_ABSENT = "CONFIRMED_ABSENT"
+    """Provider queried successfully; no usable record payload exists."""
+    FETCH_FAILED = "FETCH_FAILED"
+    """Last fetch failed transiently — retryable within the retry budget."""
+    PERMANENT_FAILURE = "PERMANENT_FAILURE"
+    """Non-retryable provider-side failure / unsupported resource."""
 
 
 # ── Sync Mode ────────────────────────────────────────────────────────────────

@@ -604,6 +604,28 @@ Per-entity job execution records — observability requirement: logs execution t
 
 ---
 
+### 2.20 `fighter_provider_record_status` (Phase D — added 2026-08-12, migration 009)
+
+Sparse per-provider evidence of fighter-record fetch outcomes. `fighter_records` row presence remains the canonical HAS_RECORD signal; this table records ONLY non-available outcomes (`CONFIRMED_ABSENT` · `FETCH_FAILED` · `PERMANENT_FAILURE`) so a missing row is unambiguous NOT_CHECKED. A persisted absence NEVER blocks record insertion — persisting a real record deletes the status row (`FighterUpsert._delete_record_status`).
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `fighter_id` | `UUID` | PK, NOT NULL, FK → fighters.id ON DELETE CASCADE | UUID storage matches `fighters.id` (dialect-consistent joins) |
+| `provider` | `VARCHAR(20)` | PK, NOT NULL | `'espn'` today; provider-scoped for multi-provider |
+| `status` | `VARCHAR(30)` | NOT NULL | CONFIRMED_ABSENT · FETCH_FAILED · PERMANENT_FAILURE |
+| `last_checked_at` | `TIMESTAMPTZ` | NOT NULL | when the outcome was observed |
+| `last_http_status` | `INTEGER` | NULLABLE | evidence (200/404/503/…) |
+| `result_detail` | `TEXT` | NULLABLE | human-readable outcome |
+| `retry_count` | `INTEGER` | NOT NULL, DEFAULT 0 | increments per transient failure; reset on CONFIRMED_ABSENT |
+| `last_run_id` | `UUID` | NULLABLE, FK → sync_runs.id | run that produced the outcome |
+| `provenance` | `VARCHAR(30)` | NULLABLE | CENSUS_FLOOR · BACKFILL_BATCH · FINAL_SWEEP |
+| `created_at` / `updated_at` | `TIMESTAMPTZ` | NOT NULL | TimestampMixin |
+
+**Indexes:**
+- `ix_fighter_provider_record_status_provider_status` on `(provider, status)`
+
+---
+
 ## 3. Index Strategy
 
 ### Full-text search indexes (GIN)

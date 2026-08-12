@@ -15,6 +15,8 @@ Key architectural decisions:
 import logging
 from typing import TYPE_CHECKING, Any
 
+import httpx
+
 from src.providers.dto import (
     BroadcastDTO,
     CompetitionDTO,
@@ -38,6 +40,7 @@ from src.providers.espn.parsers.fighter import parse_fighter
 from src.providers.espn.parsers.promotion import parse_promotion
 from src.providers.espn.parsers.ranking import parse_ranking_category
 from src.providers.espn.reference import RefResolver, extract_id_from_ref
+from src.sync.types import RecordFetchOutcome
 
 if TYPE_CHECKING:
     from src.providers.espn.parsers.records import FighterRecord
@@ -276,6 +279,28 @@ class ESPNProvider:
         reset stored records in that case (research GAP: records used to
         persist as 0-0-0-0 because the flow was never invoked).
         """
+        record, _outcome, _status = await self.fetch_fighter_record_with_outcome(
+            external_id
+        )
+        return record
+
+    async def fetch_fighter_record_with_outcome(
+        self, external_id: str
+    ) -> tuple["FighterRecord | None", RecordFetchOutcome, int | None]:
+        """Fetch the full record breakdown + tri-state outcome (Phase D).
+
+        Returns (record, outcome, http_status):
+        - AVAILABLE — a real payload was parsed (http_status 200);
+        - EMPTY     — the provider served no usable payload: a 200 response
+          with no record data, or a content-dependent 404 (NORMAL provider
+          behavior — the client never retries 4xx and never trips the
+          breaker for it);
+        - FAILED    — a transient failure (429/5xx/network/breaker-open).
+
+        Only EMPTY may ever become CONFIRMED_ABSENT; FAILED is retryable and
+        is never absence evidence. Callers keep the existing None-on-unavailable
+        semantics (records are never reset, never fabricated).
+        """
         from src.providers.espn.parsers.records import parse_fighter_records as parse_full
 
         await self._ensure_started()
@@ -288,11 +313,20 @@ class ESPNProvider:
             # unavailable (e.g. non-MMA or content-dependent athletes).
             if not record.record_summary and record.total_fights == 0:
                 logger.debug(f"Records empty for fighter {external_id} — skipping")
-                return None
-            return record
+                return None, RecordFetchOutcome.EMPTY, 200
+            return record, RecordFetchOutcome.AVAILABLE, 200
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                # Content-dependent absence — same semantics as an empty 200.
+                return None, RecordFetchOutcome.EMPTY, 404
+            logger.warning(
+                f"Failed to fetch records for fighter {external_id}: "
+                f"HTTP {e.response.status_code}"
+            )
+            return None, RecordFetchOutcome.FAILED, e.response.status_code
         except Exception as e:
             logger.warning(f"Failed to fetch records for fighter {external_id}: {e}")
-            return None
+            return None, RecordFetchOutcome.FAILED, None
 
     async def fetch_fighter_statistics(
         self, fighter_external_id: str

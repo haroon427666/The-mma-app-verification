@@ -10,10 +10,13 @@ is_active is presence-guarded: the ESPN payload only carries `active` for some
 athletes; a None DTO value means "unknown" and never overwrites the stored flag.
 """
 
-from sqlalchemy import select
+from typing import Any
+
+from sqlalchemy import delete, select
 
 from src.domain.models.fighter import Fighter, FighterRecord
 from src.providers.dto import FighterDTO
+from src.sync.types import RecordFetchOutcome, RecordFetchStatus
 from src.sync.upsert import UpsertResult
 from src.sync.upserts.base import BaseUpsert
 
@@ -94,6 +97,44 @@ class FighterUpsert(BaseUpsert):
             model.is_active = dto.is_active
 
     # ── Expanded record breakdown (fighter_records table) ──────────────────
+
+    async def upsert_records(self, dtos: list[FighterDTO]) -> UpsertResult:
+        """Records-only upsert — writes ONLY the fighter_records table.
+
+        Used by the records-backfill job (W007). Deliberately NOT upsert_batch:
+        a records-only DTO carries None profile fields, and BaseUpsert's
+        FIELD_MAP change detection would treat every stored profile value as
+        changed (None != value) and clobber the fighter row to NULLs.
+
+        Contract:
+        - resolves fighter UUIDs from EXISTING fighters only; unknown fighters
+          are skipped — never creates fighters speculatively;
+        - only DTOs carrying real record data are written (_has_record_data);
+        - idempotent via the unique constraint on fighter_id;
+        - never touches sync_discovered_athletes (registry-neutral).
+        """
+        result = UpsertResult()
+        for dto in dtos:
+            if not self._has_record_data(dto):
+                result.skipped += 1
+                continue
+            fighter_uuid = await self._resolver.resolve(
+                self.provider, dto.external_id, self.entity_type
+            )
+            if fighter_uuid is None:
+                # Unknown fighter — records backfill targets existing fighters
+                # only; never speculate. Skipped so the caller can see it.
+                result.skipped += 1
+                continue
+            try:
+                result += await self._upsert_record(fighter_uuid, dto)
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(
+                    f"Record upsert failed for {dto.external_id}: {e}"
+                )
+                result.errors += 1
+        return result
 
     async def upsert_batch(self, dtos: list[FighterDTO]) -> UpsertResult:
         """Fighter upsert + nested FighterRecord persistence.
@@ -202,4 +243,113 @@ class FighterUpsert(BaseUpsert):
             self._resolver._db.add(rec)
             result.inserted += 1
 
+        # Phase D: a persisted record is the canonical HAS_RECORD signal —
+        # clear any recorded absence/failure evidence for this fighter.
+        await self._delete_record_status(fighter_uuid)
+
         return result
+
+    # ── Phase D: per-provider record-fetch status (absence classification) ──
+
+    async def _delete_record_status(self, fighter_uuid: str) -> None:
+        """Remove per-provider absence evidence once a real record exists.
+
+        fighter_records row presence is the canonical HAS_RECORD signal — a
+        persisted CONFIRMED_ABSENT / FETCH_FAILED row must never survive (or
+        block) a real record. Idempotent: no-op when no row exists.
+        """
+        from src.db.models.support import FighterProviderRecordStatus
+
+        await self._resolver._db.execute(
+            delete(FighterProviderRecordStatus).where(
+                FighterProviderRecordStatus.fighter_id == fighter_uuid,
+                FighterProviderRecordStatus.provider == self.provider,
+            )
+        )
+
+    async def apply_record_fetch_outcomes(
+        self,
+        dtos: list[tuple[FighterDTO, RecordFetchOutcome, int | None]],
+        run_id: str | None = None,
+    ) -> dict[str, int]:
+        """Persist per-fighter record-fetch outcomes (Phase D).
+
+        Mapping:
+        - AVAILABLE → clears any status row (record persistence already did
+          this via _upsert_record; belt-and-braces no-op here).
+        - EMPTY     → upsert CONFIRMED_ABSENT (retry_count reset to 0).
+        - FAILED    → upsert FETCH_FAILED with retry_count += 1.
+
+        Idempotent via the (fighter_id, provider) primary key; never creates
+        fighter_records rows; never touches the registry; never blocks future
+        record insertion (a later real record deletes the row).
+        """
+        from datetime import UTC, datetime
+
+        from src.db.models.support import FighterProviderRecordStatus
+
+        counts = {"status_absent": 0, "status_failed": 0, "status_cleared": 0}
+        now = datetime.now(UTC)
+        for dto, outcome, http_status in dtos:
+            fighter_uuid = await self._resolver.resolve(
+                self.provider, dto.external_id, self.entity_type
+            )
+            if fighter_uuid is None:
+                continue
+
+            if outcome == RecordFetchOutcome.AVAILABLE:
+                await self._delete_record_status(fighter_uuid)
+                counts["status_cleared"] += 1
+                continue
+
+            if outcome == RecordFetchOutcome.EMPTY:
+                status = RecordFetchStatus.CONFIRMED_ABSENT.value
+                detail = f"http {http_status or 200} — no usable record payload"
+                counts["status_absent"] += 1
+            else:  # FAILED — transient, retryable, never absence evidence
+                status = RecordFetchStatus.FETCH_FAILED.value
+                detail = f"http {http_status or 'network'} — transient failure"
+                counts["status_failed"] += 1
+
+            # Portable ON CONFLICT upsert (same idiom as CheckpointManager):
+            # index_elements renders the PK column list on Postgres AND SQLite;
+            # atomic — immune to concurrent-writer races on the same fighter.
+            from sqlalchemy.dialects.postgresql import insert
+
+            confirmed = status == RecordFetchStatus.CONFIRMED_ABSENT.value
+            values: dict[str, Any] = {
+                "fighter_id": fighter_uuid,
+                "provider": self.provider,
+                "status": status,
+                "last_checked_at": now,
+                "last_http_status": http_status,
+                "result_detail": detail,
+                "retry_count": 0 if confirmed else 1,
+                "last_run_id": run_id,
+                "created_at": now,
+                "updated_at": now,
+            }
+            stmt = (
+                insert(FighterProviderRecordStatus)
+                .values(**values)
+                .on_conflict_do_update(
+                    index_elements=["fighter_id", "provider"],
+                    set_={
+                        "status": status,
+                        "last_checked_at": now,
+                        "last_http_status": http_status,
+                        "result_detail": detail,
+                        # CONFIRMED_ABSENT resets the retry budget; FETCH_FAILED
+                        # increments it (bounded by the job's selection filter).
+                        "retry_count": (
+                            0
+                            if confirmed
+                            else FighterProviderRecordStatus.retry_count + 1
+                        ),
+                        "last_run_id": run_id,
+                        "updated_at": now,
+                    },
+                )
+            )
+            await self._resolver._db.execute(stmt)
+        return counts

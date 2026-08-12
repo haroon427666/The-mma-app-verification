@@ -134,6 +134,7 @@ def build_engine(session: AsyncSession | None = None):
         ESPN_HistoricalEventSyncJob,
         ESPN_PromotionSyncJob,
         ESPN_RankingSyncJob,
+        ESPN_RecordsBackfillJob,
         ESPN_StatisticSyncJob,
         ESPN_VenueSyncJob,
         ESPN_WeightClassSyncJob,
@@ -152,6 +153,7 @@ def build_engine(session: AsyncSession | None = None):
         EntityType.BROADCAST: ESPN_BroadcastSyncJob(),
         EntityType.STATISTIC: ESPN_StatisticSyncJob(),
         EntityType.RANKING: ESPN_RankingSyncJob(),
+        EntityType.RECORDS: ESPN_RecordsBackfillJob(),
         EntityType.HISTORICAL_EVENT: ESPN_HistoricalEventSyncJob(),
     }
     statestore = (

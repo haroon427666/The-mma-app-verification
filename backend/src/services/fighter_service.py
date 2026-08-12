@@ -74,6 +74,16 @@ class FighterService:
         # Record
         record = await self._uow.fighters.get_record(fighter_id)
 
+        # Record-fetch outcome (Phase D) — present only when the provider was
+        # checked and returned no usable record (CONFIRMED_ABSENT / failures).
+        # The status row is keyed per provider; the profile is a single fighter,
+        # so we expose the status for the fighter's lineage provider (all 38,011
+        # fighters are ESPN today; fallback is explicit for NULL source_provider).
+        # A future multi-provider API surface can return per-provider statuses.
+        record_fetch = await self._uow.fighters.get_record_fetch_status(
+            fighter_id, provider=(fighter.source_provider or "espn")
+        )
+
         # Rankings
         from sqlalchemy import select as sa_select
 
@@ -89,6 +99,7 @@ class FighterService:
         return {
             "fighter": fighter,
             "record": record,
+            "record_fetch": record_fetch,
             "rankings": rankings,
             "recent_fights": fights,
         }

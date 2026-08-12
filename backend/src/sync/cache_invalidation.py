@@ -29,6 +29,10 @@ logger = logging.getLogger(__name__)
 # so they bust both.
 _ENTITY_CACHE_SEGMENTS: dict[EntityType, tuple[str, ...]] = {
     EntityType.FIGHTER: ("fighters",),
+    # Records backfill writes fighter_records + record-fetch status rows, both
+    # of which surface in the fighters:detail profile (Phase D D5) — bust the
+    # same prefix as fighter syncs.
+    EntityType.RECORDS: ("fighters",),
     EntityType.STATISTIC: ("fighters", "events"),
     EntityType.EVENT: ("events",),
     EntityType.COMPETITION: ("events",),

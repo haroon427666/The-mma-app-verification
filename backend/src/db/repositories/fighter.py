@@ -6,6 +6,7 @@ from sqlalchemy import func
 from sqlalchemy import select as sa_select
 
 from src.db.models.fighter import Fighter, FighterRecord
+from src.db.models.support import FighterProviderRecordStatus
 from src.db.repositories.base import BaseRepository
 
 
@@ -143,6 +144,38 @@ class FighterRepository(BaseRepository[Fighter]):
         result = await self._session.execute(stmt)
         await self._session.flush()
         return result.scalar_one()
+
+    # ── Record-fetch status (Phase D) ────────────────────────────────────
+
+    async def get_record_fetch_status(
+        self, fighter_id: str, provider: str = "espn",
+    ) -> FighterProviderRecordStatus | None:
+        """Persisted record-fetch outcome for one fighter+provider, or None.
+
+        None means either HAS_RECORD (a fighter_records row is the canonical
+        signal) or NOT_CHECKED — the API layer decides via the record field.
+        """
+        result = await self._session.execute(
+            sa_select(FighterProviderRecordStatus).where(
+                FighterProviderRecordStatus.fighter_id == fighter_id,
+                FighterProviderRecordStatus.provider == provider,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def get_record_fetch_statuses(
+        self, fighter_ids: list[str], provider: str = "espn",
+    ) -> dict[str, FighterProviderRecordStatus]:
+        """Batch lookup of persisted outcomes — one query, no N+1."""
+        if not fighter_ids:
+            return {}
+        result = await self._session.execute(
+            sa_select(FighterProviderRecordStatus).where(
+                FighterProviderRecordStatus.fighter_id.in_(fighter_ids),
+                FighterProviderRecordStatus.provider == provider,
+            )
+        )
+        return {row.fighter_id: row for row in result.scalars().all()}
 
     # ── Recent Fights ────────────────────────────────────────────────────
 

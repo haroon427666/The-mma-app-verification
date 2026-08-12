@@ -222,3 +222,46 @@ class DeadLetter(Base, TimestampMixin):
     error_category: Mapped[str] = mapped_column(String(30), nullable=False)
     replayed: Mapped[bool] = mapped_column(Boolean, default=False)
     replayed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class FighterProviderRecordStatus(Base, TimestampMixin):
+    """Per-provider fighter-record fetch outcomes (Phase D, sparse).
+
+    fighter_records row present  ⇔ HAS_RECORD — canonical signal; no row kept.
+    status row present           ⇔ CONFIRMED_ABSENT | FETCH_FAILED |
+                                   PERMANENT_FAILURE (per provider).
+    no row                       ⇔ NOT_CHECKED.
+
+    A persisted absence NEVER blocks record insertion: persisting a real
+    record deletes the status row (FighterUpsert._delete_record_status).
+    """
+    __tablename__ = "fighter_provider_record_status"
+    __table_args__ = (
+        {"comment": "Per-provider fighter-record fetch outcomes (sparse)"},
+    )
+
+    # Same UUID storage as fighters.id / fighter_records.fighter_id so joins
+    # match on every dialect (Postgres: native UUID; SQLite: CHAR(32) hex).
+    fighter_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False),
+        ForeignKey("fighters.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    provider: Mapped[str] = mapped_column(String(20), primary_key=True)
+
+    status: Mapped[str] = mapped_column(String(30), nullable=False)
+    # RecordFetchStatus: CONFIRMED_ABSENT | FETCH_FAILED | PERMANENT_FAILURE
+
+    last_checked_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+    last_http_status: Mapped[int | None] = mapped_column(Integer)
+    result_detail: Mapped[str | None] = mapped_column(Text)
+    retry_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    last_run_id: Mapped[str | None] = mapped_column(
+        UUID(as_uuid=False),
+        ForeignKey("sync_runs.id"),
+    )
+    provenance: Mapped[str | None] = mapped_column(String(30))

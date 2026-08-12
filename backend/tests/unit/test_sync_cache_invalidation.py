@@ -108,5 +108,11 @@ def test_prefix_mapping_known_entities() -> None:
     assert _prefixes_for("statistic") == {"mma:api:fighters", "mma:api:events"}
 
 
+def test_records_backfill_busts_fighters_prefix() -> None:
+    """Records backfill writes fighter_records + record-fetch status rows,
+    both surfacing in the fighters:detail profile (Phase D D5)."""
+    assert _prefixes_for("records") == {"mma:api:fighters"}
+
+
 def test_prefix_mapping_unknown_entity_is_empty() -> None:
     assert _prefixes_for("goblin") == set()

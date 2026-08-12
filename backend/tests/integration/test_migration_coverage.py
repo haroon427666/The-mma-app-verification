@@ -51,7 +51,7 @@ class TestTableCoverage:
     def test_support_tables_are_migrated(self):
         tables = _migration_created_tables()
         for t in ["fighter_records", "provider_conflicts", "provider_payloads",
-                  "sync_checkpoints"]:
+                  "sync_checkpoints", "fighter_provider_record_status"]:
             assert t in tables, f"Support table {t} missing from migrations"
 
 
