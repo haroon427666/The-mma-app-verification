@@ -1,0 +1,163 @@
+{
+  "artifact": "PRODUCTION_RECORDS_BACKFILL_FINALSWEEP_AFTER",
+  "phase": "TASK 2 — RECORDS BACKFILL · FINAL SWEEP (LIMIT=1512, corrected per handoff)",
+  "captured_at_utc": "2026-08-12T08:50:00+00:00",
+  "source": "live PostgreSQL 18.4 localhost:5432/mma (read-only audit)",
+  "git_head": "19a87c7055767c4587e50530b67769c62410504f",
+  "run_id": "7852a339-2a20-4ceb-868e-c9888d3a22cd",
+  "status": "COMPLETED · exit 0",
+
+  "run_details": {
+    "command": "PYTHONIOENCODING=utf-8 PYTHONUTF8=1 ESPN_RECORDS_BACKFILL_LIMIT=1512 python sync.py --full --entity records",
+    "started_at_utc": "2026-08-12 08:39:19",
+    "completed_at_utc": "2026-08-12 08:47:45",
+    "duration_ms": 505291,
+    "duration_min": 8.42,
+    "inserted": 288,
+    "updated": 0,
+    "skipped": 1224,
+    "errors": 0
+  },
+
+  "db_counts": {
+    "fighters": 38011,
+    "fighter_records": 36787,
+    "fighters_missing_fighter_records": 1224,
+    "external_ids": 38368,
+    "weight_classes": 25,
+    "rankings": 142,
+    "statistics": 399,
+    "competitors": 47,
+    "events": 24,
+    "competitions": 260,
+    "promotions": 48
+  },
+
+  "deltas_vs_baseline": {
+    "fighters": 0,
+    "fighter_records": 288,
+    "fighters_missing_fighter_records": -288,
+    "external_ids": 0,
+    "weight_classes": 0,
+    "rankings": 0,
+    "statistics": 0,
+    "competitors": 0,
+    "events": 0,
+    "competitions": 0,
+    "promotions": 0
+  },
+
+  "registry": {
+    "total": 38011,
+    "consumed": 38011,
+    "pending": 0,
+    "consumed_without_fighter": 0,
+    "registry_neutral_invariant": "HELD — registry untouched by records backfill (7th production confirmation)"
+  },
+
+  "missing_records_breakdown_after": {
+    "total_missing": 1224,
+    "pre_w019_genuine_absence_floor": 805,
+    "post_w019_remaining": 419,
+    "post_w019_detail": "419 = 414 previously-probed genuine empties (placeholder/official clusters: Mongi Zitouni/Ludovic Dandine 5238639–5239086, Ziad Harb/Jason Tatlow 5245722–5246559, Christopher Edgehill/Solimar Miranda 5259556–5259652, Brian Tyler 5264068–5264253, etc.) + 5 newly-confirmed genuine empties from the final sweep tail (5350060 Giovanna Scano, 5350061 Vincent Dudley, 5369837 Sarah Cotton, 5386478 Dejan Tesic, 5386479 Vladimir Badrljica)",
+    "actionable_deferred_remaining": 0,
+    "tail_verdict": "293 unprobed deferred tail fully probed: 288 gained real records (98.3% yield), 5 genuine empty responses — Task 2 records backfill OPERATIONALLY COMPLETE"
+  },
+
+  "cumulative_task2": {
+    "batch1_records": 95,
+    "batch2_records": 1781,
+    "final_sweep_records": 288,
+    "total_records_backfilled": 2164,
+    "missing_before_task2": 3388,
+    "missing_after_task2": 1224,
+    "deferred_backlog_before": 2580,
+    "deferred_backlog_after": 0
+  },
+
+  "yield_analysis": {
+    "requests": 1512,
+    "real_payloads": 288,
+    "empty_404_unavailable": 1224,
+    "overall_yield_pct": 19.0,
+    "deferred_tail_portion": "of the 293 unprobed tail: 288 real payloads (98.3% tail yield), 5 genuine empties",
+    "explanation": "Ascending sweep covered the ENTIRE 1,512-member candidate set. 805-ID genuine floor + 414 probed empties re-probed at 0% (as designed — no persisted absence flag, Phase D not implemented); the 293 unprobed tail yielded 288 real records. No fabrication; empty responses never converted to fake records."
+  },
+
+  "http_forensics": {
+    "total_http_requests": 1512,
+    "http_200": 1512,
+    "http_404": 0,
+    "http_429": 0,
+    "http_503": 0,
+    "http_other_5xx": 0,
+    "connection_errors": 0,
+    "retries": 0,
+    "breaker_events": 0,
+    "errors": 0,
+    "tracebacks": 0,
+    "discovery_requests": 0,
+    "request_rate_rps": 2.99,
+    "healthy_gate_events": 0
+  },
+
+  "integrity": {
+    "dup_fighters": 0,
+    "dup_fighter_records": 0,
+    "dup_registry": 0,
+    "dup_external_ids": 0,
+    "orphan_fighter_records": 0,
+    "orphan_rankings": 0,
+    "orphan_statistics": 0,
+    "orphan_competitors": 0,
+    "orphan_external_ids_fighter": 0,
+    "null_provider": 0,
+    "null_external_id": 0,
+    "unresolved_rankings": 0,
+    "rankings_resolve": "142/142"
+  },
+
+  "checkpoints_discovery_alembic": {
+    "sync_checkpoints": "3/3 COMPLETED (fighter/ranking/records)",
+    "discovery_checkpoints": "7/7 COMPLETED (global_listing + 6 rosters)",
+    "alembic": "008"
+  },
+
+  "representatives": {
+    "Makhachev_3332412": "28-1-0",
+    "Ngannou_3933168": "19-3-0",
+    "Demetrious_Johnson_2512089": "25-4-1",
+    "Rousey_2563796": "13-2-0",
+    "Gracie_2335697": "15-2-2",
+    "Shamrock_2335653": "29-17-2"
+  },
+
+  "final_sweep_records_sample": [
+    {"external_id": "5362445", "record": "0-1-0"},
+    {"external_id": "5362443", "record": "0-1-0"},
+    {"external_id": "5362442", "record": "0-1-0"},
+    {"external_id": "5362435", "record": "0-1-0"},
+    {"external_id": "5362433", "record": "0-1-0"}
+  ],
+
+  "tail_coverage_proof": {
+    "candidates_requested": "1512/1512 (ascending 2431356 → 5386479 — full candidate set incl. every deferred-tail ID)",
+    "highest_requested_id": "5386479",
+    "top293_before": 293,
+    "top293_gained_records": 288,
+    "top293_still_missing": 5,
+    "still_missing_ids": ["5350060", "5350061", "5369837", "5386478", "5386479"],
+    "still_missing_names": ["Giovanna Scano", "Vincent Dudley", "Sarah Cotton", "Dejan Tesic", "Vladimir Badrljica"],
+    "note": "The 293 previously-unprobed deferred fighters were ALL probed by this sweep. 288 returned real ESPN record payloads and were persisted; 5 returned genuine empty payloads (no row, no fabrication). NO actionable deferred fighters remain."
+  },
+
+  "remaining_backlog": {
+    "genuine_floor": 805,
+    "confirmed_genuine_empties": 419,
+    "total_missing": 1224,
+    "actionable_deferred": 0,
+    "note": "All remaining 1,224 missing are explainable genuine/content-dependent absences (officials/placeholder profiles with empty ESPN payloads). A records rerun would re-probe them at ~0% yield — Phase D (persisted absence flag) would eliminate that waste; requires explicit approval."
+  },
+
+  "sync_runs_note": "sync_runs now 40 total / 36 COMPLETED / 4 RUNNING (stale killed-process artifacts: 2 pre-existing + interrupted BATCH3 c0378a27 + first 30s-timeout attempt of this session — all cosmetic, inserted=0, no data impact)"
+}

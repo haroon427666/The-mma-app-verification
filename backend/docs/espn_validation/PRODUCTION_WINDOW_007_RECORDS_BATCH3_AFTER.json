@@ -1,0 +1,143 @@
+{
+  "type": "W007_RECORDS_BATCH3_AFTER",
+  "timestamp": "2026-08-11T10:19:23.376957+00:00",
+  "git_head": "19a87c7055767c4587e50530b67769c62410504f",
+  "fighters": 12988,
+  "fighter_records": 11219,
+  "statistics": 399,
+  "rankings": 142,
+  "competitors": 47,
+  "external_ids": 13343,
+  "events": 24,
+  "competitions": 260,
+  "promotions": 48,
+  "sync_runs": 20,
+  "sync_checkpoints": 3,
+  "sync_discovered_athletes": 38011,
+  "sync_discovery_checkpoints": 7,
+  "alembic": "008",
+  "registry_consumed": 12988,
+  "registry_pending": 25023,
+  "missing_records": 1769,
+  "dup_fighters": 0,
+  "dup_ext_ids": 0,
+  "dup_registry": 0,
+  "dup_records": 0,
+  "orphan_fighter_records": 0,
+  "orphan_rankings": 0,
+  "orphan_statistics": 0,
+  "orphan_competitors": 0,
+  "orphan_external_ids": 0,
+  "null_provider_ext": 0,
+  "unresolved_rankings": 0,
+  "sync_runs_by_status": {
+    "RUNNING": 2,
+    "COMPLETED": 18
+  },
+  "sync_checkpoints_rows": [
+    {
+      "entity_type": "fighter",
+      "provider": "espn",
+      "status": "COMPLETED",
+      "last_offset": 0,
+      "total_records": 0
+    },
+    {
+      "entity_type": "ranking",
+      "provider": "espn",
+      "status": "COMPLETED",
+      "last_offset": 0,
+      "total_records": 0
+    },
+    {
+      "entity_type": "records",
+      "provider": "espn",
+      "status": "COMPLETED",
+      "last_offset": 0,
+      "total_records": 0
+    }
+  ],
+  "batch3_sync_run": [
+    {
+      "id": "bda1065a-7aae-4c5a-98fa-73a4703417a7",
+      "status": "COMPLETED",
+      "started_at": "2026-08-11 10:06:27.680374+00:00",
+      "duration_ms": 670250.021,
+      "total_inserted": 1588,
+      "total_updated": 0,
+      "total_skipped": 412,
+      "total_errors": 0
+    }
+  ],
+  "representatives": [
+    {
+      "external_id": "2335653",
+      "wins": 29,
+      "losses": 17,
+      "draws": 2,
+      "total_fights": 48
+    },
+    {
+      "external_id": "2335697",
+      "wins": 15,
+      "losses": 2,
+      "draws": 2,
+      "total_fights": 19
+    },
+    {
+      "external_id": "2512089",
+      "wins": 25,
+      "losses": 4,
+      "draws": 1,
+      "total_fights": 30
+    },
+    {
+      "external_id": "2563796",
+      "wins": 13,
+      "losses": 2,
+      "draws": 0,
+      "total_fights": 15
+    },
+    {
+      "external_id": "3332412",
+      "wins": 28,
+      "losses": 1,
+      "draws": 0,
+      "total_fights": 29
+    },
+    {
+      "external_id": "3933168",
+      "wins": 19,
+      "losses": 3,
+      "draws": 0,
+      "total_fights": 22
+    }
+  ],
+  "freshly_inserted_samples": [
+    {
+      "external_id": "3099604",
+      "record_summary": "0-1-0",
+      "total_fights": 1
+    },
+    {
+      "external_id": "3099602",
+      "record_summary": "0-1-0",
+      "total_fights": 1
+    },
+    {
+      "external_id": "3099603",
+      "record_summary": "0-3-0",
+      "total_fights": 3
+    },
+    {
+      "external_id": "3099601",
+      "record_summary": "0-1-0",
+      "total_fights": 1
+    },
+    {
+      "external_id": "3099600",
+      "record_summary": "0-1-0",
+      "total_fights": 1
+    }
+  ]
+}

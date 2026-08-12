@@ -1,0 +1,211 @@
+{
+  "type": "W018_CENSUS_AFTER",
+  "window": "CENSUS WINDOW 11 (LIMIT=2000)",
+  "timestamp": "2026-08-11T17:41:49.000000+00:00",
+  "git_head": "19a87c7055767c4587e50530b67769c62410504f",
+  "run_id": "7caf5f7b-8879-4538-a775-e4241b3d08c1",
+  "fighters": 34988,
+  "fighter_records": 34183,
+  "statistics": 399,
+  "rankings": 142,
+  "competitors": 47,
+  "external_ids": 35345,
+  "events": 24,
+  "competitions": 260,
+  "promotions": 48,
+  "weight_classes": 25,
+  "sync_runs": 32,
+  "sync_checkpoints": 3,
+  "sync_discovered_athletes": 38011,
+  "sync_discovery_checkpoints": 7,
+  "alembic": "008",
+  "registry_consumed": 34988,
+  "registry_pending": 3023,
+  "missing_records": 805,
+  "dup_fighters": 0,
+  "dup_ext_ids": 0,
+  "dup_registry": 0,
+  "dup_records": 0,
+  "orphan_fighter_records": 0,
+  "orphan_rankings": 0,
+  "orphan_statistics": 0,
+  "orphan_competitors": 0,
+  "orphan_external_ids": 0,
+  "null_provider_ext": 0,
+  "unresolved_rankings": 0,
+  "registry_consumed_with_fighter": 34988,
+  "sync_runs_by_status": {
+    "RUNNING": 2,
+    "COMPLETED": 30
+  },
+  "sync_checkpoints_rows": [
+    {
+      "entity_type": "fighter",
+      "provider": "espn",
+      "status": "COMPLETED"
+    },
+    {
+      "entity_type": "ranking",
+      "provider": "espn",
+      "status": "COMPLETED"
+    },
+    {
+      "entity_type": "records",
+      "provider": "espn",
+      "status": "COMPLETED"
+    }
+  ],
+  "census_sync_run": [
+    {
+      "id": "7caf5f7b-8879-4538-a775-e4241b3d08c1",
+      "status": "COMPLETED",
+      "started_at": "2026-08-11 17:17:40.723034+00:00",
+      "completed_at": "2026-08-11 17:40:02.803200+00:00",
+      "duration_ms": 1342108.671,
+      "total_inserted": 3897,
+      "total_updated": 0,
+      "total_skipped": 0,
+      "total_errors": 0,
+      "api_calls": 0
+    }
+  ],
+  "network": {
+    "total_requests": 4018,
+    "profiles": 2000,
+    "records_requests": 2018,
+    "http_200": 4000,
+    "http_404": 0,
+    "http_429": 0,
+    "http_503": 18,
+    "other_5xx": 0,
+    "retrying_warnings": 18,
+    "retries_exhausted": 0,
+    "breaker_events": 0,
+    "discovery_requests": 0,
+    "discovery_skips": 14,
+    "error_lines": 0,
+    "tracebacks": 0,
+    "request_rate_rps": 2.99,
+    "duration_ms": 1342109
+  },
+  "representatives": [
+    {
+      "external_id": "2335653",
+      "first_name": "Ken",
+      "last_name": "Shamrock",
+      "record_summary": "29-17-2"
+    },
+    {
+      "external_id": "2335697",
+      "first_name": "Royce",
+      "last_name": "Gracie",
+      "record_summary": "15-2-2"
+    },
+    {
+      "external_id": "2512089",
+      "first_name": "Demetrious",
+      "last_name": "Johnson",
+      "record_summary": "25-4-1"
+    },
+    {
+      "external_id": "2563796",
+      "first_name": "Ronda",
+      "last_name": "Rousey",
+      "record_summary": "13-2-0"
+    },
+    {
+      "external_id": "3332412",
+      "first_name": "Islam",
+      "last_name": "Makhachev",
+      "record_summary": "28-1-0"
+    },
+    {
+      "external_id": "3933168",
+      "first_name": "Francis",
+      "last_name": "Ngannou",
+      "record_summary": "19-3-0"
+    }
+  ],
+  "cohort": {
+    "count": 2000,
+    "created_min": "2026-08-11 17:40:00.728111+00:00",
+    "created_max": "2026-08-11 17:40:02.764150+00:00",
+    "with_records": 1897,
+    "yield_pct": 94.85,
+    "window_band_min": "5153044",
+    "window_band_max": "5238638",
+    "yield_dip_explanation": "82 of the 103 absences are a single placeholder band (consecutive roster IDs 5238536-5238638 mapping to 'Mongi Zitouni'/'Ludovic Dandine' - officials/placeholder pattern, cf. W013, at larger scale); 21 genuine scattered absences. All empty payloads were HTTP 200; 0 fabricated rows."
+  },
+  "cohort_samples": [
+    {
+      "external_id": "5153044",
+      "first_name": "Oswaldo",
+      "last_name": "Castillo",
+      "record_summary": "0-1-0",
+      "wins": 0,
+      "losses": 1,
+      "draws": 0,
+      "total_fights": 1
+    },
+    {
+      "external_id": "5153082",
+      "first_name": "Daniel",
+      "last_name": "Frunza",
+      "record_summary": "9-4-0",
+      "wins": 9,
+      "losses": 4,
+      "draws": 0,
+      "total_fights": 13
+    },
+    {
+      "external_id": "5153227",
+      "first_name": "Fakhreddin",
+      "last_name": "Myrzadavlatov",
+      "record_summary": "0-0-1",
+      "wins": 0,
+      "losses": 0,
+      "draws": 1,
+      "total_fights": 1
+    },
+    {
+      "external_id": "5153229",
+      "first_name": "Mashrapjon",
+      "last_name": "Sabirov",
+      "record_summary": "0-1-0",
+      "wins": 0,
+      "losses": 1,
+      "draws": 0,
+      "total_fights": 1
+    },
+    {
+      "external_id": "5153231",
+      "first_name": "TJ",
+      "last_name": "Welch",
+      "record_summary": "0-3-0",
+      "wins": 0,
+      "losses": 3,
+      "draws": 0,
+      "total_fights": 3
+    }
+  ],
+  "recovered_503_athletes": [
+    { "external_id": "5157180", "name": "Mateusz Grzezolkowski", "record_summary": "0-1-0" },
+    { "external_id": "5157184", "name": "Lukasz Stanek", "record_summary": "0-1-0" },
+    { "external_id": "5157186", "name": "Henry Fadipe", "record_summary": "0-1-0" },
+    { "external_id": "5157247", "name": "Manolo Zecchini", "record_summary": "11-5-0" },
+    { "external_id": "5157251", "name": "Sufiev Karomatullo", "record_summary": "1-0-0" },
+    { "external_id": "5157252", "name": "Guilherme Neto", "record_summary": "0-1-0" }
+  ],
+  "next_window_sample": [
+    "5238639",
+    "5238640",
+    "5238641",
+    "5238642",
+    "5238643",
+    "5238650",
+    "5238651",
+    "5238652",
+    "5238653",
+    "5238656"
+  ]
+}

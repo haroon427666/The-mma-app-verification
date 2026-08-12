@@ -1,0 +1,120 @@
+{
+  "type": "W008_CENSUS_BASELINE",
+  "window": "CENSUS WINDOW 1 (LIMIT=2000)",
+  "timestamp": "2026-08-11T11:00:51.784619+00:00",
+  "git_head": "19a87c7055767c4587e50530b67769c62410504f",
+  "fighters": 12988,
+  "fighter_records": 12559,
+  "statistics": 399,
+  "rankings": 142,
+  "competitors": 47,
+  "external_ids": 13343,
+  "events": 24,
+  "competitions": 260,
+  "promotions": 48,
+  "weight_classes": 23,
+  "sync_runs": 21,
+  "sync_checkpoints": 3,
+  "sync_discovered_athletes": 38011,
+  "sync_discovery_checkpoints": 7,
+  "alembic": "008",
+  "registry_consumed": 12988,
+  "registry_pending": 25023,
+  "missing_records": 429,
+  "dup_fighters": 0,
+  "dup_ext_ids": 0,
+  "dup_registry": 0,
+  "dup_records": 0,
+  "orphan_fighter_records": 0,
+  "orphan_rankings": 0,
+  "orphan_statistics": 0,
+  "orphan_competitors": 0,
+  "orphan_external_ids": 0,
+  "null_provider_ext": 0,
+  "unresolved_rankings": 0,
+  "sync_runs_by_status": {
+    "RUNNING": 2,
+    "COMPLETED": 19
+  },
+  "sync_checkpoints_rows": [
+    {
+      "entity_type": "fighter",
+      "provider": "espn",
+      "status": "COMPLETED",
+      "last_offset": 0,
+      "total_records": 0
+    },
+    {
+      "entity_type": "ranking",
+      "provider": "espn",
+      "status": "COMPLETED",
+      "last_offset": 0,
+      "total_records": 0
+    },
+    {
+      "entity_type": "records",
+      "provider": "espn",
+      "status": "COMPLETED",
+      "last_offset": 0,
+      "total_records": 0
+    }
+  ],
+  "sync_discovery_checkpoints_rows": [
+    {
+      "source": "global_listing",
+      "league_slug": "",
+      "status": "COMPLETED",
+      "completed": true,
+      "page": 39,
+      "discovered_count": 38011
+    },
+    {
+      "source": "roster",
+      "league_slug": "bellator",
+      "status": "COMPLETED",
+      "completed": true,
+      "page": 1,
+      "discovered_count": 986
+    },
+    {
+      "source": "roster",
+      "league_slug": "ifc",
+      "status": "COMPLETED",
+      "completed": true,
+      "page": 1,
+      "discovered_count": 172
+    },
+    {
+      "source": "roster",
+      "league_slug": "ksw",
+      "status": "COMPLETED",
+      "completed": true,
+      "page": 1,
+      "discovered_count": 208
+    },
+    {
+      "source": "roster",
+      "league_slug": "ofc",
+      "status": "COMPLETED",
+      "completed": true,
+      "page": 1,
+      "discovered_count": 408
+    },
+    {
+      "source": "roster",
+      "league_slug": "pfl",
+      "status": "COMPLETED",
+      "completed": true,
+      "page": 1,
+      "discovered_count": 587
+    },
+    {
+      "source": "roster",
+      "league_slug": "ufc",
+      "status": "COMPLETED",
+      "completed": true,
+      "page": 2,
+      "discovered_count": 1840
+    }
+  ]
+}

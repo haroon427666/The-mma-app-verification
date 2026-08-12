@@ -1,0 +1,68 @@
+{
+  "type": "W019_CENSUS_BASELINE",
+  "window": "CENSUS WINDOW 12 (LIMIT=2000)",
+  "timestamp": "2026-08-11T17:57:53.000000+00:00",
+  "git_head": "19a87c7055767c4587e50530b67769c62410504f",
+  "fighters": 34988,
+  "fighter_records": 34183,
+  "statistics": 399,
+  "rankings": 142,
+  "competitors": 47,
+  "external_ids": 35345,
+  "events": 24,
+  "competitions": 260,
+  "promotions": 48,
+  "weight_classes": 25,
+  "sync_runs": 32,
+  "sync_checkpoints": 3,
+  "sync_discovered_athletes": 38011,
+  "sync_discovery_checkpoints": 7,
+  "alembic": "008",
+  "registry_consumed": 34988,
+  "registry_pending": 3023,
+  "missing_records": 805,
+  "dup_fighters": 0,
+  "dup_ext_ids": 0,
+  "dup_registry": 0,
+  "dup_records": 0,
+  "orphan_fighter_records": 0,
+  "orphan_rankings": 0,
+  "orphan_statistics": 0,
+  "orphan_competitors": 0,
+  "orphan_external_ids": 0,
+  "null_provider_ext": 0,
+  "unresolved_rankings": 0,
+  "sync_runs_by_status": {
+    "RUNNING": 2,
+    "COMPLETED": 30
+  },
+  "sync_checkpoints_rows": [
+    {
+      "entity_type": "fighter",
+      "provider": "espn",
+      "status": "COMPLETED"
+    },
+    {
+      "entity_type": "ranking",
+      "provider": "espn",
+      "status": "COMPLETED"
+    },
+    {
+      "entity_type": "records",
+      "provider": "espn",
+      "status": "COMPLETED"
+    }
+  ],
+  "next_window_sample": [
+    "5238639",
+    "5238640",
+    "5238641",
+    "5238642",
+    "5238643",
+    "5238650",
+    "5238651",
+    "5238652",
+    "5238653",
+    "5238656"
+  ]
+}

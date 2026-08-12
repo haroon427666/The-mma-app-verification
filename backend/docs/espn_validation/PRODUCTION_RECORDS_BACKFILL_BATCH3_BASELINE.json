@@ -1,0 +1,49 @@
+{
+  "artifact": "PRODUCTION_RECORDS_BACKFILL_BATCH3_BASELINE",
+  "phase": "TASK 2 — RECORDS BACKFILL · BATCH 3 (LIMIT=300, final approved sweep)",
+  "captured_at_utc": "2026-08-11T20:12:00+00:00",
+  "source": "live PostgreSQL 18 localhost:5432/mma (read-only preflight; no mutation)",
+  "git_head": "19a87c7",
+  "approval": "Explicit user authorization: 'Approve final small sweep' (LIMIT=300). User was informed that the ascending sweep selects the 805-ID genuine floor first, so LIMIT=300 will re-probe 300 floor members at 0% yield and will NOT reach the 293-deferred highest-ID tail; user elected to run the approved LIMIT=300 as-is.",
+
+  "preflight": {
+    "matches_batch2_after": true,
+    "fighters": 38011,
+    "fighter_records": 36499,
+    "fighters_missing_fighter_records": 1512,
+    "external_ids": 38368,
+    "weight_classes": 25,
+    "rankings": 142,
+    "statistics": 399,
+    "competitors": 47,
+    "events": 24,
+    "competitions": 260,
+    "promotions": 48,
+    "registry_total": 38011,
+    "registry_consumed": 38011,
+    "registry_pending": 0,
+    "consumed_without_fighter": 0,
+    "alembic": "008",
+    "sync_process_running": false,
+    "integrity": "all clean (dupes 0, orphans 0, NULLs 0, unresolved rankings 0)",
+    "representatives": "6/6 verified (Makhachev 28-1-0, Ngannou 19-3-0, DJ 25-4-1, Rousey 13-2-0, Gracie 15-2-2, Shamrock 29-17-2)"
+  },
+
+  "missing_records_breakdown": {
+    "total_missing": 1512,
+    "pre_w019_genuine_absence_floor": 805,
+    "post_w019_cohort": 707,
+    "post_w019_detail": "707 = ~414 probed-empty genuine empties (incl. Mongi Zitouni/Ludovic Dandine placeholder cluster) + 293 unprobed highest-ID tail (to 5386479)"
+  },
+
+  "expected_outcome": {
+    "requests": 300,
+    "expected_records": 0,
+    "reason": "ascending sweep selects the first 300 missing = 300 of the 805-ID genuine floor (previously probed, 0% yield). The 293-deferred tail is NOT in the window. This run is a documented re-probe per explicit user instruction (LIMIT=300 as-is).",
+    "remaining_after": "1,512 missing unchanged (no floor member gains records; tail untouched)"
+  },
+
+  "execution_command": "PYTHONIOENCODING=utf-8 PYTHONUTF8=1 ESPN_RECORDS_BACKFILL_LIMIT=300 python sync.py --full --entity records",
+  "expected_duration_min": 1.7,
+  "status": "EXECUTION AUTHORIZED"
+}

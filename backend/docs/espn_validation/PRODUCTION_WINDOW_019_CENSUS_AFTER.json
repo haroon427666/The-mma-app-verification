@@ -1,0 +1,159 @@
+{
+  "type": "W019_CENSUS_AFTER",
+  "window": "CENSUS WINDOW 12 (LIMIT=2000) - PARTIAL (breaker trip)",
+  "timestamp": "2026-08-11T18:10:21.000000+00:00",
+  "git_head": "19a87c7055767c4587e50530b67769c62410504f",
+  "run_id": "09d84b8d-a75b-4a8c-a8ee-8cbcb1ff0dee",
+  "outcome": "PARTIAL_WINDOW_BREAKER_TRIP - consumed 1,676 of 2,000 target IDs; records phase NOT executed; 324 IDs left queued/unconsumed (healthy-gate crash-safety worked as designed); run COMPLETED with 0 errors",
+  "fighters": 36664,
+  "fighter_records": 34183,
+  "statistics": 399,
+  "rankings": 142,
+  "competitors": 47,
+  "external_ids": 37021,
+  "events": 24,
+  "competitions": 260,
+  "promotions": 48,
+  "weight_classes": 25,
+  "sync_runs": 33,
+  "sync_checkpoints": 3,
+  "sync_discovered_athletes": 38011,
+  "sync_discovery_checkpoints": 7,
+  "alembic": "008",
+  "registry_consumed": 36664,
+  "registry_pending": 1347,
+  "missing_records": 2481,
+  "dup_fighters": 0,
+  "dup_ext_ids": 0,
+  "dup_registry": 0,
+  "dup_records": 0,
+  "orphan_fighter_records": 0,
+  "orphan_rankings": 0,
+  "orphan_statistics": 0,
+  "orphan_competitors": 0,
+  "orphan_external_ids": 0,
+  "null_provider_ext": 0,
+  "unresolved_rankings": 0,
+  "registry_consumed_with_fighter": 36664,
+  "consumed_no_fighter": 0,
+  "sync_runs_by_status": {
+    "RUNNING": 2,
+    "COMPLETED": 31
+  },
+  "sync_checkpoints_rows": [
+    {
+      "entity_type": "fighter",
+      "provider": "espn",
+      "status": "COMPLETED"
+    },
+    {
+      "entity_type": "ranking",
+      "provider": "espn",
+      "status": "COMPLETED"
+    },
+    {
+      "entity_type": "records",
+      "provider": "espn",
+      "status": "COMPLETED"
+    }
+  ],
+  "census_sync_run": [
+    {
+      "id": "09d84b8d-a75b-4a8c-a8ee-8cbcb1ff0dee",
+      "status": "COMPLETED",
+      "started_at": "2026-08-11 17:58:10.011121+00:00",
+      "completed_at": "2026-08-11 18:07:50.803212+00:00",
+      "duration_ms": 580809.029,
+      "total_inserted": 1676,
+      "total_updated": 0,
+      "total_skipped": 0,
+      "total_errors": 0,
+      "api_calls": 0
+    }
+  ],
+  "network": {
+    "total_requests": 1720,
+    "profiles": 1720,
+    "records_requests": 0,
+    "http_200": 1676,
+    "http_404": 0,
+    "http_429": 0,
+    "http_503": 44,
+    "other_5xx": 0,
+    "retrying_warnings": 44,
+    "retries_recovered": 0,
+    "breaker_events": 1,
+    "breaker_transition": "CLOSED -> OPEN (5 consecutive failures)",
+    "unresolved_ids_left_queued": 324,
+    "discovery_requests": 0,
+    "discovery_skips": 14,
+    "error_lines": 0,
+    "tracebacks": 0,
+    "request_rate_rps": 2.96,
+    "duration_ms": 580809
+  },
+  "representatives": [
+    {
+      "external_id": "2335653",
+      "first_name": "Ken",
+      "last_name": "Shamrock",
+      "record_summary": "29-17-2"
+    },
+    {
+      "external_id": "2335697",
+      "first_name": "Royce",
+      "last_name": "Gracie",
+      "record_summary": "15-2-2"
+    },
+    {
+      "external_id": "2512089",
+      "first_name": "Demetrious",
+      "last_name": "Johnson",
+      "record_summary": "25-4-1"
+    },
+    {
+      "external_id": "2563796",
+      "first_name": "Ronda",
+      "last_name": "Rousey",
+      "record_summary": "13-2-0"
+    },
+    {
+      "external_id": "3332412",
+      "first_name": "Islam",
+      "last_name": "Makhachev",
+      "record_summary": "28-1-0"
+    },
+    {
+      "external_id": "3933168",
+      "first_name": "Francis",
+      "last_name": "Ngannou",
+      "record_summary": "19-3-0"
+    }
+  ],
+  "cohort": {
+    "count": 1676,
+    "created_min": "2026-08-11 18:07:50.233222+00:00",
+    "created_max": "2026-08-11 18:07:50.772634+00:00",
+    "with_records": 0,
+    "window_band_min": "5238639",
+    "window_band_max": "5311038",
+    "note": "records phase never executed (breaker trip before records phase); all 1,676 new fighters lack fighter_records"
+  },
+  "queued_unconsumed": {
+    "total_pending": 1347,
+    "next_pending": "5310951",
+    "note": "324 of the window's 2,000 IDs left queued/unconsumed (44 persistent-503 failures + ~280 never attempted after breaker OPEN); plus 1,023 IDs beyond the window band"
+  },
+  "next_window_sample": [
+    "5310951",
+    "5310982",
+    "5310983",
+    "5310990",
+    "5311036",
+    "5311037",
+    "5311039",
+    "5311040",
+    "5311041",
+    "5311042"
+  ]
+}

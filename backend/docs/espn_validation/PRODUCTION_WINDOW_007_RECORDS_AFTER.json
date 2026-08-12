@@ -1,0 +1,67 @@
+{
+  "type": "W007_RECORDS_AFTER",
+  "timestamp": "2026-08-10T19:14:17.215354+00:00",
+  "git_head": "19a87c7055767c4587e50530b67769c62410504f",
+  "alembic": "008",
+  "fighters": 12988,
+  "fighter_records": 8025,
+  "statistics": 399,
+  "rankings": 142,
+  "competitors": 47,
+  "external_ids": 13343,
+  "events": 24,
+  "competitions": 260,
+  "promotions": 48,
+  "sync_runs": 18,
+  "registry_total": 38011,
+  "registry_consumed": 12988,
+  "registry_pending": 25023,
+  "fighters_missing_records": 4963,
+  "dup_fighters": 0,
+  "dup_ext_ids": 0,
+  "dup_registry": 0,
+  "dup_records": 0,
+  "orphan_fighter_records": 0,
+  "orphan_rankings": 0,
+  "orphan_statistics": 0,
+  "orphan_competitors": 0,
+  "orphan_external_ids": 0,
+  "null_provider_ext": 0,
+  "unresolved_rankings": 0,
+  "records_checkpoint": [
+    {
+      "entity_type": "records",
+      "provider": "espn",
+      "status": "COMPLETED",
+      "completed": true,
+      "last_offset": 0,
+      "total_records": 0
+    }
+  ],
+  "recent_sync_runs": [
+    {
+      "id": "9d04653c-1d47-4a37-9860-21f32b24fed2",
+      "status": "COMPLETED",
+      "provider": "espn",
+      "started_at": "2026-08-10 19:03:46.757813+00:00",
+      "duration_ms": 341651.288,
+      "total_inserted": 638
+    },
+    {
+      "id": "41f13f93-0b4c-41a8-86c2-3fcf4b055d9b",
+      "status": "COMPLETED",
+      "provider": "espn",
+      "started_at": "2026-08-10 18:13:16.882695+00:00",
+      "duration_ms": 1826403.642,
+      "total_inserted": 5392
+    },
+    {
+      "id": "7eec7396-6748-4abe-90e4-8c2e0ce9c198",
+      "status": "COMPLETED",
+      "provider": "espn",
+      "started_at": "2026-08-10 17:28:10.499086+00:00",
+      "duration_ms": 1337511.8399999999,
+      "total_inserted": 3933
+    }
+  ]
+}

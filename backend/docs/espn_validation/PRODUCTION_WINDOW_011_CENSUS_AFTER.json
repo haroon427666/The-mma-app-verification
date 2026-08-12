@@ -1,0 +1,223 @@
+{
+  "type": "W011_CENSUS_AFTER",
+  "window": "CENSUS WINDOW 4 (LIMIT=2000)",
+  "timestamp": "2026-08-11T13:12:54.004817+00:00",
+  "git_head": "19a87c7055767c4587e50530b67769c62410504f",
+  "run_id": "6b6b0bb5-38ff-49a5-8ecc-8d6bd8a929f7",
+  "fighters": 20988,
+  "fighter_records": 20440,
+  "statistics": 399,
+  "rankings": 142,
+  "competitors": 47,
+  "external_ids": 21345,
+  "events": 24,
+  "competitions": 260,
+  "promotions": 48,
+  "weight_classes": 25,
+  "sync_runs": 25,
+  "sync_checkpoints": 3,
+  "sync_discovered_athletes": 38011,
+  "sync_discovery_checkpoints": 7,
+  "alembic": "008",
+  "registry_consumed": 20988,
+  "registry_pending": 17023,
+  "missing_records": 548,
+  "dup_fighters": 0,
+  "dup_ext_ids": 0,
+  "dup_registry": 0,
+  "dup_records": 0,
+  "orphan_fighter_records": 0,
+  "orphan_rankings": 0,
+  "orphan_statistics": 0,
+  "orphan_competitors": 0,
+  "orphan_external_ids": 0,
+  "null_provider_ext": 0,
+  "unresolved_rankings": 0,
+  "registry_consumed_with_fighter": 20988,
+  "sync_runs_by_status": {
+    "RUNNING": 2,
+    "COMPLETED": 23
+  },
+  "sync_checkpoints_rows": [
+    {
+      "entity_type": "fighter",
+      "provider": "espn",
+      "status": "COMPLETED",
+      "last_offset": 0,
+      "total_records": 0
+    },
+    {
+      "entity_type": "ranking",
+      "provider": "espn",
+      "status": "COMPLETED",
+      "last_offset": 0,
+      "total_records": 0
+    },
+    {
+      "entity_type": "records",
+      "provider": "espn",
+      "status": "COMPLETED",
+      "last_offset": 0,
+      "total_records": 0
+    }
+  ],
+  "census_sync_run": [
+    {
+      "id": "6b6b0bb5-38ff-49a5-8ecc-8d6bd8a929f7",
+      "status": "COMPLETED",
+      "started_at": "2026-08-11 12:50:13.709314+00:00",
+      "completed_at": "2026-08-11 13:12:28.522714+00:00",
+      "duration_ms": 1334851.704,
+      "total_inserted": 3967,
+      "total_updated": 0,
+      "total_skipped": 0,
+      "total_errors": 0,
+      "api_calls": 0,
+      "error": null
+    }
+  ],
+  "representatives": [
+    {
+      "external_id": "2335653",
+      "first_name": "Ken",
+      "last_name": "Shamrock",
+      "record_summary": "29-17-2",
+      "wins": 29,
+      "losses": 17,
+      "draws": 2,
+      "no_contests": 0,
+      "ko_tko_wins": 4,
+      "submission_wins": 22,
+      "total_fights": 48
+    },
+    {
+      "external_id": "2335697",
+      "first_name": "Royce",
+      "last_name": "Gracie",
+      "record_summary": "15-2-2",
+      "wins": 15,
+      "losses": 2,
+      "draws": 2,
+      "no_contests": 0,
+      "ko_tko_wins": 2,
+      "submission_wins": 11,
+      "total_fights": 19
+    },
+    {
+      "external_id": "2512089",
+      "first_name": "Demetrious",
+      "last_name": "Johnson",
+      "record_summary": "25-4-1",
+      "wins": 25,
+      "losses": 4,
+      "draws": 1,
+      "no_contests": 0,
+      "ko_tko_wins": 5,
+      "submission_wins": 8,
+      "total_fights": 30
+    },
+    {
+      "external_id": "2563796",
+      "first_name": "Ronda",
+      "last_name": "Rousey",
+      "record_summary": "13-2-0",
+      "wins": 13,
+      "losses": 2,
+      "draws": 0,
+      "no_contests": 0,
+      "ko_tko_wins": 3,
+      "submission_wins": 10,
+      "total_fights": 15
+    },
+    {
+      "external_id": "3332412",
+      "first_name": "Islam",
+      "last_name": "Makhachev",
+      "record_summary": "28-1-0",
+      "wins": 28,
+      "losses": 1,
+      "draws": 0,
+      "no_contests": 0,
+      "ko_tko_wins": 5,
+      "submission_wins": 13,
+      "total_fights": 29
+    },
+    {
+      "external_id": "3933168",
+      "first_name": "Francis",
+      "last_name": "Ngannou",
+      "record_summary": "19-3-0",
+      "wins": 19,
+      "losses": 3,
+      "draws": 0,
+      "no_contests": 0,
+      "ko_tko_wins": 14,
+      "submission_wins": 4,
+      "total_fights": 22
+    }
+  ],
+  "freshly_inserted_samples": [
+    {
+      "external_id": "4294861",
+      "first_name": "Anderson",
+      "last_name": "Sakamoto",
+      "record_summary": "0-1-0",
+      "wins": 0,
+      "losses": 1,
+      "draws": 0,
+      "total_fights": 1
+    },
+    {
+      "external_id": "4294866",
+      "first_name": "Mike",
+      "last_name": "Pope",
+      "record_summary": "7-3-0",
+      "wins": 7,
+      "losses": 3,
+      "draws": 0,
+      "total_fights": 10
+    },
+    {
+      "external_id": "4294864",
+      "first_name": "Peterson",
+      "last_name": "Almeida Vilela",
+      "record_summary": "0-2-0",
+      "wins": 0,
+      "losses": 2,
+      "draws": 0,
+      "total_fights": 2
+    },
+    {
+      "external_id": "4294863",
+      "first_name": "Omar",
+      "last_name": "Darvish",
+      "record_summary": "0-1-0",
+      "wins": 0,
+      "losses": 1,
+      "draws": 0,
+      "total_fights": 1
+    },
+    {
+      "external_id": "4294862",
+      "first_name": "Dae Sung",
+      "last_name": "Kim",
+      "record_summary": "0-2-0",
+      "wins": 0,
+      "losses": 2,
+      "draws": 0,
+      "total_fights": 2
+    }
+  ],
+  "next_window_sample": [
+    "4294867",
+    "4294868",
+    "4294869",
+    "4294870",
+    "4294871",
+    "4294872",
+    "4294873",
+    "4294874",
+    "4294875",
+    "4294876"
+  ]
+}

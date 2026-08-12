@@ -1,0 +1,49 @@
+{
+  "artifact": "PRODUCTION_RECORDS_BACKFILL_FINALSWEEP_D4_RECONCILIATION",
+  "phase": "PHASE D D4 — HISTORICAL ABSENCE CLASSIFICATION BACKFILL",
+  "method": "read-only DB derivation + artifact cross-check; abort-on-mismatch",
+  "derivation": {
+    "source_query": "fighters LEFT JOIN fighter_records ON fighter_id WHERE fighter_records.id IS NULL ORDER BY external_id",
+    "derived_missing": 1224,
+    "expected_missing_from_artifacts": 1224,
+    "split_rule": "external_id < 5238639 (W019 band start) => pre-W019 floor; >= 5238639 => post-W019 cohort",
+    "derived_floor": 805,
+    "derived_post_w019": 419,
+    "final_sweep_named_ids": ["5350060", "5350061", "5369837", "5386478", "5386479"],
+    "final_sweep_subset_in_post_w019": true,
+    "post_w019_split": {"BACKFILL_BATCH": 414, "FINAL_SWEEP": 5},
+    "total": 1224
+  },
+  "artifact_cross_checks": {
+    "FINALSWEEP_AFTER.json.missing_records_breakdown_after": {
+      "total_missing": 1224,
+      "pre_w019_genuine_absence_floor": 805,
+      "post_w019_remaining": 419
+    },
+    "FINALSWEEP_AFTER.json.tail_coverage_proof.still_missing_ids": ["5350060", "5350061", "5369837", "5386478", "5386479"],
+    "FINALSWEEP_REPORT.md.section_N": "1,224 = 805 + 419 (414 + 5)",
+    "BATCH1_AFTER.json.missing_records_breakdown_after": "floor 805 constant",
+    "BATCH2_AFTER.json.remaining_backlog": "805 floor + 414 probed empty + 293 tail (pre-final-sweep)",
+    "MISSING_BREAKDOWN.md": "805 floor + 419 post-W019 (7 placeholder clusters 384 + 35 singletons)"
+  },
+  "db_state_gates": {
+    "status_table_pre_d4_rows": 0,
+    "fighters": 38011,
+    "fighter_records": 36787,
+    "missing": 1224,
+    "registry": "38,011 / 38,011 / 0",
+    "representatives": "6/6 verified",
+    "run_7852a339_in_sync_runs": "COMPLETED"
+  },
+  "evidence_applied_to_rows": {
+    "provider": "espn",
+    "status": "CONFIRMED_ABSENT",
+    "last_checked_at_utc": "2026-08-12T08:47:45+00:00",
+    "last_run_id": "7852a339-2a20-4ceb-868e-c9888d3a22cd",
+    "last_http_status": 200,
+    "result_detail": "http 200 — no usable record payload",
+    "note": "all 1,224 were re-probed by the final sweep with HTTP 200 (POST_AUDIT section 8)"
+  },
+  "idempotency": "INSERT ... ON CONFLICT (fighter_id, provider) DO NOTHING; rerun inserted 0 new rows",
+  "verdict": "RECONCILIATION PASS — exact 1,224 set with evidence-backed provenance; abort checks all passed"
+}

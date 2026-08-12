@@ -1,0 +1,148 @@
+{
+  "artifact": "PRODUCTION_RECORDS_BACKFILL_BATCH2_AFTER",
+  "phase": "TASK 2 — RECORDS BACKFILL · BATCH 2 (LIMIT=3000, final remaining sweep)",
+  "captured_at_utc": "2026-08-11T20:06:57.000000+00:00",
+  "source": "live PostgreSQL 18 localhost:5432/mma (read-only audit)",
+  "git_head": "19a87c7",
+  "run_id": "66dc4dfa-b6e7-44b7-b8a7-b71efa449a47",
+  "status": "COMPLETED · exit 0",
+
+  "run_details": {
+    "command": "PYTHONIOENCODING=utf-8 PYTHONUTF8=1 ESPN_RECORDS_BACKFILL_LIMIT=3000 python sync.py --full --entity records",
+    "started_at_utc": "2026-08-11 19:48:36",
+    "completed_at_utc": "2026-08-11 20:05:21",
+    "duration_ms": 1005469,
+    "duration_min": 16.76,
+    "inserted": 1781,
+    "updated": 0,
+    "skipped": 1219,
+    "errors": 0
+  },
+
+  "db_counts": {
+    "fighters": 38011,
+    "fighter_records": 36499,
+    "fighters_missing_fighter_records": 1512,
+    "external_ids": 38368,
+    "weight_classes": 25,
+    "rankings": 142,
+    "statistics": 399,
+    "competitors": 47,
+    "events": 24,
+    "competitions": 260,
+    "promotions": 48
+  },
+
+  "deltas_vs_batch1_after": {
+    "fighters": 0,
+    "fighter_records": 1781,
+    "fighters_missing_fighter_records": -1781,
+    "external_ids": 0,
+    "weight_classes": 0,
+    "rankings": 0,
+    "statistics": 0,
+    "competitors": 0,
+    "events": 0,
+    "competitions": 0,
+    "promotions": 0
+  },
+
+  "registry": {
+    "total": 38011,
+    "consumed": 38011,
+    "pending": 0,
+    "consumed_without_fighter": 0,
+    "registry_neutral_invariant": "HELD — registry untouched by records backfill (6th production confirmation)"
+  },
+
+  "missing_records_breakdown_after": {
+    "total_missing": 1512,
+    "pre_w019_genuine_absence_floor": 805,
+    "post_w019_cohort": 707,
+    "post_w019_detail": "707 = ~414 probed-empty genuine empties (incl. the Mongi Zitouni/Ludovic Dandine placeholder cluster that extends into the W019 band) + ~293 unprobed tail (highest-ID deferred, IDs up to 5386479 — outside the LIMIT=3000 window because the 805-ID floor re-sorts first)"
+  },
+
+  "cumulative_task2": {
+    "batch1_records": 95,
+    "batch2_records": 1781,
+    "total_records_backfilled": 1876,
+    "missing_before_task2": 3388,
+    "missing_after_task2": 1512,
+    "deferred_backlog_before": 2580,
+    "deferred_backlog_after": 293,
+    "note": "deferred backlog 2,580 → 293 unprobed tail (+414 confirmed genuine empties); genuine floor 805 permanent"
+  },
+
+  "yield_analysis": {
+    "requests": 3000,
+    "real_payloads": 1781,
+    "empty_404_unavailable": 1219,
+    "overall_yield_pct": 59.4,
+    "deferred_portion": "of 2,195 deferred covered: 1,781 real payloads (81.1% deferred yield), 414 genuine empties",
+    "explanation": "Ascending sweep re-probed the 805-ID genuine floor (0% yield) before reaching the deferred cohort; within the deferred band, the Mongi Zitouni/Ludovic Dandine placeholder cluster (5238639+, W019-band extension) returned genuine empty payloads. No fabrication; empty responses never converted to fake records."
+  },
+
+  "http_forensics": {
+    "total_http_requests": 3000,
+    "http_200": 3000,
+    "http_404": 0,
+    "http_429": 0,
+    "http_503": 0,
+    "http_other_5xx": 0,
+    "connection_errors": 0,
+    "retries": 0,
+    "breaker_events": 0,
+    "errors": 0,
+    "tracebacks": 0,
+    "discovery_requests": 0,
+    "request_rate_rps": 2.98
+  },
+
+  "integrity": {
+    "dup_fighters": 0,
+    "dup_fighter_records": 0,
+    "dup_registry": 0,
+    "dup_external_ids": 0,
+    "orphan_fighter_records": 0,
+    "orphan_rankings": 0,
+    "orphan_statistics": 0,
+    "orphan_competitors": 0,
+    "orphan_external_ids_fighter": 0,
+    "null_provider": 0,
+    "null_external_id": 0,
+    "unresolved_rankings": 0,
+    "rankings_resolve": "142/142"
+  },
+
+  "checkpoints_discovery_alembic": {
+    "sync_checkpoints": "3/3 COMPLETED (fighter/ranking/records)",
+    "discovery_checkpoints": "7/7 COMPLETED (global_listing + 6 rosters)",
+    "alembic": "008"
+  },
+
+  "representatives": {
+    "Makhachev_3332412": "28-1-0",
+    "Ngannou_3933168": "19-3-0",
+    "Demetrious_Johnson_2512089": "25-4-1",
+    "Rousey_2563796": "13-2-0",
+    "Gracie_2335697": "15-2-2",
+    "Shamrock_2335653": "29-17-2"
+  },
+
+  "batch2_records_sample": [
+    {"external_id": "5246013", "record": "0-0-0"},
+    {"external_id": "5246799", "record": "8-0-0"},
+    {"external_id": "5248207", "record": "7-1-0"},
+    {"external_id": "5248208", "record": "0-1-0"},
+    {"external_id": "5250437", "record": "0-0-1"},
+    {"external_id": "5250466", "record": "9-3-0"}
+  ],
+
+  "remaining_backlog": {
+    "deferred_unprobed_tail": 293,
+    "deferred_probed_empty": 414,
+    "genuine_floor": 805,
+    "total_missing": 1512,
+    "note": "a final small sweep (LIMIT≈300) could probe the 293 unprobed tail — NOT authorized; requires a new explicit decision gate"
+  }
+}

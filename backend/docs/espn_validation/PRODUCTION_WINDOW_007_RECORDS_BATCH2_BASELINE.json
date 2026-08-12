@@ -1,0 +1,65 @@
+{
+  "type": "W007_RECORDS_BATCH2_BASELINE",
+  "timestamp": "2026-08-11T08:58:39.115042+00:00",
+  "git_head": "19a87c7055767c4587e50530b67769c62410504f",
+  "fighters": 12988,
+  "fighter_records": 8025,
+  "statistics": 399,
+  "rankings": 142,
+  "competitors": 47,
+  "external_ids": 13343,
+  "events": 24,
+  "competitions": 260,
+  "promotions": 48,
+  "sync_runs": 18,
+  "sync_checkpoints": 3,
+  "sync_discovered_athletes": 38011,
+  "sync_discovery_checkpoints": 7,
+  "alembic": "008",
+  "registry_total": 38011,
+  "registry_consumed": 12988,
+  "registry_pending": 25023,
+  "fighters_missing_records": 4963,
+  "sync_runs_by_status": {
+    "RUNNING": 2,
+    "COMPLETED": 16
+  },
+  "sync_checkpoints_rows": [
+    {
+      "entity_type": "fighter",
+      "provider": "espn",
+      "status": "COMPLETED",
+      "completed": true,
+      "last_offset": 0,
+      "total_records": 0
+    },
+    {
+      "entity_type": "ranking",
+      "provider": "espn",
+      "status": "COMPLETED",
+      "completed": true,
+      "last_offset": 0,
+      "total_records": 0
+    },
+    {
+      "entity_type": "records",
+      "provider": "espn",
+      "status": "COMPLETED",
+      "completed": true,
+      "last_offset": 0,
+      "total_records": 0
+    }
+  ],
+  "discovery_checkpoints_completed": 7,
+  "dup_fighters": 0,
+  "dup_ext_ids": 0,
+  "dup_registry": 0,
+  "dup_records": 0,
+  "orphan_fighter_records": 0,
+  "orphan_rankings": 0,
+  "orphan_statistics": 0,
+  "orphan_competitors": 0,
+  "orphan_external_ids": 0,
+  "null_provider_ext": 0,
+  "unresolved_rankings": 0
+}

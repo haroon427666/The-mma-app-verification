@@ -1,0 +1,51 @@
+{
+  "artifact": "PRODUCTION_RECORDS_BACKFILL_FINALSWEEP_BASELINE",
+  "phase": "TASK 2 — RECORDS BACKFILL · FINAL SWEEP (LIMIT=1512, corrected per handoff)",
+  "captured_at_utc": "2026-08-12T08:36:03+00:00",
+  "source": "live PostgreSQL 18.4 localhost:5432/mma (read-only preflight; no mutation)",
+  "git_head": "19a87c7055767c4587e50530b67769c62410504f",
+  "approval": "Handoff authorization: 'If all read-only checks pass AND source-code inspection confirms the ascending selection behavior, the approved production operation for this session is ESPN_RECORDS_BACKFILL_LIMIT=1512 python sync.py --full --entity records — ONE bounded records-backfill run, NOT a census/discovery/registry operation.' Previous session's LIMIT=300 plan (interrupted run c0378a27, 0 inserts) was based on an incorrect assumption and is corrected to LIMIT=1512 — the minimum LIMIT covering the entire 1,512-member missing-record candidate set.",
+
+  "preflight": {
+    "matches_batch2_after": true,
+    "fighters": 38011,
+    "fighter_records": 36499,
+    "fighters_missing_fighter_records": 1512,
+    "external_ids": 38368,
+    "weight_classes": 25,
+    "rankings": 142,
+    "statistics": 399,
+    "competitors": 47,
+    "events": 24,
+    "competitions": 260,
+    "promotions": 48,
+    "registry_total": 38011,
+    "registry_consumed": 38011,
+    "registry_pending": 0,
+    "consumed_without_fighter": 0,
+    "alembic": "008",
+    "sync_process_running": false,
+    "integrity": "all clean (dupes 0, orphans 0, NULLs 0, unresolved rankings 0, consumed-without-fighter 0)",
+    "representatives": "6/6 record summaries verified (Makhachev 28-1-0, Ngannou 19-3-0, DJ 25-4-1, Rousey 13-2-0, Gracie 15-2-2, Shamrock 29-17-2)"
+  },
+
+  "missing_records_breakdown": {
+    "total_missing": 1512,
+    "pre_w019_genuine_absence_floor": 805,
+    "post_w019_cohort": 707,
+    "post_w019_detail": "707 = ~414 probed-empty genuine empties (incl. Mongi Zitouni/Ludovic Dandine placeholder cluster) + 293 unprobed highest-ID tail (IDs to 5386479)",
+    "first_missing_id_ascending": "2431356",
+    "highest_missing_id": "5386479"
+  },
+
+  "expected_outcome": {
+    "requests": 1512,
+    "note": "LIMIT=1512 covers the ENTIRE remaining missing-record candidate set (805 floor + 414 probed empties + 293 unprobed tail) in ascending order. Most of the first ~805 requests are expected to return empty (genuine-absence floor, previously probed at 0% yield); the important purpose is to REACH and probe the final 293 deferred fighters.",
+    "expected_records": "much smaller than 1,512 (unknown until run)",
+    "expected_remaining_after": "only explainable genuine/content-dependent absences; actionable deferred should be 0"
+  },
+
+  "execution_command": "PYTHONIOENCODING=utf-8 PYTHONUTF8=1 ESPN_RECORDS_BACKFILL_LIMIT=1512 python sync.py --full --entity records",
+  "expected_duration_min": 8.4,
+  "status": "EXECUTION AUTHORIZED"
+}

@@ -1,0 +1,42 @@
+{
+  "artifact": "PRODUCTION_RECORDS_BACKFILL_BATCH2_BASELINE",
+  "phase": "TASK 2 — RECORDS BACKFILL · BATCH 2 (LIMIT=3000, final remaining sweep)",
+  "captured_at_utc": "2026-08-11T19:50:00+00:00",
+  "source": "live PostgreSQL 18 localhost:5432/mma (read-only preflight; no mutation)",
+  "git_head": "19a87c7",
+  "approval": "Explicit user authorization: 'Authorize the remaining Task 2 records backfill in one operation (LIMIT=3000, --entity records) to finish the 2,488-fighter deferred backlog, then audit and STOP.'",
+
+  "preflight": {
+    "matches_batch1_after": true,
+    "fighters": 38011,
+    "fighter_records": 34718,
+    "fighters_missing_fighter_records": 3293,
+    "external_ids": 38368,
+    "weight_classes": 25,
+    "rankings": 142,
+    "statistics": 399,
+    "competitors": 47,
+    "events": 24,
+    "competitions": 260,
+    "promotions": 48,
+    "registry_total": 38011,
+    "registry_consumed": 38011,
+    "registry_pending": 0,
+    "consumed_without_fighter": 0,
+    "alembic": "008",
+    "sync_process_running": false,
+    "integrity": "all clean (dupes 0, orphans 0, NULLs 0, unresolved rankings 0)",
+    "representatives": "6/6 verified (Makhachev 28-1-0, Ngannou 19-3-0, DJ 25-4-1, Rousey 13-2-0, Gracie 15-2-2, Shamrock 29-17-2)"
+  },
+
+  "missing_records_breakdown": {
+    "total_missing": 3293,
+    "pre_w019_genuine_absence_floor": 805,
+    "post_w019_deferred_cohort": 2488,
+    "note": "ascending sweep means LIMIT=3000 covers the 805-ID floor (0% yield re-probe) + 2,195 of the 2,488 deferred; expected residual after run ≈ 293 deferred + 805 floor = 1,098"
+  },
+
+  "execution_command": "PYTHONIOENCODING=utf-8 PYTHONUTF8=1 ESPN_RECORDS_BACKFILL_LIMIT=3000 python sync.py --full --entity records",
+  "expected_duration_min": 16.7,
+  "status": "EXECUTION AUTHORIZED"
+}

@@ -1,0 +1,58 @@
+{
+  "captured_at_utc": "2026-08-12T09:51:29.293368+00:00",
+  "fighters": 38011,
+  "fighter_records": 36787,
+  "missing": 1224,
+  "external_ids": 38368,
+  "weight_classes": 25,
+  "rankings": 142,
+  "statistics": 399,
+  "competitors": 47,
+  "events": 24,
+  "competitions": 260,
+  "promotions": 48,
+  "registry_total": 38011,
+  "registry_consumed": 38011,
+  "status_rows": 1224,
+  "alembic": "009",
+  "representatives": "6/6 verified",
+  "artifact": "PRODUCTION_RECORDS_BACKFILL_FINALSWEEP_D4_AFTER",
+  "phase": "PHASE D D4 \u2014 HISTORICAL ABSENCE CLASSIFICATION BACKFILL",
+  "commit": true,
+  "provenance_plan": {
+    "CENSUS_FLOOR": 805,
+    "BACKFILL_BATCH": 414,
+    "FINAL_SWEEP": 5
+  },
+  "evidence": {
+    "last_checked_at_utc": "2026-08-12T08:47:45+00:00",
+    "last_run_id": "7852a339-2a20-4ceb-868e-c9888d3a22cd",
+    "last_http_status": 200,
+    "status": "CONFIRMED_ABSENT",
+    "note": "all 1,224 were re-probed by the final sweep with HTTP 200 (FINALSWEEP POST_AUDIT section 8) \u2014 no new ESPN requests"
+  },
+  "inserted_rows": 1224,
+  "db_counts": {
+    "fighters": 38011,
+    "fighter_records": 36787,
+    "missing": 1224,
+    "external_ids": 38368,
+    "rankings": 142,
+    "registry_total": 38011,
+    "registry_consumed": 38011
+  },
+  "status_table": {
+    "rows": 1224,
+    "espn_confirmed_absent": 1224,
+    "duplicates": 0,
+    "orphans": 0,
+    "null_required": 0,
+    "provenance": {
+      "CENSUS_FLOOR": 805,
+      "BACKFILL_BATCH": 414,
+      "FINAL_SWEEP": 5
+    }
+  },
+  "idempotent_rerun_inserted": 0,
+  "artifact_note": "Post-D4 state: 1,224 CONFIRMED_ABSENT rows (provider=espn). Delta = +1,224 from the first commit run; this rerun added 0 (idempotent)."
+}

@@ -1,0 +1,112 @@
+{
+  "type": "W006_AFTER",
+  "alembic": "008",
+  "fighters": 12988,
+  "fighter_records": 7387,
+  "statistics": 399,
+  "rankings": 142,
+  "competitors": 47,
+  "external_ids": 13343,
+  "events": 24,
+  "competitions": 260,
+  "promotions": 48,
+  "sync_runs": 17,
+  "registry_total": 38011,
+  "registry_consumed": 12988,
+  "registry_pending": 25023,
+  "discovery_checkpoints_completed": 7,
+  "checkpoints": [
+    {
+      "entity_type": "ranking",
+      "provider": "espn",
+      "status": "COMPLETED",
+      "completed": true
+    },
+    {
+      "entity_type": "fighter",
+      "provider": "espn",
+      "status": "COMPLETED",
+      "completed": true
+    }
+  ],
+  "dup_fighters": 0,
+  "dup_registry": 0,
+  "dup_ext_ids": 0,
+  "orphan_fighter_records": 0,
+  "orphan_rankings": 0,
+  "orphan_statistics": 0,
+  "orphan_competitors": 0,
+  "orphan_ext_ids": 0,
+  "null_provider_ext": 0,
+  "unresolved_rankings": 0,
+  "sync_run_status": {
+    "RUNNING": 2,
+    "COMPLETED": 15
+  },
+  "w006_runs": [
+    {
+      "id": "41f13f93-0b4c-41a8-86c2-3fcf4b055d9b",
+      "mode": "auto",
+      "status": "COMPLETED",
+      "started_at": "2026-08-10 18:13:16.882695+00:00",
+      "completed_at": "2026-08-10 18:43:43.218426+00:00"
+    },
+    {
+      "id": "7eec7396-6748-4abe-90e4-8c2e0ce9c198",
+      "mode": "auto",
+      "status": "COMPLETED",
+      "started_at": "2026-08-10 17:28:10.499086+00:00",
+      "completed_at": "2026-08-10 17:50:27.913455+00:00"
+    },
+    {
+      "id": "1ed8e522-26c3-4557-b981-d0e8dc06be49",
+      "mode": "auto",
+      "status": "COMPLETED",
+      "started_at": "2026-08-10 17:17:08.075217+00:00",
+      "completed_at": "2026-08-10 17:20:55.630854+00:00"
+    }
+  ],
+  "fighters_without_records": 5601,
+  "confirmed_mma_total": 2763,
+  "confirmed_mma_synced": 1057,
+  "confirmed_mma_pending": 1706,
+  "mma_likely_synced": 11219,
+  "representatives": {
+    "Makhachev": {
+      "external_id": "3332412",
+      "first_name": "Islam",
+      "last_name": "Makhachev",
+      "record_summary": "28-1-0"
+    },
+    "Ngannou": {
+      "external_id": "3933168",
+      "first_name": "Francis",
+      "last_name": "Ngannou",
+      "record_summary": "19-3-0"
+    },
+    "DJ": {
+      "external_id": "2512089",
+      "first_name": "Demetrious",
+      "last_name": "Johnson",
+      "record_summary": "25-4-1"
+    },
+    "Rousey": {
+      "external_id": "2563796",
+      "first_name": "Ronda",
+      "last_name": "Rousey",
+      "record_summary": "13-2-0"
+    },
+    "Gracie": {
+      "external_id": "2335697",
+      "first_name": "Royce",
+      "last_name": "Gracie",
+      "record_summary": "15-2-2"
+    },
+    "Shamrock": {
+      "external_id": "2335653",
+      "first_name": "Ken",
+      "last_name": "Shamrock",
+      "record_summary": "29-17-2"
+    }
+  }
+}

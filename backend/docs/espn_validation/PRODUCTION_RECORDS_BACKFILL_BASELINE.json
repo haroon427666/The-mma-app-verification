@@ -1,0 +1,105 @@
+{
+  "artifact": "PRODUCTION_RECORDS_BACKFILL_BASELINE",
+  "phase": "TASK 2 — RECORDS BACKFILL (preparation/pre-flight)",
+  "captured_at_utc": "2026-08-11T19:23:30.000000+00:00",
+  "source": "live PostgreSQL 18 localhost:5432/mma (read-only audit; no mutation)",
+  "git_head": "19a87c7",
+  "state": "FINAL CENSUS COMPLETE (TASK 1 done); TASK 2 NOT AUTHORIZED — baseline captured for the proposed first bounded batch",
+
+  "db_counts": {
+    "fighters": 38011,
+    "fighter_records": 34623,
+    "fighters_missing_fighter_records": 3388,
+    "external_ids": 38368,
+    "weight_classes": 25,
+    "rankings": 142,
+    "statistics": 399,
+    "competitors": 47,
+    "events": 24,
+    "competitions": 260,
+    "promotions": 48
+  },
+
+  "registry": {
+    "total": 38011,
+    "consumed": 38011,
+    "pending": 0,
+    "next_pending_id": null,
+    "consumed_without_fighter": 0,
+    "fighters_without_registry_row": 0
+  },
+
+  "missing_records_breakdown": {
+    "total_missing": 3388,
+    "pre_w019_genuine_absence_floor": 805,
+    "post_w019_cohort": 2583,
+    "post_w019_of_which": {
+      "deferred_actionable_backlog": 2580,
+      "final_census_genuine_empty_payloads": 3
+    }
+  },
+
+  "missing_by_external_id_band": {
+    "ext_lt_5100000": 687,
+    "ext_5100000_to_5362433": 2694,
+    "ext_ge_5362434": 7,
+    "floor_id_range": "2431356 ... 5238638",
+    "post_w019_id_range": "5238639 ... 5386479",
+    "note": "records job sweeps missing fighters ORDER BY external_id ASC — the 805 genuine-absence floor (lower IDs) sorts before the 2,580 deferred backlog (higher IDs). Re-probing the floor is unavoidable without a persisted absence flag (Phase D, not authorized)."
+  },
+
+  "integrity": {
+    "dup_fighters": 0,
+    "dup_fighter_records": 0,
+    "dup_registry": 0,
+    "dup_external_ids": 0,
+    "orphan_fighter_records": 0,
+    "orphan_rankings": 0,
+    "orphan_statistics": 0,
+    "orphan_competitors": 0,
+    "orphan_external_ids_fighter": 0,
+    "null_provider": 0,
+    "null_external_id": 0,
+    "unresolved_rankings": 0,
+    "rankings_resolve": "142/142"
+  },
+
+  "checkpoints_discovery_alembic": {
+    "sync_checkpoints": "3/3 COMPLETED (fighter/ranking/records)",
+    "discovery_checkpoints": "7/7 COMPLETED (global_listing + 6 rosters)",
+    "alembic": "008"
+  },
+
+  "representatives": {
+    "Makhachev_3332412": "28-1-0",
+    "Ngannou_3933168": "19-3-0",
+    "Demetrious_Johnson_2512089": "25-4-1",
+    "Rousey_2563796": "13-2-0",
+    "Gracie_2335697": "15-2-2",
+    "Shamrock_2335653": "29-17-2"
+  },
+
+  "sync_process_running": false,
+
+  "recent_sync_runs": [
+    {"id": "9bc35273-ab06-4bff-a9ad-b0f4a0be0866", "status": "COMPLETED", "inserted": 883, "started_at_utc": "2026-08-11 18:59:55", "completed_at_utc": "2026-08-11 19:04:50"},
+    {"id": "7e0d0a87-b74a-4244-a838-fa22f7bf5ea7", "status": "COMPLETED", "inserted": 904, "started_at_utc": "2026-08-11 18:23:12", "completed_at_utc": "2026-08-11 18:28:50"},
+    {"id": "09d84b8d-a75b-4a8c-a8ee-8cbcb1ff0dee", "status": "COMPLETED", "inserted": 1676, "started_at_utc": "2026-08-11 17:58:10", "completed_at_utc": "2026-08-11 18:07:50"}
+  ],
+
+  "espn_health_probe": {
+    "result": "ALL HTTP 200 (profiles + records on 2431356, 5238639, 5310951, 5362434, 2512089; leagues control)",
+    "observed_at_utc": "2026-08-11T19:22:00+00:00",
+    "note": "same base URL + UA as the production client"
+  },
+
+  "execution_plan_proposed": {
+    "command_template": "PYTHONIOENCODING=utf-8 ESPN_RECORDS_BACKFILL_LIMIT=<N> python sync.py --full --entity records",
+    "batch_1_limit": 1000,
+    "batch_2_limit": 2000,
+    "batch_3_limit": 1000,
+    "total_requests_estimate": 3388,
+    "envelope": "3 req/s token bucket, burst 6, max_concurrency 6, max_retries 3, backoff 2^n, breaker threshold 5 / recovery 60s (defaults; not env-adjustable without code change)",
+    "status": "NOT AUTHORIZED — awaiting explicit approval before the first production batch"
+  }
+}

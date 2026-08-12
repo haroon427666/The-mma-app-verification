@@ -1,0 +1,113 @@
+{
+  "type": "FINAL_CENSUS_COMPLETION_AFTER",
+  "operation": "Final census completion (Task 1) — consume the last 443 registry IDs",
+  "timestamp": "2026-08-11T19:05:29.000000+00:00",
+  "git_head": "19a87c7055767c4587e50530b67769c62410504f",
+  "outcome": "CENSUS COMPLETE — PASS. All 38,011 registry IDs consumed; 0 pending. Perfect network run: 886/886 HTTP 200, 0 retries, 0 breaker events, 0 errors. Records phase executed for the final cohort (443 profiles + 443 records; 440 real payloads, 3 genuine absences).",
+  "run_id": "9bc35273-ab06-4bff-a9ad-b0f4a0be0866",
+  "run_status": "COMPLETED",
+  "started_at": "2026-08-11 18:59:55.278309+00:00",
+  "completed_at": "2026-08-11 19:04:50.097945+00:00",
+  "duration_ms": 294835.527,
+  "total_inserted": 883,
+  "total_updated": 0,
+  "total_skipped": 0,
+  "total_errors": 0,
+  "db_counts": {
+    "fighters": 38011,
+    "fighter_records": 34623,
+    "missing_records": 3388,
+    "deferred_missing_since_1800": 2583,
+    "external_ids": 38368,
+    "weight_classes": 25,
+    "rankings": 142,
+    "statistics": 399,
+    "competitors": 47,
+    "events": 24,
+    "competitions": 260,
+    "promotions": 48
+  },
+  "registry": {
+    "total": 38011,
+    "consumed": 38011,
+    "pending": 0,
+    "next_pending": null,
+    "consumed_with_fighter": 38011,
+    "consumed_no_fighter": 0,
+    "deltas": {
+      "consumed": "+443 (37,568 -> 38,011)",
+      "pending": "-443 (443 -> 0)",
+      "note": "REGISTRY EXHAUSTED — census 100% complete"
+    }
+  },
+  "cohort": {
+    "count": 443,
+    "created_min": "2026-08-11 19:04:48.972695+00:00",
+    "created_max": "2026-08-11 19:04:50.032779+00:00",
+    "with_records": 440,
+    "genuine_empty_payloads": 3,
+    "record_yield": "99.3%"
+  },
+  "network": {
+    "total_requests": 886,
+    "profiles": 443,
+    "records_requests": 443,
+    "http_200": 886,
+    "http_404": 0,
+    "http_429": 0,
+    "http_503": 0,
+    "other_5xx": 0,
+    "retrying_warnings": 0,
+    "breaker_events": 0,
+    "breaker_transitions": 0,
+    "unresolved_ids_left_queued": 0,
+    "discovery_requests": 0,
+    "discovery_skips": 14,
+    "error_lines": 0,
+    "tracebacks": 0,
+    "request_rate_rps": 3.0,
+    "window_line": "Fighter window: 443 resolved of 443 ids"
+  },
+  "integrity": {
+    "dup_fighters": 0,
+    "dup_fighter_records": 0,
+    "dup_registry": 0,
+    "dup_external_ids": 0,
+    "orphan_fighter_records": 0,
+    "orphan_rankings": 0,
+    "orphan_statistics": 0,
+    "orphan_competitors": 0,
+    "orphan_external_ids": 0,
+    "null_provider_ext": 0,
+    "unresolved_rankings": 0
+  },
+  "checkpoints": {
+    "fighter": "COMPLETED",
+    "ranking": "COMPLETED",
+    "records": "COMPLETED",
+    "discovery": "7/7 COMPLETED"
+  },
+  "alembic": "008",
+  "sync_runs": {
+    "total": 35,
+    "COMPLETED": 33,
+    "RUNNING": 2,
+    "note": "2 stale RUNNING are pre-existing killed-process artifacts"
+  },
+  "representatives": [
+    {"external_id": "2335653", "name": "Ken Shamrock", "record_summary": "29-17-2"},
+    {"external_id": "2335697", "name": "Royce Gracie", "record_summary": "15-2-2"},
+    {"external_id": "2512089", "name": "Demetrious Johnson", "record_summary": "25-4-1"},
+    {"external_id": "2563796", "name": "Ronda Rousey", "record_summary": "13-2-0"},
+    {"external_id": "3332412", "name": "Islam Makhachev", "record_summary": "28-1-0"},
+    {"external_id": "3933168", "name": "Francis Ngannou", "record_summary": "19-3-0"}
+  ],
+  "record_backlog_after_census": {
+    "total_missing": 3388,
+    "deferred_w019_r1": 2580,
+    "new_genuine_absences_final_cohort": 3,
+    "genuine_absence_floor": 805,
+    "note": "Task 2 (records backfill) NOT authorized yet — requires explicit approval. Deferred 2,580 are NOT genuine absences."
+  },
+  "decision_gate": "CENSUS COMPLETE — STOP. Registry exhausted (38,011/38,011, 0 pending). Task 2 (records backfill for the deferred backlog) NOT authorized — requires a new explicit decision gate. No W020, no further census, no commit/push."
+}

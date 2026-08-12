@@ -1,0 +1,132 @@
+{
+  "artifact": "PRODUCTION_RECORDS_BACKFILL_BATCH1_AFTER",
+  "phase": "TASK 2 — RECORDS BACKFILL · BATCH 1 (LIMIT=1000)",
+  "captured_at_utc": "2026-08-11T19:41:54.000000+00:00",
+  "source": "live PostgreSQL 18 localhost:5432/mma (read-only audit)",
+  "git_head": "19a87c7055767c4587e50530b67769c62410504f",
+  "run_id": "0f8d2a74-488f-4b4c-9cb6-a1cfc690c95e",
+  "status": "COMPLETED · exit 0",
+
+  "run_details": {
+    "command": "PYTHONIOENCODING=utf-8 PYTHONUTF8=1 ESPN_RECORDS_BACKFILL_LIMIT=1000 python sync.py --full --entity records",
+    "started_at_utc": "2026-08-11 19:33:53",
+    "completed_at_utc": "2026-08-11 19:39:25",
+    "duration_ms": 332476,
+    "duration_min": 5.54,
+    "inserted": 95,
+    "updated": 0,
+    "skipped": 905,
+    "errors": 0
+  },
+
+  "db_counts": {
+    "fighters": 38011,
+    "fighter_records": 34718,
+    "fighters_missing_fighter_records": 3293,
+    "external_ids": 38368,
+    "weight_classes": 25,
+    "rankings": 142,
+    "statistics": 399,
+    "competitors": 47,
+    "events": 24,
+    "competitions": 260,
+    "promotions": 48
+  },
+
+  "deltas_vs_baseline": {
+    "fighters": 0,
+    "fighter_records": 95,
+    "fighters_missing_fighter_records": -95,
+    "external_ids": 0,
+    "weight_classes": 0,
+    "rankings": 0,
+    "statistics": 0,
+    "competitors": 0,
+    "events": 0,
+    "competitions": 0,
+    "promotions": 0
+  },
+
+  "registry": {
+    "total": 38011,
+    "consumed": 38011,
+    "pending": 0,
+    "consumed_without_fighter": 0,
+    "registry_neutral_invariant": "HELD — registry untouched by records backfill"
+  },
+
+  "missing_records_breakdown_after": {
+    "total_missing": 3293,
+    "pre_w019_genuine_absence_floor": 805,
+    "post_w019_cohort": 2488
+  },
+
+  "yield_analysis": {
+    "requests": 1000,
+    "real_payloads": 95,
+    "empty_404_unavailable": 905,
+    "overall_yield_pct": 9.5,
+    "explanation": "Ascending sweep consumed the 805-ID genuine-absence floor first (0% yield by design — previously probed, genuine empties) plus a ~100-ID placeholder/official band (duplicate 'Mongi Zitouni'/'Ludovic Dandine' profiles, genuine empty payloads — same pattern as W013/W018). The 95 real payloads are deferred-backlog records. No fabrication; empty responses never converted to fake records.",
+    "next_batches_expected": "Batch 2+ will sweep the remaining 2,488 post-W019 deferred fighters (5238739+) with materially higher yield once the placeholder band is crossed."
+  },
+
+  "http_forensics": {
+    "total_http_requests": 1000,
+    "http_200": 1000,
+    "http_404": 0,
+    "http_429": 0,
+    "http_503": 0,
+    "http_other_5xx": 0,
+    "connection_errors": 0,
+    "retries": 0,
+    "breaker_events": 0,
+    "errors": 0,
+    "tracebacks": 0,
+    "discovery_requests": 0,
+    "request_rate_rps": 3.01
+  },
+
+  "integrity": {
+    "dup_fighters": 0,
+    "dup_fighter_records": 0,
+    "dup_registry": 0,
+    "dup_external_ids": 0,
+    "orphan_fighter_records": 0,
+    "orphan_rankings": 0,
+    "orphan_statistics": 0,
+    "orphan_competitors": 0,
+    "orphan_external_ids_fighter": 0,
+    "null_provider": 0,
+    "null_external_id": 0,
+    "unresolved_rankings": 0,
+    "rankings_resolve": "142/142"
+  },
+
+  "checkpoints_discovery_alembic": {
+    "sync_checkpoints": "3/3 COMPLETED (fighter/ranking/records)",
+    "discovery_checkpoints": "7/7 COMPLETED (global_listing + 6 rosters)",
+    "alembic": "008"
+  },
+
+  "representatives": {
+    "Makhachev_3332412": "28-1-0",
+    "Ngannou_3933168": "19-3-0",
+    "Demetrious_Johnson_2512089": "25-4-1",
+    "Rousey_2563796": "13-2-0",
+    "Gracie_2335697": "15-2-2",
+    "Shamrock_2335653": "29-17-2"
+  },
+
+  "cohort_sample_records": [
+    {"external_id": "5238959", "record": "0-1-0"},
+    {"external_id": "5238963", "record": "1-0-0"},
+    {"external_id": "5238964", "record": "0-1-0"},
+    {"external_id": "5238965", "record": "0-1-0"},
+    {"external_id": "5239182", "record": "0-2-0"}
+  ],
+
+  "remaining_backlog": {
+    "deferred_actionable_records": 2488,
+    "note": "post-W019 cohort still missing = 2,488 (was 2,580 deferred + 3 final-census empties = 2,583; minus 95 records backfilled). Floor unchanged at 805."
+  }
+}

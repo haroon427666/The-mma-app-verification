@@ -1,0 +1,226 @@
+{
+  "type": "W017_CENSUS_AFTER",
+  "window": "CENSUS WINDOW 10 (LIMIT=2000)",
+  "timestamp": "2026-08-11T17:13:32.000000+00:00",
+  "git_head": "19a87c7055767c4587e50530b67769c62410504f",
+  "run_id": "e408afbb-b902-4809-bf9e-f443fb77f629",
+  "fighters": 32988,
+  "fighter_records": 32286,
+  "statistics": 399,
+  "rankings": 142,
+  "competitors": 47,
+  "external_ids": 33345,
+  "events": 24,
+  "competitions": 260,
+  "promotions": 48,
+  "weight_classes": 25,
+  "sync_runs": 31,
+  "sync_checkpoints": 3,
+  "sync_discovered_athletes": 38011,
+  "sync_discovery_checkpoints": 7,
+  "alembic": "008",
+  "registry_consumed": 32988,
+  "registry_pending": 5023,
+  "missing_records": 702,
+  "dup_fighters": 0,
+  "dup_ext_ids": 0,
+  "dup_registry": 0,
+  "dup_records": 0,
+  "orphan_fighter_records": 0,
+  "orphan_rankings": 0,
+  "orphan_statistics": 0,
+  "orphan_competitors": 0,
+  "orphan_external_ids": 0,
+  "null_provider_ext": 0,
+  "unresolved_rankings": 0,
+  "registry_consumed_with_fighter": 32988,
+  "sync_runs_by_status": {
+    "RUNNING": 2,
+    "COMPLETED": 29
+  },
+  "sync_checkpoints_rows": [
+    {
+      "entity_type": "fighter",
+      "provider": "espn",
+      "status": "COMPLETED"
+    },
+    {
+      "entity_type": "ranking",
+      "provider": "espn",
+      "status": "COMPLETED"
+    },
+    {
+      "entity_type": "records",
+      "provider": "espn",
+      "status": "COMPLETED"
+    }
+  ],
+  "census_sync_run": [
+    {
+      "id": "e408afbb-b902-4809-bf9e-f443fb77f629",
+      "status": "COMPLETED",
+      "started_at": "2026-08-11 16:49:23.725752+00:00",
+      "completed_at": "2026-08-11 17:11:50.115364+00:00",
+      "duration_ms": 1346405.391,
+      "total_inserted": 3985,
+      "total_updated": 0,
+      "total_skipped": 0,
+      "total_errors": 0,
+      "api_calls": 0
+    }
+  ],
+  "network": {
+    "total_requests": 4027,
+    "profiles": 2000,
+    "records_requests": 2027,
+    "http_200": 4000,
+    "http_404": 0,
+    "http_429": 0,
+    "http_503": 27,
+    "other_5xx": 0,
+    "retrying_warnings": 27,
+    "retries_exhausted": 0,
+    "breaker_events": 0,
+    "discovery_requests": 0,
+    "discovery_skips": 14,
+    "error_lines": 0,
+    "tracebacks": 0,
+    "request_rate_rps": 2.99,
+    "duration_ms": 1346405
+  },
+  "representatives": [
+    {
+      "external_id": "2335653",
+      "first_name": "Ken",
+      "last_name": "Shamrock",
+      "record_summary": "29-17-2"
+    },
+    {
+      "external_id": "2335697",
+      "first_name": "Royce",
+      "last_name": "Gracie",
+      "record_summary": "15-2-2"
+    },
+    {
+      "external_id": "2512089",
+      "first_name": "Demetrious",
+      "last_name": "Johnson",
+      "record_summary": "25-4-1"
+    },
+    {
+      "external_id": "2563796",
+      "first_name": "Ronda",
+      "last_name": "Rousey",
+      "record_summary": "13-2-0"
+    },
+    {
+      "external_id": "3332412",
+      "first_name": "Islam",
+      "last_name": "Makhachev",
+      "record_summary": "28-1-0"
+    },
+    {
+      "external_id": "3933168",
+      "first_name": "Francis",
+      "last_name": "Ngannou",
+      "record_summary": "19-3-0"
+    }
+  ],
+  "cohort": {
+    "count": 2000,
+    "created_min": "2026-08-11 17:11:48.103626+00:00",
+    "created_max": "2026-08-11 17:11:50.022870+00:00",
+    "with_records": 1985,
+    "yield_pct": 99.25,
+    "window_band_min": "5110554",
+    "window_band_max": "5153043"
+  },
+  "cohort_missing_members": [
+    { "external_id": "5120132", "name": "Michael Tate" },
+    { "external_id": "5120133", "name": "David Tirelli" },
+    { "external_id": "5124795", "name": "Rafael Ferreira" },
+    { "external_id": "5127381", "name": "Matt Wynne" },
+    { "external_id": "5127420", "name": "Mick Maney" },
+    { "external_id": "5141978", "name": "Dwayne Bess" },
+    { "external_id": "5142168", "name": "Ross Swanberg" },
+    { "external_id": "5142169", "name": "David Huyette" },
+    { "external_id": "5144958", "name": "Larry Carter" },
+    { "external_id": "5144969", "name": "Bobby Harris" },
+    { "external_id": "5146910", "name": "Mitch Cadlick" },
+    { "external_id": "5146911", "name": "Sal Ram" },
+    { "external_id": "5146912", "name": "Phil Koldyk" },
+    { "external_id": "5146925", "name": "Jake Maxim" },
+    { "external_id": "5146929", "name": "Sal Ram" }
+  ],
+  "cohort_samples": [
+    {
+      "external_id": "5110554",
+      "first_name": "Jairo",
+      "last_name": "Pacheco",
+      "record_summary": "7-2-0",
+      "wins": 7,
+      "losses": 2,
+      "draws": 0,
+      "total_fights": 9
+    },
+    {
+      "external_id": "5110557",
+      "first_name": "Maria Laura",
+      "last_name": "Alves Fontoura",
+      "record_summary": "0-1-0",
+      "wins": 0,
+      "losses": 1,
+      "draws": 0,
+      "total_fights": 1
+    },
+    {
+      "external_id": "5110558",
+      "first_name": "Anastasiya",
+      "last_name": "Svetkivska",
+      "record_summary": "1-2-0",
+      "wins": 1,
+      "losses": 2,
+      "draws": 0,
+      "total_fights": 3
+    },
+    {
+      "external_id": "5110828",
+      "first_name": "A.J.",
+      "last_name": "Weber",
+      "record_summary": "0-1-0",
+      "wins": 0,
+      "losses": 1,
+      "draws": 0,
+      "total_fights": 1
+    },
+    {
+      "external_id": "5110829",
+      "first_name": "Zachary",
+      "last_name": "Vaci",
+      "record_summary": "1-0-0",
+      "wins": 1,
+      "losses": 0,
+      "draws": 0,
+      "total_fights": 1
+    }
+  ],
+  "recovered_503_athletes": [
+    { "external_id": "5121866", "name": "Greg Velasco", "record_summary": "6-2-0" },
+    { "external_id": "5122171", "name": "Mona Ftouhi", "record_summary": "0-1-0" },
+    { "external_id": "5122172", "name": "Martina Gemrani", "record_summary": "0-1-0" },
+    { "external_id": "5122173", "name": "Antonia Prifti", "record_summary": "1-0-0" },
+    { "external_id": "5122174", "name": "Oliwia Zaluska", "record_summary": "0-1-0" }
+  ],
+  "next_window_sample": [
+    "5153044",
+    "5153082",
+    "5153227",
+    "5153229",
+    "5153231",
+    "5153232",
+    "5153234",
+    "5153235",
+    "5153237",
+    "5153238"
+  ]
+}

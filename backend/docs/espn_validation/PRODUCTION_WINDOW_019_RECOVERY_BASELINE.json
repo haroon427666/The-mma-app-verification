@@ -1,0 +1,108 @@
+{
+  "type": "W019_RECOVERY_BASELINE",
+  "operation": "W019 recovery — census completion (Run R1) + records completion (Run R2)",
+  "timestamp": "2026-08-11T18:22:52.000000+00:00",
+  "git_head": "19a87c7055767c4587e50530b67769c62410504f",
+  "preflight": {
+    "verdict": "PASS 17/17",
+    "live_db_matches": "W019 AFTER exactly",
+    "espn_health_probe": "ALL 200 — 3x rounds next-pending 5310951 (profile+records), 10 deferred tail IDs, 4 records endpoints, control 3332412, /leagues; 0x503",
+    "no_sync_process": true,
+    "mma_stats_db": "0 bytes, untouched (not production)"
+  },
+  "db_counts": {
+    "fighters": 36664,
+    "fighter_records": 34183,
+    "missing_records": 2481,
+    "external_ids": 37021,
+    "weight_classes": 25,
+    "rankings": 142,
+    "statistics": 399,
+    "competitors": 47,
+    "events": 24,
+    "competitions": 260,
+    "promotions": 48
+  },
+  "registry": {
+    "total": 38011,
+    "consumed": 36664,
+    "pending": 1347,
+    "next_pending": "5310951",
+    "consumed_with_fighter": 36664,
+    "consumed_no_fighter": 0,
+    "composition": {
+      "w019_deferred_tail": 324,
+      "beyond_w019_tail": 1023
+    },
+    "next_window_sample": [
+      "5310951", "5310982", "5310983", "5310990", "5311036",
+      "5311037", "5311039", "5311040", "5311041", "5311042"
+    ]
+  },
+  "integrity": {
+    "dup_fighters": 0,
+    "dup_fighter_records": 0,
+    "dup_registry": 0,
+    "dup_external_ids": 0,
+    "orphan_fighter_records": 0,
+    "orphan_rankings": 0,
+    "orphan_rankings_promotion": 0,
+    "orphan_statistics": 0,
+    "orphan_competitors": 0,
+    "orphan_external_ids": 0,
+    "null_provider_ext": 0,
+    "unresolved_rankings": 0
+  },
+  "checkpoints": {
+    "fighter": "COMPLETED",
+    "ranking": "COMPLETED",
+    "records": "COMPLETED",
+    "sync_checkpoints": 3,
+    "discovery_checkpoints": 7,
+    "discovery_all_completed": true
+  },
+  "alembic": "008",
+  "sync_runs": {
+    "total": 33,
+    "COMPLETED": 31,
+    "RUNNING": 2,
+    "note": "2 stale RUNNING are pre-existing killed-process artifacts"
+  },
+  "last_run": {
+    "id": "09d84b8d-a75b-4a8c-a8ee-8cbcb1ff0dee",
+    "status": "COMPLETED",
+    "started_at": "2026-08-11 17:58:10.011121+00:00",
+    "completed_at": "2026-08-11 18:07:50.803212+00:00",
+    "duration_ms": 580809.029,
+    "total_inserted": 1676,
+    "total_errors": 0
+  },
+  "representatives": [
+    {"external_id": "2335653", "name": "Ken Shamrock", "record_summary": "29-17-2"},
+    {"external_id": "2335697", "name": "Royce Gracie", "record_summary": "15-2-2"},
+    {"external_id": "2512089", "name": "Demetrious Johnson", "record_summary": "25-4-1"},
+    {"external_id": "2563796", "name": "Ronda Rousey", "record_summary": "13-2-0"},
+    {"external_id": "3332412", "name": "Islam Makhachev", "record_summary": "28-1-0"},
+    {"external_id": "3933168", "name": "Francis Ngannou", "record_summary": "19-3-0"}
+  ],
+  "recovery_plan": {
+    "run_r1": "ESPN_FIGHTER_SYNC_LIMIT=2000 python sync.py --full --entity fighter  (consumes all 1,347 unconsumed: 324 deferred + 1,023)",
+    "run_r2": "ESPN_RECORDS_BACKFILL_LIMIT=2000 python sync.py --full --entity records  (backfills records for fighters missing fighter_records, registry-neutral)",
+    "expected_r1_deltas": {
+      "fighters": "+1,347",
+      "registry_consumed": "+1,347",
+      "registry_pending": "-1,347 (to 0)",
+      "registry_total": "38,011 unchanged",
+      "records_attached_in_run": "yes (window fighters)"
+    },
+    "expected_r2_deltas": {
+      "registry": "unchanged (registry-neutral)",
+      "fighter_records": "backfilled for the 1,676 W019 backlog (genuine empties excluded, never fabricated)"
+    },
+    "stop_conditions": [
+      "breaker trips again -> leave unresolved queued, STOP, no auto-retry",
+      "any invariant fails -> STOP",
+      "no W020/W021 without new explicit approval"
+    ]
+  }
+}

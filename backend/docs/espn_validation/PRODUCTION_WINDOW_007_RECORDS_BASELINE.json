@@ -1,0 +1,81 @@
+{
+  "type": "W007_RECORDS_BASELINE",
+  "timestamp": "2026-08-10T19:00:01.621659+00:00",
+  "git_head": "19a87c7055767c4587e50530b67769c62410504f",
+  "alembic": "008",
+  "fighters": 12988,
+  "fighter_records": 7387,
+  "statistics": 399,
+  "rankings": 142,
+  "competitors": 47,
+  "external_ids": 13343,
+  "events": 24,
+  "competitions": 260,
+  "promotions": 48,
+  "sync_runs": 17,
+  "registry_total": 38011,
+  "registry_consumed": 12988,
+  "registry_pending": 25023,
+  "fighters_missing_records": 5601,
+  "discovery_checkpoints": [
+    {
+      "source": "global_listing",
+      "league_slug": "",
+      "status": "COMPLETED",
+      "completed": true,
+      "page": 39
+    },
+    {
+      "source": "roster",
+      "league_slug": "bellator",
+      "status": "COMPLETED",
+      "completed": true,
+      "page": 1
+    },
+    {
+      "source": "roster",
+      "league_slug": "ifc",
+      "status": "COMPLETED",
+      "completed": true,
+      "page": 1
+    },
+    {
+      "source": "roster",
+      "league_slug": "ksw",
+      "status": "COMPLETED",
+      "completed": true,
+      "page": 1
+    },
+    {
+      "source": "roster",
+      "league_slug": "ofc",
+      "status": "COMPLETED",
+      "completed": true,
+      "page": 1
+    },
+    {
+      "source": "roster",
+      "league_slug": "pfl",
+      "status": "COMPLETED",
+      "completed": true,
+      "page": 1
+    },
+    {
+      "source": "roster",
+      "league_slug": "ufc",
+      "status": "COMPLETED",
+      "completed": true,
+      "page": 2
+    }
+  ],
+  "dup_fighters": 0,
+  "dup_ext_ids": 0,
+  "dup_registry": 0,
+  "dup_records": 0,
+  "orphan_fighter_records": 0,
+  "orphan_rankings": 0,
+  "orphan_statistics": 0,
+  "orphan_competitors": 0,
+  "orphan_external_ids": 0,
+  "null_provider_ext": 0
+}

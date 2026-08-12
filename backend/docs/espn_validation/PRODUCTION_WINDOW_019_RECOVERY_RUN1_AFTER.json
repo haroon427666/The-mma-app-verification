@@ -1,0 +1,113 @@
+{
+  "type": "W019_RECOVERY_RUN1_AFTER",
+  "operation": "W019 recovery Run R1 — census completion (LIMIT=2000, --entity fighter)",
+  "timestamp": "2026-08-11T18:34:54.000000+00:00",
+  "git_head": "19a87c7055767c4587e50530b67769c62410504f",
+  "outcome": "PARTIAL_RECOVERY_BREAKER_TRIP — window selected all 1,347 pending IDs; 904 consumed (incl. ALL 324 deferred W019 IDs); 443 left queued (connection-level ESPN instability tripped breaker CLOSED->OPEN; healthy-gate held); records phase NOT executed (0 records requests)",
+  "run_id": "7e0d0a87-b74a-4244-a838-fa22f7bf5ea7",
+  "run_status": "COMPLETED",
+  "started_at": "2026-08-11 18:23:12.849172+00:00",
+  "completed_at": "2026-08-11 18:28:50.445317+00:00",
+  "duration_ms": 337625.654,
+  "total_inserted": 904,
+  "total_updated": 0,
+  "total_skipped": 0,
+  "total_errors": 0,
+  "db_counts": {
+    "fighters": 37568,
+    "fighter_records": 34183,
+    "missing_records": 3385,
+    "external_ids": 37925,
+    "weight_classes": 25,
+    "rankings": 142,
+    "statistics": 399,
+    "competitors": 47,
+    "events": 24,
+    "competitions": 260,
+    "promotions": 48
+  },
+  "registry": {
+    "total": 38011,
+    "consumed": 37568,
+    "pending": 443,
+    "next_pending": "5362434",
+    "consumed_with_fighter": 37568,
+    "consumed_no_fighter": 0,
+    "deltas": {
+      "consumed": "+904",
+      "pending": "-904",
+      "note": "window selected 1,347 (all pending); 904 consumed; 443 left queued (breaker trip, healthy-gate)"
+    },
+    "deferred_w019_recovered": true,
+    "deferred_w019_count": 324,
+    "deferred_w019_note": "all 324 deferred W019 IDs (5310951+) consumed — next pending jumped to 5362434",
+    "next_window_sample": [
+      "5362434", "5362444", "5362446", "5362447", "5362448",
+      "5362460", "5362461", "5362462", "5362463", "5362464"
+    ]
+  },
+  "network": {
+    "total_requests": 904,
+    "profiles": 904,
+    "records_requests": 0,
+    "http_200": 904,
+    "http_404": 0,
+    "http_429": 0,
+    "http_503": 0,
+    "other_5xx": 0,
+    "connection_errors": 40,
+    "retrying_warnings": 40,
+    "breaker_transition": "CLOSED -> OPEN (5 consecutive failures) at 18:28:47 UTC",
+    "breaker_open_rejections": 1336,
+    "profile_failed_lines": 443,
+    "unresolved_ids_left_queued": 443,
+    "discovery_requests": 0,
+    "discovery_skips": 14,
+    "error_lines": 0,
+    "tracebacks": 0,
+    "request_rate_rps": 2.68
+  },
+  "integrity": {
+    "dup_fighters": 0,
+    "dup_fighter_records": 0,
+    "dup_registry": 0,
+    "dup_external_ids": 0,
+    "orphan_fighter_records": 0,
+    "orphan_rankings": 0,
+    "orphan_rankings_promotion": 0,
+    "orphan_statistics": 0,
+    "orphan_competitors": 0,
+    "orphan_external_ids": 0,
+    "null_provider_ext": 0,
+    "unresolved_rankings": 0
+  },
+  "checkpoints": {
+    "fighter": "COMPLETED",
+    "ranking": "COMPLETED",
+    "records": "COMPLETED",
+    "discovery": "7/7 COMPLETED"
+  },
+  "alembic": "008",
+  "sync_runs": {
+    "total": 34,
+    "COMPLETED": 32,
+    "RUNNING": 2,
+    "note": "2 stale RUNNING are pre-existing killed-process artifacts"
+  },
+  "representatives": [
+    {"external_id": "2335653", "name": "Ken Shamrock", "record_summary": "29-17-2"},
+    {"external_id": "2335697", "name": "Royce Gracie", "record_summary": "15-2-2"},
+    {"external_id": "2512089", "name": "Demetrious Johnson", "record_summary": "25-4-1"},
+    {"external_id": "2563796", "name": "Ronda Rousey", "record_summary": "13-2-0"},
+    {"external_id": "3332412", "name": "Islam Makhachev", "record_summary": "28-1-0"},
+    {"external_id": "3933168", "name": "Francis Ngannou", "record_summary": "19-3-0"}
+  ],
+  "record_backlog_after_r1": {
+    "w019_deferred_fighters": 1676,
+    "r1_new_fighters_without_records": 904,
+    "genuine_absence_floor": 805,
+    "total_missing": 3385,
+    "note": "R2 (records backfill) NOT executed — stopped per protocol after breaker trip; 0 records requests were made in R1"
+  },
+  "decision_gate": "STOP — R1 partial (904/1,347). Breaker tripped again (connection-level instability). Per protocol: leave 443 queued, DO NOT auto-retry, DO NOT auto-run R2. New explicit approval required for continuation."
+}

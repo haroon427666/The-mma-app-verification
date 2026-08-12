@@ -1,0 +1,46 @@
+{
+  "type": "W006_BASELINE",
+  "alembic": "008",
+  "fighters": 7988,
+  "fighter_records": 6995,
+  "statistics": 399,
+  "rankings": 142,
+  "competitors": 47,
+  "external_ids": 8341,
+  "events": 24,
+  "competitions": 260,
+  "promotions": 48,
+  "sync_runs": 16,
+  "registry_total": 38011,
+  "registry_consumed": 7988,
+  "registry_pending": 30023,
+  "discovery_checkpoints_completed": 7,
+  "checkpoints": [
+    {
+      "entity_type": "ranking",
+      "provider": "espn",
+      "status": "COMPLETED",
+      "completed": true
+    },
+    {
+      "entity_type": "fighter",
+      "provider": "espn",
+      "status": "COMPLETED",
+      "completed": true
+    }
+  ],
+  "dup_fighters": 0,
+  "dup_registry": 0,
+  "dup_ext_ids": 0,
+  "orphan_fighter_records": 0,
+  "orphan_rankings": 0,
+  "orphan_statistics": 0,
+  "orphan_competitors": 0,
+  "orphan_ext_ids": 0,
+  "null_provider_ext": 0,
+  "unresolved_rankings": 0,
+  "sync_run_status": {
+    "RUNNING": 2,
+    "COMPLETED": 14
+  }
+}
